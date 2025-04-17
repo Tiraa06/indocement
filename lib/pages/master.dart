@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'profile.dart';
 import 'hr_menu.dart';
+import 'bpjs_kesehatan.dart';
+
 
 class MasterScreen extends StatelessWidget {
   const MasterScreen({super.key});
@@ -169,15 +171,18 @@ class Categories extends StatelessWidget {
                 text: category["text"]!,
                 // Contoh Navigasi
                   press: () {
-                    if (category["text"] == "HR Care") {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => HRCareMenuPage(),
-                          ));
-                    }
-                  }
-              );
+    if (category["text"] == "HR Care") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => HRCareMenuPage()),
+      );
+    } else if (category["text"] == "BPJS") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MenuPage()), // pastikan MenuPage adalah nama class di bpjs_kesehatan.dart
+      );
+    }
+  },
             },
           ),
         ),
