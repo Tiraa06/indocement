@@ -38,7 +38,7 @@ class MenuPage extends StatelessWidget {
                 ),
                 clipBehavior: Clip.hardEdge, // Ensure the image respects the border radius
                 child: Image.asset(
-                  'assets/BPJS.png', // Path to BPJS.png
+                  'assets/images/BPJS.png', // Path to BPJS.png
                   height: 150, // Increased height
                   fit: BoxFit.contain,
                 ),
