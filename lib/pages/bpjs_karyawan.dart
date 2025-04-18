@@ -46,37 +46,41 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
           file: File(pickedFile.path),
         );
 
-        showDialog(
+        // Show success popup
+        _showPopup(
           context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Upload Berhasil'),
-                content: const Text('Dokumen berhasil diunggah.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
+          title: 'Upload Berhasil',
+          message: 'Dokumen berhasil diunggah.',
         );
       } catch (e) {
-        showDialog(
+        // Show failure popup
+        _showPopup(
           context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Upload Gagal'),
-                content: Text('Terjadi kesalahan saat mengunggah dokumen:\n$e'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Tutup'),
-                  ),
-                ],
-              ),
+          title: 'Upload Gagal',
+          message: 'Terjadi kesalahan saat mengunggah dokumen:\n$e',
         );
       }
     }
+  }
+
+  void _showPopup({
+    required BuildContext context,
+    required String title,
+    required String message,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
