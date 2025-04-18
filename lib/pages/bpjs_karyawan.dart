@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'bpjs_upload_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BPJSKaryawanPage extends StatefulWidget {
   const BPJSKaryawanPage({super.key});
@@ -27,73 +28,76 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     });
   }
 
-Future<void> pickAndCropImage({
-  required BuildContext context,
-  required int idEmployee,
-  required String anggotaBpjs,
-  required String fieldName,
-}) async {
-  final picker = ImagePicker();
-  final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> pickAndCropImage({
+    required BuildContext context,
+    required int idEmployee,
+    required String anggotaBpjs,
+    required String fieldName,
+  }) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  if (pickedFile != null) {
-    File? cropped = (await ImageCropper().cropImage(
-      sourcePath: pickedFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Image',
-          toolbarColor: const Color(0xFF1572E8),
-          toolbarWidgetColor: Colors.white,
-        ),
-      ],
-    )) as File?;
+    if (pickedFile != null) {
+      File? cropped =
+          (await ImageCropper().cropImage(
+                sourcePath: pickedFile.path,
+                aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+                uiSettings: [
+                  AndroidUiSettings(
+                    toolbarTitle: 'Crop Image',
+                    toolbarColor: const Color(0xFF1572E8),
+                    toolbarWidgetColor: Colors.white,
+                  ),
+                ],
+              ))
+              as File?;
 
-    if (cropped != null) {
-      try {
-        final response = await uploadBpjsDocument(
-          idEmployee: idEmployee,
-          anggotaBpjs: anggotaBpjs,
-          fieldName: fieldName,
-          file: File(cropped.path),
-        );
+      if (cropped != null) {
+        try {
+          final response = await uploadBpjsDocument(
+            idEmployee: idEmployee,
+            anggotaBpjs: anggotaBpjs,
+            fieldName: fieldName,
+            file: File(cropped.path),
+          );
 
-        // Tampilkan dialog sukses
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Upload Berhasil'),
-            content: const Text('Dokumen berhasil diunggah.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      } catch (e) {
-        // Tampilkan dialog gagal
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Upload Gagal'),
-            content: Text('Terjadi kesalahan saat mengunggah dokumen:\n$e'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup'),
-              ),
-            ],
-          ),
-        );
+          // Tampilkan dialog sukses
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Upload Berhasil'),
+                  content: const Text('Dokumen berhasil diunggah.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+          );
+        } catch (e) {
+          // Tampilkan dialog gagal
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Upload Gagal'),
+                  content: Text(
+                    'Terjadi kesalahan saat mengunggah dokumen:\n$e',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Tutup'),
+                    ),
+                  ],
+                ),
+          );
+        }
       }
     }
   }
-}
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -191,12 +195,22 @@ Future<void> pickAndCropImage({
                               title: 'Upload KK',
                               color: const Color(0xFF1572E8),
                               onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Istri",
-                                  fieldName: "urlKk",
-                                );
+                                if (idEmployee != null) {
+                                  pickAndCropImage(
+                                    context: context,
+                                    idEmployee: idEmployee!,
+                                    anggotaBpjs: "Istri",
+                                    fieldName: "urlKk",
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "ID karyawan belum tersedia",
+                                      ),
+                                    ),
+                                  );
+                                }
                               },
                             ),
 
@@ -205,12 +219,22 @@ Future<void> pickAndCropImage({
                               title: 'Upload Surat Nikah',
                               color: const Color(0xFF1572E8),
                               onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Istri",
-                                  fieldName: "urlSuratNikah",
-                                );
+                                if (idEmployee != null) {
+                                  pickAndCropImage(
+                                    context: context,
+                                    idEmployee: idEmployee!,
+                                    anggotaBpjs: "Istri",
+                                    fieldName: "urlSuratNikah",
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "ID karyawan belum tersedia",
+                                      ),
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -245,12 +269,22 @@ Future<void> pickAndCropImage({
                               title: 'Upload KK',
                               color: const Color(0xFF1572E8),
                               onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Anak",
-                                  fieldName: "urlKk",
-                                );
+                                if (idEmployee != null) {
+                                  pickAndCropImage(
+                                    context: context,
+                                    idEmployee: idEmployee!,
+                                    anggotaBpjs: "Anak",
+                                    fieldName: "urlKk",
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "ID karyawan belum tersedia",
+                                      ),
+                                    ),
+                                  );
+                                }
                               },
                             ),
 
@@ -259,12 +293,22 @@ Future<void> pickAndCropImage({
                               title: 'Upload Surat Keterangan Lahir',
                               color: const Color(0xFF1572E8),
                               onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Anak",
-                                  fieldName: "urlAkteLahir",
-                                );
+                                if (idEmployee != null) {
+                                  pickAndCropImage(
+                                    context: context,
+                                    idEmployee: idEmployee!,
+                                    anggotaBpjs: "Anak",
+                                    fieldName: "urlAktekLahir",
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "ID karyawan belum tersedia",
+                                      ),
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
