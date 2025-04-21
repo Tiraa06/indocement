@@ -54,6 +54,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
+    print('EditProfilePage initState called');
     _fetchInitialData();
   }
 
@@ -63,13 +64,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final userId = prefs.getInt('id');
 
     print(
-        'SharedPreferences Keys: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+        'SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
     print('employeeId: $employeeId, userId: $userId');
 
     setState(() {
       _userId = userId;
-      _employeeNameController.text =
-          prefs.getString('employeeName') ?? widget.employeeName;
+      _employeeNameController.text = prefs.getString('employeeName') ??
+          widget.employeeName ??
+          "Nama Tidak Tersedia";
       _phoneController.text = prefs.getString('telepon') ?? '';
       _emailController.text = prefs.getString('email') ?? '';
       _jobTitleController.text = prefs.getString('jobTitle') ?? widget.jobTitle;
@@ -80,7 +82,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (employeeId == null || employeeId <= 0) {
       print('Invalid or missing employeeId: $employeeId');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID karyawan tidak valid')),
+        const SnackBar(
+            content: Text('ID karyawan tidak valid, silakan login ulang')),
       );
       return;
     }
@@ -96,8 +99,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (response.statusCode == 200) {
         final employee = jsonDecode(response.body);
+        print('Employee Data Keys: ${employee.keys}');
         setState(() {
           fullData = employee;
+          _employeeNameController.text =
+              employee['EmployeeName']?.isNotEmpty == true
+                  ? employee['EmployeeName']
+                  : _employeeNameController.text;
+          _jobTitleController.text =
+              employee['JobTitle'] ?? _jobTitleController.text;
           _livingAreaController.text =
               employee['LivingArea'] ?? _livingAreaController.text;
           _birthDateController.text = employee['BirthDate'] ?? '';
@@ -111,16 +121,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _idEslController.text = employee['IdEsl']?.toString() ?? '';
           _photoUrl = employee['UrlFoto'] ?? _photoUrl;
         });
+
+        await prefs.setString('employeeName', _employeeNameController.text);
         await prefs.setString('jobTitle', _jobTitleController.text);
         await prefs.setString('livingArea', _livingAreaController.text);
-        if (employee['UrlFoto'] != null) {
-          await prefs.setString('urlFoto', employee['UrlFoto']);
+        if (_photoUrl != null) {
+          await prefs.setString('urlFoto', _photoUrl!);
         }
+
+        print('Updated employeeName: ${_employeeNameController.text}');
       } else {
         print('Failed to fetch employee data: ${response.statusCode}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data: ${response.statusCode}')),
+        );
       }
     } catch (e) {
       print('Error fetching employee data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
     }
   }
 

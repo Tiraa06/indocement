@@ -25,17 +25,26 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    print('ProfilePage initState called');
+    _loadProfileData();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfilePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    print('ProfilePage didUpdateWidget called');
     _loadProfileData();
   }
 
   Future<void> _loadProfileData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final employeeId = prefs.getInt('idEmployee');
+
     print(
-        'SharedPreferences Keys: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+        'SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
 
     setState(() {
-      _employeeName = prefs.getString('employeeName') ?? "";
+      _employeeName = prefs.getString('employeeName') ?? "Nama Tidak Tersedia";
       _employeeId = employeeId;
       _email = prefs.getString('email') ?? "";
       _telepon = prefs.getString('telepon') ?? "";
@@ -43,42 +52,58 @@ class _ProfilePageState extends State<ProfilePage> {
       _jobTitle = prefs.getString('jobTitle') ?? "";
     });
 
-    if (employeeId != null && employeeId > 0) {
-      try {
-        final response = await http.get(
-          Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
-          headers: {'Content-Type': 'application/json'},
-        ).timeout(const Duration(seconds: 10));
-
-        print('Fetch Employee Status: ${response.statusCode}');
-        print('Fetch Employee Body: ${response.body}');
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          setState(() {
-            _jobTitle = data['JobTitle'] ?? _jobTitle;
-            _urlFoto = data['UrlFoto'] ?? _urlFoto;
-            _employeeName = data['EmployeeName'] ?? _employeeName;
-            _email = data['Email'] ?? _email;
-            _telepon = data['Telepon'] ?? _telepon;
-          });
-          await prefs.setString('jobTitle', _jobTitle);
-          await prefs.setString('employeeName', _employeeName);
-          await prefs.setString('email', _email);
-          await prefs.setString('telepon', _telepon);
-          if (data['UrlFoto'] != null) {
-            await prefs.setString('urlFoto', data['UrlFoto']);
-          }
-        } else {
-          print('Failed to fetch employee data: ${response.statusCode}');
-        }
-      } catch (e) {
-        print('Error fetching employee data: $e');
-      }
-    } else {
+    if (employeeId == null || employeeId <= 0) {
       print('Invalid or missing employeeId: $employeeId');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID karyawan tidak valid')),
+        const SnackBar(
+            content: Text('ID karyawan tidak valid, silakan login ulang')),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      print('Fetch Employee Status: ${response.statusCode}');
+      print('Fetch Employee Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Employee Data Keys: ${data.keys}');
+        setState(() {
+          _employeeName = data['EmployeeName']?.isNotEmpty == true
+              ? data['EmployeeName']
+              : _employeeName;
+          _jobTitle = data['JobTitle'] ?? _jobTitle;
+          _urlFoto = data['UrlFoto'] ?? _urlFoto;
+          _email = data['Email'] ?? _email;
+          _telepon = data['Telepon'] ?? _telepon;
+        });
+
+        await prefs.setString('employeeName', _employeeName);
+        await prefs.setString('jobTitle', _jobTitle);
+        await prefs.setString('email', _email);
+        await prefs.setString('telepon', _telepon);
+        if (_urlFoto != null) {
+          await prefs.setString('urlFoto', _urlFoto!);
+        } else {
+          await prefs.remove('urlFoto');
+        }
+
+        print('Updated employeeName: $_employeeName');
+      } else {
+        print('Failed to fetch employee data: ${response.statusCode}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('Error fetching employee data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
     }
   }
@@ -235,6 +260,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   SharedPreferences prefs =
                       await SharedPreferences.getInstance();
                   await prefs.clear();
+                  print(
+                      'After logout - SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
                   Navigator.pushReplacementNamed(context, '/login');
                 },
               ),

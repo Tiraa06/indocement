@@ -30,16 +30,30 @@ class _LoginState extends State<Login> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data is List && data.isNotEmpty && data[0]['Id'] != null) {
-          return {
-            'idEmployee': data[0]['Id'] as int,
-            'employeeName': data[0]['EmployeeName'] ?? '',
-            'jobTitle': data[0]['JobTitle'] ?? '',
-            'telepon': data[0]['Telepon'] ?? '',
-            'urlFoto': data[0]['UrlFoto'],
-          };
+        if (data is List && data.isNotEmpty) {
+          // Cari karyawan yang email-nya benar-benar cocok
+          final matchingEmployee = data.firstWhere(
+            (employee) =>
+                employee['Email']?.toLowerCase() == email.toLowerCase(),
+            orElse: () => null,
+          );
+
+          if (matchingEmployee != null && matchingEmployee['Id'] != null) {
+            print('Matching Employee Data: $matchingEmployee');
+            return {
+              'idEmployee': matchingEmployee['Id'] as int,
+              'employeeName': matchingEmployee['EmployeeName'] ?? '',
+              'jobTitle': matchingEmployee['JobTitle'] ?? '',
+              'telepon': matchingEmployee['Telepon'] ?? '',
+              'email': matchingEmployee['Email'] ?? email,
+              'urlFoto': matchingEmployee['UrlFoto'],
+              'livingArea': matchingEmployee['LivingArea'] ?? '',
+            };
+          }
+          print('No matching employee found for email: $email');
+          return null;
         }
-        print('No valid employee data found in response');
+        print('No valid employee data found in response: $data');
         return null;
       }
       print('Failed to fetch idEmployee: ${response.statusCode}');
@@ -87,25 +101,61 @@ class _LoginState extends State<Login> {
         print('Parsed User: $user');
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
-          final employeeData = await _fetchIdEmployee(email);
-          if (employeeData == null || employeeData['idEmployee'] == 0) {
-            _showMessage('Gagal mendapatkan data karyawan.');
+          final employeeData = await _fetchIdEmployee(email) ?? {};
+
+          if (employeeData.isEmpty && user['IdEmployee'] == null) {
+            _showMessage('Gagal mengambil data karyawan. Silakan coba lagi.');
             setState(() => _isLoading = false);
             return;
           }
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.remove('id');
+          await prefs.remove('idEmployee');
+          await prefs.remove('email');
+          await prefs.remove('employeeName');
+          await prefs.remove('jobTitle');
+          await prefs.remove('telepon');
+          await prefs.remove('livingArea');
+          await prefs.remove('urlFoto');
+          print(
+              'After manual clear - SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+
+          // Gunakan IdEmployee dari user jika employeeData kosong
+          final int idEmployee =
+              employeeData['idEmployee'] ?? user['IdEmployee'] ?? 0;
+          if (idEmployee <= 0) {
+            _showMessage('ID karyawan tidak valid. Silakan hubungi admin.');
+            setState(() => _isLoading = false);
+            return;
+          }
+
           await prefs.setInt('id', user['Id'] as int);
-          await prefs.setInt('idEmployee', employeeData['idEmployee']);
-          await prefs.setString('email', user['Email'] ?? email);
-          await prefs.setString('employeeName', employeeData['employeeName']);
-          await prefs.setString('jobTitle', employeeData['jobTitle']);
-          await prefs.setString('telepon', employeeData['telepon']);
+          await prefs.setInt('idEmployee', idEmployee);
+          await prefs.setString('email', user['email'] ?? email);
+          await prefs.setString('employeeName',
+              user['employeeName'] ?? employeeData['employeeName'] ?? '');
+          await prefs.setString(
+              'jobTitle', user['role'] ?? employeeData['jobTitle'] ?? '');
+          await prefs.setString(
+              'telepon', user['telepon'] ?? employeeData['telepon'] ?? '');
+          await prefs.setString('livingArea', employeeData['livingArea'] ?? '');
+
           if (employeeData['urlFoto'] != null) {
             await prefs.setString('urlFoto', employeeData['urlFoto']);
+          } else {
+            await prefs.remove('urlFoto');
           }
+
+          final savedEmployeeName = prefs.getString('employeeName');
+          print('Saved employeeName: $savedEmployeeName');
           print(
               'Saved to SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+
+          if (savedEmployeeName == null || savedEmployeeName.isEmpty) {
+            _showMessage(
+                'Nama karyawan tidak tersedia. Silakan hubungi admin.');
+          }
 
           Navigator.pushNamedAndRemoveUntil(
             context,
