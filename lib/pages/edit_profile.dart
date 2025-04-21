@@ -1,26 +1,19 @@
-// ✅ Versi final dengan UI asli dipertahankan
-// ✅ Hanya Nomor Telepon, Email, dan Living Area yang bisa diedit
-// ✅ Data tersimpan ke SharedPreferences & API dengan format lengkap
-// ✅ Semua kolom dari API ditambahkan, read-only kecuali telepon, email, livingArea
-// ✅ UI dipercantik dengan pengelompokan Informasi Pribadi, Pekerjaan, dan Kontak
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final String name;
+  final String employeeName;
   final String jobTitle;
   final String? urlFoto;
   final int? employeeId;
 
   const EditProfilePage({
     super.key,
-    required this.name,
+    required this.employeeName,
     required this.jobTitle,
     this.urlFoto,
     this.employeeId,
@@ -56,51 +49,90 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _idEslController = TextEditingController();
 
   Map<String, dynamic> fullData = {};
+  int? _userId;
 
   @override
   void initState() {
     super.initState();
-    _fetchEmployeeData();
+    _fetchInitialData();
   }
 
-  Future<void> _fetchEmployeeData() async {
+  Future<void> _fetchInitialData() async {
     final prefs = await SharedPreferences.getInstance();
     final employeeId = widget.employeeId ?? prefs.getInt('idEmployee');
-    if (employeeId == null) return;
+    final userId = prefs.getInt('id');
 
-    final response =
-        await http.get(Uri.parse('http://213.35.123.110:5555/api/Employees'));
-    if (response.statusCode == 200) {
-      final List<dynamic> employees = jsonDecode(response.body);
-      final employee = employees.firstWhere((e) => e['id'] == employeeId,
-          orElse: () => null);
-      if (employee != null) {
+    print(
+        'SharedPreferences Keys: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+    print('employeeId: $employeeId, userId: $userId');
+
+    setState(() {
+      _userId = userId;
+      _employeeNameController.text =
+          prefs.getString('employeeName') ?? widget.employeeName;
+      _phoneController.text = prefs.getString('telepon') ?? '';
+      _emailController.text = prefs.getString('email') ?? '';
+      _jobTitleController.text = prefs.getString('jobTitle') ?? widget.jobTitle;
+      _livingAreaController.text = prefs.getString('livingArea') ?? '';
+      _photoUrl = widget.urlFoto ?? prefs.getString('urlFoto');
+    });
+
+    if (employeeId == null || employeeId <= 0) {
+      print('Invalid or missing employeeId: $employeeId');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID karyawan tidak valid')),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      print('Fetch Employee Status: ${response.statusCode}');
+      print('Fetch Employee Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final employee = jsonDecode(response.body);
         setState(() {
           fullData = employee;
-          _phoneController.text = employee['telepon'] ?? '';
-          _emailController.text = employee['email'] ?? '';
-          _livingAreaController.text = employee['livingArea'] ?? '';
-          _employeeNameController.text = employee['employeeName'] ?? '';
-          _jobTitleController.text = employee['jobTitle'] ?? '';
-          _birthDateController.text = employee['birthDate'] ?? '';
-          _employeeNoController.text = employee['employeeNo'] ?? '';
-          _serviceDateController.text = employee['serviceDate'] ?? '';
-          _noBpjsController.text = employee['noBpjs'] ?? '';
-          _genderController.text = employee['gender'] ?? '';
-          _educationController.text = employee['education'] ?? '';
-          _workLocationController.text = employee['workLocation'] ?? '';
-          _idSectionController.text = employee['idSection']?.toString() ?? '';
-          _idEslController.text = employee['idEsl']?.toString() ?? '';
-          _photoUrl = employee['urlFoto'];
+          _livingAreaController.text =
+              employee['LivingArea'] ?? _livingAreaController.text;
+          _birthDateController.text = employee['BirthDate'] ?? '';
+          _employeeNoController.text = employee['EmployeeNo'] ?? '';
+          _serviceDateController.text = employee['ServiceDate'] ?? '';
+          _noBpjsController.text = employee['NoBpjs'] ?? '';
+          _genderController.text = employee['Gender'] ?? '';
+          _educationController.text = employee['Education'] ?? '';
+          _workLocationController.text = employee['WorkLocation'] ?? '';
+          _idSectionController.text = employee['IdSection']?.toString() ?? '';
+          _idEslController.text = employee['IdEsl']?.toString() ?? '';
+          _photoUrl = employee['UrlFoto'] ?? _photoUrl;
         });
+        await prefs.setString('jobTitle', _jobTitleController.text);
+        await prefs.setString('livingArea', _livingAreaController.text);
+        if (employee['UrlFoto'] != null) {
+          await prefs.setString('urlFoto', employee['UrlFoto']);
+        }
+      } else {
+        print('Failed to fetch employee data: ${response.statusCode}');
       }
+    } catch (e) {
+      print('Error fetching employee data: $e');
     }
   }
 
   Future<void> _saveChanges() async {
     final prefs = await SharedPreferences.getInstance();
-    final employeeId = widget.employeeId ?? prefs.getInt('idEmployee');
-    if (employeeId == null) return;
+    final userId = _userId;
+    if (userId == null || userId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID pengguna tidak ditemukan')),
+      );
+      return;
+    }
 
     if (_emailController.text.isNotEmpty &&
         !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
@@ -111,43 +143,52 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
 
-    await prefs.setString('phone', _phoneController.text);
+    await prefs.setString('telepon', _phoneController.text);
     await prefs.setString('email', _emailController.text);
     await prefs.setString('livingArea', _livingAreaController.text);
 
     final updatedPayload = {
-      'id': fullData['id'],
-      'employeeNo': fullData['employeeNo'],
-      'employeeName': fullData['employeeName'],
-      'jobTitle': fullData['jobTitle'],
-      'serviceDate': fullData['serviceDate'],
-      'birthDate': fullData['birthDate'],
-      'noBpjs': fullData['noBpjs'],
-      'gender': fullData['gender'],
-      'education': fullData['education'],
-      'workLocation': fullData['workLocation'],
-      'idSection': fullData['idSection'],
-      'idEsl': fullData['idEsl'],
-      'urlFoto': fullData['urlFoto'],
-      'telepon': _phoneController.text,
-      'email': _emailController.text,
-      'livingArea': _livingAreaController.text,
+      'Id': userId,
+      'IdEmployee': widget.employeeId ?? prefs.getInt('idEmployee'),
+      'Email': _emailController.text,
+      'Telepon': _phoneController.text,
+      'EmployeeName': _employeeNameController.text,
+      'JobTitle': _jobTitleController.text,
+      'LivingArea': _livingAreaController.text,
     };
 
-    final response = await http.put(
-      Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(updatedPayload),
-    );
+    try {
+      final response = await http
+          .put(
+            Uri.parse('http://213.35.123.110:5555/api/User/$userId'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(updatedPayload),
+          )
+          .timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200 || response.statusCode == 204) {
+      print('Update Status: ${response.statusCode}');
+      print('Update Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perubahan berhasil disimpan')),
+        );
+        setState(() => isEditing = false);
+        Navigator.pop(context, {
+          'employeeName': _employeeNameController.text,
+          'jobTitle': _jobTitleController.text,
+          'urlFoto': _photoUrl,
+          'employeeId': widget.employeeId ?? prefs.getInt('idEmployee'),
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('Error updating profile: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perubahan berhasil disimpan')),
-      );
-      setState(() => isEditing = false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: ${response.statusCode}')),
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
     }
   }

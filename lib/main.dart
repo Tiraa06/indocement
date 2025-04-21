@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:indocement_apk/utils/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:indocement_apk/pages/home.dart';
+import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/login.dart';
 import 'package:indocement_apk/pages/register.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      designSize: Size(375, 812),
+      designSize: const Size(375, 812),
       builder: (context, child) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: "Indocement_Apk",
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
           textTheme: GoogleFonts.poppinsTextTheme(),
         ),
-        initialRoute: "/",
+        home: const SplashScreen(),
         onGenerateRoute: _onGenerateRoute,
       ),
     );
@@ -35,21 +35,55 @@ class MyApp extends StatelessWidget {
 
 Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   switch (settings.name) {
-    case "/":
+    case "/master":
       return MaterialPageRoute(builder: (BuildContext context) {
-        return Home();
+        return const MasterScreen();
       });
     case "/login":
       return MaterialPageRoute(builder: (BuildContext context) {
-        return Login();
+        return const Login();
       });
     case "/register":
       return MaterialPageRoute(builder: (BuildContext context) {
-        return Register();
+        return const Register();
       });
     default:
       return MaterialPageRoute(builder: (BuildContext context) {
-        return Home();
+        return const Login(); // Default ke Login untuk keamanan
       });
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getInt('idEmployee') != null;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/master');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Constants.scaffoldBackgroundColor,
+      body: const Center(child: CircularProgressIndicator()),
+    );
   }
 }

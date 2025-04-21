@@ -3,10 +3,8 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'register.dart';
-import 'master.dart';
-import 'forgot.dart';
+import 'package:indocement_apk/pages/register.dart';
+import 'package:indocement_apk/pages/forgot.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -20,59 +18,117 @@ class _LoginState extends State<Login> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  Future<Map<String, dynamic>> fetchEmployeeDetail(int idEmployee) async {
-    final response = await http.get(
-      Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
-      headers: {'Content-Type': 'application/json'},
-    );
+  Future<Map<String, dynamic>?> _fetchIdEmployee(String email) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://213.35.123.110:5555/api/Employees?email=$email'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Gagal memuat data employee');
+      print('Fetch idEmployee Status: ${response.statusCode}');
+      print('Fetch idEmployee Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List && data.isNotEmpty && data[0]['Id'] != null) {
+          return {
+            'idEmployee': data[0]['Id'] as int,
+            'employeeName': data[0]['EmployeeName'] ?? '',
+            'jobTitle': data[0]['JobTitle'] ?? '',
+            'telepon': data[0]['Telepon'] ?? '',
+            'urlFoto': data[0]['UrlFoto'],
+          };
+        }
+        print('No valid employee data found in response');
+        return null;
+      }
+      print('Failed to fetch idEmployee: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('Error fetching idEmployee: $e');
+      return null;
     }
   }
 
   Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
-
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
 
-    final Uri url = Uri.parse("http://213.35.123.110:5555/api/Users");
+    if (email.isEmpty) {
+      _showMessage('Email tidak boleh kosong.');
+      return;
+    }
+    if (password.isEmpty) {
+      _showMessage('Password tidak boleh kosong.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
     try {
-      final response = await http.get(url);
+      final response = await http.post(
+        Uri.parse('http://213.35.123.110:5555/api/User/login'),
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      print('Sending payload: ${json.encode({
+            'email': email,
+            'password': password
+          })}');
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> users = jsonDecode(response.body);
+        final user = json.decode(response.body);
+        print('Parsed User: $user');
 
-        final user = users.firstWhere(
-          (u) => u['email'] == email && u['password'] == password,
-          orElse: () => null,
-        );
-
-        if (user != null) {
-          final int idEmployee = user['idEmployee'];
-          final employeeData = await fetchEmployeeDetail(idEmployee);
+        if (user is Map<String, dynamic> && user['Id'] != null) {
+          final employeeData = await _fetchIdEmployee(email);
+          if (employeeData == null || employeeData['idEmployee'] == 0) {
+            _showMessage('Gagal mendapatkan data karyawan.');
+            setState(() => _isLoading = false);
+            return;
+          }
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setInt('idEmployee', idEmployee); // Simpan idEmployee
-          await prefs.setString('name', employeeData['employeeName']);
+          await prefs.setInt('id', user['Id'] as int);
+          await prefs.setInt('idEmployee', employeeData['idEmployee']);
+          await prefs.setString('email', user['Email'] ?? email);
+          await prefs.setString('employeeName', employeeData['employeeName']);
           await prefs.setString('jobTitle', employeeData['jobTitle']);
+          await prefs.setString('telepon', employeeData['telepon']);
+          if (employeeData['urlFoto'] != null) {
+            await prefs.setString('urlFoto', employeeData['urlFoto']);
+          }
+          print(
+              'Saved to SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
 
-          Navigator.pushReplacement(
+          Navigator.pushNamedAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => MasterScreen()),
+            '/master',
+            (route) => false,
           );
         } else {
-          _showMessage("Email atau password salah.");
+          _showMessage('Data pengguna tidak valid: ID tidak ditemukan.');
         }
       } else {
-        _showMessage("Gagal mengambil data pengguna.");
+        String errorMessage = 'Gagal login';
+        try {
+          final responseBody = json.decode(response.body);
+          errorMessage = responseBody['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage =
+              response.body.isNotEmpty ? response.body : errorMessage;
+        }
+        _showMessage(errorMessage);
       }
     } catch (e) {
-      _showMessage("Terjadi kesalahan: $e");
+      print('Error: $e');
+      _showMessage('Terjadi kesalahan: ${e.toString()}');
     }
 
     setState(() => _isLoading = false);
@@ -98,7 +154,7 @@ class _LoginState extends State<Login> {
                 children: [
                   const SizedBox(height: 100),
                   FadeInDown(
-                    duration: Duration(milliseconds: 800),
+                    duration: const Duration(milliseconds: 800),
                     child: Center(
                       child: Image.asset(
                         'assets/images/logo2.png',
@@ -110,9 +166,9 @@ class _LoginState extends State<Login> {
                   ),
                   const SizedBox(height: 30),
                   FadeInLeft(
-                    duration: Duration(milliseconds: 800),
+                    duration: const Duration(milliseconds: 800),
                     child: const Text(
-                      "Login",
+                      'Login',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -121,12 +177,12 @@ class _LoginState extends State<Login> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  _buildField("Email", 900, controller: _emailController),
-                  _buildField("Password", 1100,
+                  _buildField('Email', 900, controller: _emailController),
+                  _buildField('Password', 1100,
                       obscure: true, controller: _passwordController),
                   const SizedBox(height: 30),
                   FadeInLeft(
-                    duration: Duration(milliseconds: 1200),
+                    duration: const Duration(milliseconds: 1200),
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
@@ -134,12 +190,13 @@ class _LoginState extends State<Login> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ForgotPasswordScreen(),
+                              builder: (context) =>
+                                  const ForgotPasswordScreen(),
                             ),
                           );
                         },
-                        child: Text(
-                          "Forgot your password?",
+                        child: const Text(
+                          'Forgot your password?',
                           style: TextStyle(color: Color(0xFF1A2035)),
                         ),
                       ),
@@ -147,22 +204,23 @@ class _LoginState extends State<Login> {
                   ),
                   const SizedBox(height: 30),
                   FadeInUp(
-                    duration: Duration(milliseconds: 1300),
+                    duration: const Duration(milliseconds: 1300),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          backgroundColor: Color(0xFF1572E8),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          backgroundColor: const Color(0xFF1572E8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         child: _isLoading
-                            ? CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : const Text(
-                                "Login",
+                                'Login',
                                 style: TextStyle(color: Colors.white),
                               ),
                       ),
@@ -170,24 +228,24 @@ class _LoginState extends State<Login> {
                   ),
                   const SizedBox(height: 20),
                   FadeInUp(
-                    duration: Duration(milliseconds: 1400),
+                    duration: const Duration(milliseconds: 1400),
                     child: Center(
                       child: GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => Register(),
+                              builder: (context) => const Register(),
                             ),
                           );
                         },
                         child: RichText(
-                          text: TextSpan(
+                          text: const TextSpan(
                             style: TextStyle(color: Colors.black, fontSize: 14),
                             children: [
-                              TextSpan(text: "Belum punya akun? "),
+                              TextSpan(text: 'Belum punya akun? '),
                               TextSpan(
-                                text: "Register",
+                                text: 'Register',
                                 style: TextStyle(
                                   color: Colors.blue,
                                   fontWeight: FontWeight.bold,
@@ -223,7 +281,7 @@ class _LoginState extends State<Login> {
       child: FadeInLeft(
         duration: Duration(milliseconds: duration),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: Colors.grey)),
           ),
           child: TextField(
@@ -232,12 +290,19 @@ class _LoginState extends State<Login> {
             decoration: InputDecoration(
               hintText: hint,
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
             ),
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
 
@@ -249,7 +314,7 @@ class WavePainter extends CustomPainter {
     Path path = Path();
     Paint gradientPaint = Paint()
       ..shader = LinearGradient(
-        colors: [Color(0xFF0E5AB7), Color(0xFF1572E8), Color(0xFF5A9DF3)],
+        colors: const [Color(0xFF0E5AB7), Color(0xFF1572E8), Color(0xFF5A9DF3)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.15));

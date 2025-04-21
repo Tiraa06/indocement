@@ -1,62 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'profile.dart';
-import 'hr_menu.dart';
-import 'bpjs_kesehatan.dart';
-
+import 'package:indocement_apk/pages/profile.dart';
+import 'package:indocement_apk/pages/hr_menu.dart';
+import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
 
 class MasterScreen extends StatelessWidget {
   const MasterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        const Scaffold(
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  HomeHeader(),
-                  Banner(),
-                  Categories(),
-                  DailyInfo(),
-                  SizedBox(height: 48),
-                ],
+    return WillPopScope(
+      onWillPop: () async => false, // Cegah tombol back keluar
+      child: Stack(
+        children: [
+          const Scaffold(
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HomeHeader(),
+                    Banner(),
+                    Categories(),
+                    DailyInfo(),
+                    SizedBox(height: 48),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
 
-        // ⬇️ Floating FAQ button di pojok kiri bawah
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: FloatingActionButton.extended(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("FAQ"),
-                  content: const Text(
-                      "Berisi pertanyaan yang sering ditanyakan oleh karyawan."),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Tutup"),
-                    ),
-                  ],
-                ),
-              );
-            },
-            icon: const Icon(Icons.help_outline),
-            label: const Text("FAQ"),
-            backgroundColor: Colors.blue,
+          // Floating FAQ button
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("FAQ"),
+                    content: const Text(
+                        "Berisi pertanyaan yang sering ditanyakan oleh karyawan."),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Tutup"),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: const Icon(Icons.help_outline),
+              label: const Text("FAQ"),
+              backgroundColor: Colors.blue,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -72,16 +74,15 @@ class HomeHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Logo kiri
-        Image.asset(
+          Image.asset(
             'assets/images/logo2.png',
-            width: 180, // ubah nilai ini sesuai kebutuhan, misal 160–200
+            width: 180,
             fit: BoxFit.contain,
           ),
 
           // Profil kanan
           GestureDetector(
             onTap: () {
-              // Navigasi ke halaman ProfilePage saat avatar ditekan
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfilePage()),
@@ -118,10 +119,10 @@ class Banner extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Image.asset(
-          bannerImages[0], // Menampilkan hanya gambar pertama
+          bannerImages[0],
           fit: BoxFit.cover,
           width: double.infinity,
-          height: 100, // Sesuaikan dengan tinggi sebelumnya
+          height: 100,
         ),
       ),
     );
@@ -142,11 +143,18 @@ class Categories extends StatelessWidget {
       {"icon": "assets/icons/more.svg", "text": "Lainnya"},
     ];
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    const cardWidth = 70.0;
+    const spacing = 20.0;
+    const padding = 16.0 * 2;
+    final crossAxisCount = (screenWidth - padding) ~/ (cardWidth + spacing);
+    final columnCount = crossAxisCount.clamp(2, 5);
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -158,10 +166,13 @@ class Categories extends StatelessWidget {
             ),
           ],
         ),
-        child: Wrap(
-          spacing: 20,
-          runSpacing: 20,
-          alignment: WrapAlignment.start,
+        child: GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: columnCount,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: 12.0,
+          childAspectRatio: cardWidth / (cardWidth + 30),
           children: List.generate(
             categories.length,
             (index) {
@@ -169,20 +180,20 @@ class Categories extends StatelessWidget {
               return CategoryCard(
                 iconPath: category["icon"]!,
                 text: category["text"]!,
-                // Contoh Navigasi
-                  press: () {
-    if (category["text"] == "HR Care") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => HRCareMenuPage()),
-      );
-    } else if (category["text"] == "BPJS") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MenuPage()), // pastikan MenuPage adalah nama class di bpjs_kesehatan.dart
-      );
-    }
-  },
+                press: () {
+                  if (category["text"] == "HR Care") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => HRCareMenuPage()),
+                    );
+                  } else if (category["text"] == "BPJS") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MenuPage()),
+                    );
+                  }
+                },
+              );
             },
           ),
         ),
@@ -205,37 +216,35 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 70,
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: press,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              height: 60,
-              width: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F6F9),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: SvgPicture.asset(
-                iconPath,
-                width: 30,
-                height: 30,
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: press,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            height: 60,
+            width: 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F6F9),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: SvgPicture.asset(
+              iconPath,
+              width: 30,
+              height: 30,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
     );
   }
 }
@@ -246,21 +255,19 @@ class DailyInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 32), // Tambahkan padding bawah
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionTitle(
             title: "Info Harian",
             press: () {
-              // Aksi ketika See more ditekan
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Lihat semua info harian')),
               );
             },
           ),
           const SizedBox(height: 12),
-          // Gunakan Wrap di sini agar item bisa disesuaikan dengan lebar layar
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -357,8 +364,7 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 20), // ⬅️ Biar sejajar dengan konten lain
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -377,7 +383,7 @@ class SectionTitle extends StatelessWidget {
             label: const Text(
               "Lihat Semua",
               style: TextStyle(
-                color: Colors.blue, // Lebih mencolok
+                color: Colors.blue,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -393,6 +399,3 @@ class SectionTitle extends StatelessWidget {
     );
   }
 }
-
-
-

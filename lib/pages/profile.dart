@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'edit_profile.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+import 'package:indocement_apk/pages/edit_profile.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -12,10 +15,12 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _name = "";
+  String _employeeName = "";
   String _jobTitle = "";
   String? _urlFoto;
   int? _employeeId;
+  String _email = "";
+  String _telepon = "";
 
   @override
   void initState() {
@@ -25,18 +30,63 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadProfileData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    final employeeId = prefs.getInt('idEmployee');
+    print(
+        'SharedPreferences Keys: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+
     setState(() {
-      _name = prefs.getString('name') ?? "";
-      _jobTitle = prefs.getString('jobTitle') ?? "";
+      _employeeName = prefs.getString('employeeName') ?? "";
+      _employeeId = employeeId;
+      _email = prefs.getString('email') ?? "";
+      _telepon = prefs.getString('telepon') ?? "";
       _urlFoto = prefs.getString('urlFoto');
-      _employeeId = prefs.getInt('idEmployee');
+      _jobTitle = prefs.getString('jobTitle') ?? "";
     });
+
+    if (employeeId != null && employeeId > 0) {
+      try {
+        final response = await http.get(
+          Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 10));
+
+        print('Fetch Employee Status: ${response.statusCode}');
+        print('Fetch Employee Body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _jobTitle = data['JobTitle'] ?? _jobTitle;
+            _urlFoto = data['UrlFoto'] ?? _urlFoto;
+            _employeeName = data['EmployeeName'] ?? _employeeName;
+            _email = data['Email'] ?? _email;
+            _telepon = data['Telepon'] ?? _telepon;
+          });
+          await prefs.setString('jobTitle', _jobTitle);
+          await prefs.setString('employeeName', _employeeName);
+          await prefs.setString('email', _email);
+          await prefs.setString('telepon', _telepon);
+          if (data['UrlFoto'] != null) {
+            await prefs.setString('urlFoto', data['UrlFoto']);
+          }
+        } else {
+          print('Failed to fetch employee data: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Error fetching employee data: $e');
+      }
+    } else {
+      print('Invalid or missing employeeId: $employeeId');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID karyawan tidak valid')),
+      );
+    }
   }
 
-  Future<void> _saveProfileData(
-      String name, String jobTitle, String? urlFoto, int? employeeId) async {
+  Future<void> _saveProfileData(String employeeName, String jobTitle,
+      String? urlFoto, int? employeeId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('name', name);
+    await prefs.setString('employeeName', employeeName);
     await prefs.setString('jobTitle', jobTitle);
     if (urlFoto != null) {
       await prefs.setString('urlFoto', urlFoto);
@@ -85,7 +135,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _name.isNotEmpty ? _name : "Nama Tidak Tersedia",
+                        _employeeName.isNotEmpty
+                            ? _employeeName
+                            : "Nama Tidak Tersedia",
                         style: GoogleFonts.roboto(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -107,6 +159,24 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _email.isNotEmpty ? _email : "Email Tidak Tersedia",
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _telepon.isNotEmpty
+                            ? _telepon
+                            : "Telepon Tidak Tersedia",
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -122,7 +192,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => EditProfilePage(
-                        name: _name,
+                        employeeName: _employeeName,
                         jobTitle: _jobTitle,
                         urlFoto: _urlFoto,
                         employeeId: _employeeId,
@@ -132,13 +202,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   if (updatedData != null) {
                     setState(() {
-                      _name = updatedData['name'] ?? _name;
+                      _employeeName =
+                          updatedData['employeeName'] ?? _employeeName;
                       _jobTitle = updatedData['jobTitle'] ?? _jobTitle;
                       _urlFoto = updatedData['urlFoto'];
                       _employeeId = updatedData['employeeId'] ?? _employeeId;
                     });
                     await _saveProfileData(
-                        _name, _jobTitle, _urlFoto, _employeeId);
+                        _employeeName, _jobTitle, _urlFoto, _employeeId);
                   }
                 },
               ),
