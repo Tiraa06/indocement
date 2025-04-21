@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HRCareMenuPage extends StatefulWidget {
   const HRCareMenuPage({super.key});
@@ -32,13 +35,35 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
   // State untuk waktu
   String _currentTime = '';
 
-  @override
+@override
   void initState() {
     super.initState();
+    // Load profile data
+    _loadProfileData();
     // Listener untuk menghitung lines dan words
     _messageController.addListener(_updateLinesAndWords);
     // Update waktu setiap detik
     _updateTime();
+  }
+
+  // Fungsi untuk memuat data profil dari SharedPreferences
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Debug: Print all keys and values in SharedPreferences
+    print('SharedPreferences keys: ${prefs.getKeys()}');
+    for (var key in prefs.getKeys()) {
+      print('$key: ${prefs.get(key)}');
+    }
+    
+
+    final employeeName = prefs.getString('employeeName') ?? 'Unknown';
+    final email = prefs.getString('email') ?? 'Unknown';
+
+    setState(() {
+      _nameController.text = employeeName;
+      _emailController.text = email;
+    });
   }
 
   void _updateLinesAndWords() {
@@ -199,23 +224,27 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.access_time, color: Colors.black54, size: 20),
+                    const Icon(Icons.access_time,
+                        color: Colors.black54, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      _currentTime.isEmpty ? 'Loading...' : 'WIB: $_currentTime',
+                      _currentTime.isEmpty
+                          ? 'Loading...'
+                          : 'WIB: $_currentTime',
                       style: GoogleFonts.roboto(
-                      fontSize: fontSizeLabel,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
+                        fontSize: fontSizeLabel,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ]
-                )
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               // Open Ticket Title dengan dekorasi
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF1572E8), Color(0xFF3B94F3)],
@@ -247,9 +276,10 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Name Field
+              // Name Field (Read-only)
               TextField(
                 controller: _nameController,
+                readOnly: true,
                 decoration: InputDecoration(
                   labelText: 'Name',
                   labelStyle: GoogleFonts.roboto(fontSize: fontSizeLabel),
@@ -257,13 +287,14 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: Colors.grey[200],
                 ),
               ),
               const SizedBox(height: 16),
-              // Email Address Field
+              // Email Address Field (Read-only)
               TextField(
                 controller: _emailController,
+                readOnly: true,
                 decoration: InputDecoration(
                   labelText: 'Email Address',
                   labelStyle: GoogleFonts.roboto(fontSize: fontSizeLabel),
@@ -271,7 +302,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: Colors.grey[200],
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
