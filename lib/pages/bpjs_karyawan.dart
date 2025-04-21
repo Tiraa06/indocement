@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bpjs_upload_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BPJSKaryawanPage extends StatefulWidget {
   const BPJSKaryawanPage({super.key});
@@ -28,73 +29,60 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     });
   }
 
-Future<void> pickAndCropImage({
-  required BuildContext context,
-  required int idEmployee,
-  required String anggotaBpjs,
-  required String fieldName,
-}) async {
-  final picker = ImagePicker();
-  final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> pickAndUploadImage({
+    required BuildContext context,
+    required int idEmployee,
+    required String anggotaBpjs,
+    required String fieldName,
+  }) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  if (pickedFile != null) {
-    File? cropped = (await ImageCropper().cropImage(
-      sourcePath: pickedFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Image',
-          toolbarColor: const Color(0xFF1572E8),
-          toolbarWidgetColor: Colors.white,
-        ),
-      ],
-    )) as File?;
-
-    if (cropped != null) {
+    if (pickedFile != null) {
       try {
         final response = await uploadBpjsDocument(
           idEmployee: idEmployee,
           anggotaBpjs: anggotaBpjs,
           fieldName: fieldName,
-          file: File(cropped.path),
+          file: File(pickedFile.path),
         );
 
-        // Tampilkan dialog sukses
-        showDialog(
+        // Show success popup
+        _showPopup(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Upload Berhasil'),
-            content: const Text('Dokumen berhasil diunggah.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+          title: 'Upload Berhasil',
+          message: 'Dokumen berhasil diunggah.',
         );
       } catch (e) {
-        // Tampilkan dialog gagal
-        showDialog(
+        // Show failure popup
+        _showPopup(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Upload Gagal'),
-            content: Text('Terjadi kesalahan saat mengunggah dokumen:\n$e'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup'),
-              ),
-            ],
-          ),
+          title: 'Upload Gagal',
+          message: 'Terjadi kesalahan saat mengunggah dokumen:\n$e',
         );
       }
     }
   }
-}
 
-
-
+  void _showPopup({
+    required BuildContext context,
+    required String title,
+    required String message,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,243 +91,134 @@ Future<void> pickAndCropImage({
       body: Stack(
         children: [
           SingleChildScrollView(
-            // Enable scrolling
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Modern Header Section
-                  Container(
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1572E8),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.info,
-                            size: 30,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Informasi BPJS Karyawan',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                  const Text(
+                    'BPJS Istri',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Column(
+                    children: [
+                      _buildBox(
+                        title: 'Upload KK',
+                        color: const Color(0xFF1572E8),
+                        onTap: () {
+                          if (idEmployee != null) {
+                            pickAndUploadImage(
+                              context: context,
+                              idEmployee: idEmployee!,
+                              anggotaBpjs: "Istri",
+                              fieldName: "urlKk",
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("ID karyawan belum tersedia"),
                               ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Halaman ini digunakan untuk mengunggah dokumen yang diperlukan untuk pengelolaan BPJS Karyawan.',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white70,
-                                ),
+                            );
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+                      _buildBox(
+                        title: 'Upload Surat Nikah',
+                        color: const Color(0xFF1572E8),
+                        onTap: () {
+                          if (idEmployee != null) {
+                            pickAndUploadImage(
+                              context: context,
+                              idEmployee: idEmployee!,
+                              anggotaBpjs: "Istri",
+                              fieldName: "urlSuratNikah",
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("ID karyawan belum tersedia"),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  // Section 1: BPJS Istri
-                  Container(
-                    padding: const EdgeInsets.all(12.0),
-                    decoration: BoxDecoration(
-                      color: const Color(
-                        0xFF1572E8,
-                      ).withOpacity(0.1), // Background color
-                      borderRadius: BorderRadius.circular(12), // Border radius
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'BPJS Istri',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Column(
-                          children: [
-                            _buildBox(
-                              title: 'Upload KK',
-                              color: const Color(0xFF1572E8),
-                              onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Istri",
-                                  fieldName: "urlKk",
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-                            _buildBox(
-                              title: 'Upload Surat Nikah',
-                              color: const Color(0xFF1572E8),
-                              onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Istri",
-                                  fieldName: "urlSuratNikah",
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Section 2: BPJS Anak > 21 Tahun Masih Kuliah
-                  Container(
-                    padding: const EdgeInsets.all(12.0),
-                    decoration: BoxDecoration(
-                      color: const Color(
-                        0xFF1572E8,
-                      ).withOpacity(0.1), // Background color
-                      borderRadius: BorderRadius.circular(12), // Border radius
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'BPJS Anak > 21 Tahun Masih Kuliah',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Column(
-                          children: [
-                            _buildBox(
-                              title: 'Upload KK',
-                              color: const Color(0xFF1572E8),
-                              onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Anak",
-                                  fieldName: "urlKk",
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-                            _buildBox(
-                              title: 'Upload Surat Keterangan Lahir',
-                              color: const Color(0xFF1572E8),
-                              onTap: () {
-                                pickAndCropImage(
-                                  context: context,
-                                  idEmployee: idEmployee!, // Ganti ID sesuai user
-                                  anggotaBpjs: "Anak",
-                                  fieldName: "urlAkteLahir",
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24), // Add bottom spacing
                 ],
               ),
             ),
           ),
-          // Floating FAQ Button
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: GestureDetector(
-              onTap: () {
-                // Handle FAQ button tap
-                showDialog(
-                  context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('FAQ'),
-                        content: const Text(
-                          'Frequently Asked Questions about BPJS Karyawan.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      ),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 16.0,
-                ), // Increased padding
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1572E8),
-                  borderRadius: BorderRadius.circular(
-                    16,
-                  ), // Slightly larger border radius
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
+          const SizedBox(height: 24),
+          // Section 2: BPJS Anak > 21 Tahun Masih Kuliah
+          Container(
+            padding: const EdgeInsets.all(12.0),
+            decoration: BoxDecoration(
+              color: const Color(
+                0xFF1572E8,
+              ).withOpacity(0.1), // Background color
+              borderRadius: BorderRadius.circular(12), // Border radius
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'BPJS Anak > 21 Tahun Masih Kuliah',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Column(
+                  children: [
+                    _buildBox(
+                      title: 'Upload KK',
+                      color: const Color(0xFF1572E8),
+                      onTap: () {
+                        if (idEmployee != null) {
+                          pickAndUploadImage(
+                            context: context,
+                            idEmployee: idEmployee!,
+                            anggotaBpjs: "Anak",
+                            fieldName: "urlKk",
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("ID karyawan belum tersedia"),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+                    _buildBox(
+                      title: 'Upload Surat Keterangan Lahir',
+                      color: const Color(0xFF1572E8),
+                      onTap: () {
+                        if (idEmployee != null) {
+                          pickAndUploadImage(
+                            context: context,
+                            idEmployee: idEmployee!,
+                            anggotaBpjs: "Anak",
+                            fieldName: "urlAktekLahir",
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("ID karyawan belum tersedia"),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
-                child: Row(
-                  children: const [
-                    Icon(
-                      Icons.help_outline,
-                      size: 28,
-                      color: Color.fromARGB(255, 0, 0, 0),
-                    ), // Larger icon
-                    SizedBox(width: 10),
-                    Text(
-                      'FAQ',
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
-                        fontSize: 16,
-                      ), // Larger text
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
+          const SizedBox(height: 24), // Add bottom spacing
         ],
       ),
     );
