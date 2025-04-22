@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:indocement_apk/pages/edit_profile.dart';
+import 'notification.dart'; // Impor halaman notifikasi
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -241,7 +242,14 @@ class _ProfilePageState extends State<ProfilePage> {
               MenuItem(
                 icon: 'assets/icons/notification.svg',
                 title: 'Notifikasi',
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationPage(),
+                    ),
+                  );
+                },
               ),
               MenuItem(
                 icon: 'assets/icons/setting.svg',
