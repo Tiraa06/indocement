@@ -25,7 +25,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
   String? _department;
   List<String> _departments = [];
 
-  List<XFile> _selectedFiles = [];
+  final List<XFile> _selectedFiles = [];
 
   int _lines = 0;
   int _words = 0;

@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "C:\\Users\\sijas\\Documents\\indocement project\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\groovy\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\sijas\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "C:\\Users\\sijas\\Documents\\indocement project\\indocement_apk\\android\\app\\.cxx\\RelWithDebInfo\\4123w5g5\\x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\sijas\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "C:\\Users\\sijas\\Documents\\indocement project\\indocement_apk\\android\\app\\.cxx\\RelWithDebInfo\\4123w5g5\\x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

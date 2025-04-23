@@ -313,7 +313,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                 value: selectedAnggotaBpjs,
                 hint: const Text('Pilih Anggota BPJS'),
                 isExpanded: true,
-                items: ['Ayah Kandung', 'Ibu Kandung', 'Ayah Mertua', 'Ibu Mertua']
+                items: ['Ayah', 'Ibu', 'Ayah Mertua', 'Ibu Mertua']
                     .map((e) => DropdownMenuItem(
                           value: e,
                           child: Text(e),
