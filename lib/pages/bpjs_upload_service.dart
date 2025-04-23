@@ -255,7 +255,7 @@ Future<void> uploadBpjsDocumentsMultipart({
     } else {
       print("❌ Gagal upload: ${response.statusCode}");
       print("Respons: $responseBody");
-      throw Exception("Gagal upload: ${responseBody}");
+      throw Exception("Gagal upload: $responseBody");
     }
   } catch (e) {
     print("❌ Terjadi kesalahan: $e");

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http; // Tambahkan ini
+import 'dart:convert'; // Tambahkan ini
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini
 
 class MasterScreen extends StatelessWidget {
   const MasterScreen({super.key});
@@ -132,6 +135,61 @@ class Banner extends StatelessWidget {
 class Categories extends StatelessWidget {
   const Categories({super.key});
 
+  Future<void> _checkAccess(BuildContext context) async {
+    try {
+      // Ambil ID pengguna yang sedang login dari SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final int? idEmployee = prefs.getInt('idEmployee');
+
+      if (idEmployee == null) {
+        throw Exception('ID pengguna tidak ditemukan. Silakan login ulang.');
+      }
+
+      // Ambil data Employee berdasarkan ID pengguna yang sedang login
+      final employeeResponse = await http.get(
+        Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
+      );
+
+      if (employeeResponse.statusCode == 200) {
+        final employeeData = json.decode(employeeResponse.body);
+        final int idEsl = employeeData['IdEsl']; // Ambil IdEsl dari data Employee
+
+        // Periksa akses berdasarkan IdEsl
+        if (idEsl >= 1 && idEsl <= 5) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MenuPage()),
+          );
+        } else if (idEsl == 6 || idEsl == 7) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Akses Ditolak"),
+              content: const Text(
+                  "Anda memerlukan izin dari PIC untuk mengakses halaman ini."),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Tutup"),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('IdEsl tidak valid')),
+          );
+        }
+      } else {
+        throw Exception('Gagal memuat data Employee dari API');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Map<String, String>> categories = [
@@ -187,10 +245,7 @@ class Categories extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => HRCareMenuPage()),
                     );
                   } else if (category["text"] == "BPJS") {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MenuPage()),
-                    );
+                    _checkAccess(context);
                   }
                 },
               );
