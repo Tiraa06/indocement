@@ -96,7 +96,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const ChatWithHRPage(),
+                    builder: (_) => const ChatPage(),
                   ),
                 );
               },
