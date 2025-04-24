@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async'; // Added for Timer
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,19 +12,34 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController =
+      ScrollController(); // Added for scroll control
   List<dynamic> _messages = [];
   Map<String, dynamic>? opponent;
   String? roomId;
   String? konsultasiId;
   int? idEmployee;
+  Timer? _pollingTimer; // Added for polling
 
   @override
   void initState() {
     super.initState();
     _loadChatRoom();
+    // Start polling every 5 seconds to check for updates
+    _pollingTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      _loadChatRoom(isPolling: true);
+    });
   }
 
-  Future<void> _loadChatRoom() async {
+  @override
+  void dispose() {
+    _pollingTimer?.cancel(); // Cancel the timer to avoid memory leaks
+    _scrollController.dispose(); // Dispose the scroll controller
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadChatRoom({bool isPolling = false}) async {
     final prefs = await SharedPreferences.getInstance();
     idEmployee = prefs.getInt('idEmployee');
     roomId = prefs.getString('roomId');
@@ -54,14 +70,43 @@ class _ChatPageState extends State<ChatPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() {
-          _messages = data['Messages'] ?? [];
-          opponent = data['Opponent'];
-        });
+        final newMessages = data['Messages'] ?? [];
+        final newOpponent = data['Opponent'];
 
-        for (var msg in _messages) {
-          if (msg['SenderId'] != idEmployee && msg['Status'] != 'Dibaca') {
-            await _updateMessageStatus(msg['Id'], 'Dibaca');
+        // Only update state if messages or opponent have changed to avoid unnecessary rebuilds
+        if (_messages.toString() != newMessages.toString() ||
+            opponent.toString() != newOpponent.toString()) {
+          double? previousOffset;
+          if (isPolling && _scrollController.hasClients) {
+            previousOffset =
+                _scrollController.offset; // Save scroll position during polling
+          }
+
+          setState(() {
+            _messages = newMessages;
+            opponent = newOpponent;
+          });
+
+          // Restore scroll position after update
+          if (isPolling &&
+              previousOffset != null &&
+              _scrollController.hasClients) {
+            _scrollController.jumpTo(previousOffset);
+          } else {
+            // Scroll to bottom for initial load or after sending a message
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                _scrollController
+                    .jumpTo(_scrollController.position.maxScrollExtent);
+              }
+            });
+          }
+
+          // Update message status for unread messages from the opponent
+          for (var msg in _messages) {
+            if (msg['SenderId'] != idEmployee && msg['Status'] != 'Dibaca') {
+              await _updateMessageStatus(msg['Id'], 'Dibaca');
+            }
           }
         }
       } else {
@@ -165,7 +210,7 @@ class _ChatPageState extends State<ChatPage> {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       _messageController.clear();
-      await _loadChatRoom();
+      await _loadChatRoom(); // Refresh messages after sending
     } else {
       final error = jsonDecode(response.body);
       if (error['Message'] == "Chat room tidak ditemukan.") {
@@ -249,6 +294,7 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             Expanded(
               child: ListView.builder(
+                controller: _scrollController, // Attach scroll controller
                 padding: EdgeInsets.symmetric(vertical: 10),
                 itemCount: _messages.length,
                 itemBuilder: (_, index) {
