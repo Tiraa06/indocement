@@ -155,12 +155,12 @@ class Categories extends StatelessWidget {
         final int idEsl = employeeData['IdEsl']; // Ambil IdEsl dari data Employee
 
         // Periksa akses berdasarkan IdEsl
-        if (idEsl >= 1 && idEsl <= 5) {
+        if (idEsl >= 1 && idEsl <= 4) {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const MenuPage()),
           );
-        } else if (idEsl == 6 || idEsl == 7) {
+        } else if (idEsl == 5 || idEsl == 6) {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
