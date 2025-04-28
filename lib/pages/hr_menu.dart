@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:indocement_apk/pages/master.dart';
 import 'chat.dart';
 import 'form.dart';
 
@@ -39,6 +40,15 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back), // Ikon back
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MasterScreen()), // Navigasi ke halaman Master
+            );
+          },
+        ),
         title: Text(
           "HR Care",
           style: GoogleFonts.roboto(
@@ -47,7 +57,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> {
             color: Colors.white,
           ),
         ),
-        backgroundColor: const Color(0xFF1572E8),
+        backgroundColor: const Color(0xFF1572E8), // Warna latar belakang header
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
