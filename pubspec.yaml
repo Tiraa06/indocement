@@ -45,11 +45,7 @@ dependencies:
   printing: ^5.11.0
   path: ^1.9.1
   dio: ^5.7.0         
-<<<<<<< HEAD
-  signalr_netcore: 1.4.3
-=======
   signalr_netcore: ^1.4.3
->>>>>>> 5bd40f21140c4f455fcdf669c9e1eaac5e5f18bf
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
