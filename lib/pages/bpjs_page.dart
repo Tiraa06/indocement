@@ -1,0 +1,470 @@
+import 'package:flutter/material.dart';
+import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
+import 'package:indocement_apk/pages/master.dart';
+import 'package:indocement_apk/pages/hr_menu.dart';
+
+class BPJSPage extends StatefulWidget {
+  const BPJSPage({super.key});
+
+  @override
+  State<BPJSPage> createState() => _BPJSPageState();
+}
+
+class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Inisialisasi AnimationController
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300), // Durasi animasi
+    );
+
+    // Inisialisasi Slide Animation
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0), // Mulai dari luar layar (kanan)
+      end: Offset.zero, // Berakhir di posisi normal
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut, // Kurva animasi
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose(); // Hentikan controller saat widget dihancurkan
+    super.dispose();
+  }
+
+  void _toggleMenu() {
+    if (_animationController.isCompleted) {
+      _animationController.reverse(); // Tutup menu
+    } else {
+      _animationController.forward(); // Buka menu
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back), // Ikon back
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MasterScreen()), // Navigasi ke halaman Master
+            );
+          },
+        ),
+        backgroundColor: const Color(0xFF1572E8), // Warna latar belakang header
+        title: const Text(
+          "BPJS",
+          style: TextStyle(
+            color: Colors.white, // Warna putih untuk judul
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(
+          color: Colors.white, // Warna putih untuk ikon
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu), // Ikon menu garis tiga
+            onPressed: () {
+              _toggleMenu(); // Buka atau tutup menu
+            },
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Banner
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2), // Warna bayangan
+                        blurRadius: 8, // Radius blur bayangan
+                        offset: const Offset(0, 4), // Posisi bayangan
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
+                    child: Image.asset(
+                      'assets/images/banner_bpjs_page.jpg', // Path ke gambar banner
+                      width: double.infinity, // Lebar penuh
+                      height: 150, // Tinggi banner
+                      fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
+                    ),
+                  ),
+                ),
+
+                // Deskripsi
+                const Text(
+                  "Selamat datang di halaman BPJS. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
+                  textAlign: TextAlign.center, // Rata tengah
+                  style: TextStyle(
+                    fontSize: 16, // Perbesar ukuran teks
+                    fontWeight: FontWeight.w500, // Tambahkan ketebalan teks
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 10), // Jarak antara deskripsi dan menu
+
+                // Menu
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Menu BPJS Kesehatan
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: ListTile(
+                          leading: const Icon(Icons.health_and_safety, color: Colors.blue),
+                          title: const Text(
+                            "BPJS Kesehatan",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          onTap: () {
+                            // Navigasi ke MenuPage
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MenuPage()),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10), // Jarak antar menu
+
+                      // Menu BPJS Ketenagakerjaan
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: ListTile(
+                          leading: const Icon(Icons.work, color: Colors.green),
+                          title: const Text(
+                            "BPJS Ketenagakerjaan",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          onTap: () {
+                            // Aksi untuk BPJS Ketenagakerjaan
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Navigasi ke BPJS Ketenagakerjaan")),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10), // Jarak antar menu
+
+                      // Menu PCIR
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: ListTile(
+                          leading: const Icon(Icons.account_balance, color: Colors.orange),
+                          title: const Text(
+                            "PCIR",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          onTap: () {
+                            // Aksi untuk PCIR
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Navigasi ke PCIR")),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Floating FAQ button
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    final ScrollController scrollController = ScrollController();
+
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                      ),
+                      contentPadding: const EdgeInsets.all(16.0),
+                      content: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.95, // Lebih panjang (95% dari lebar layar)
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: Scrollbar(
+                          controller: scrollController, // Kontrol scrollbar
+                          thumbVisibility: false, // Hilang jika tidak di-scroll
+                          thickness: 3, // Ketebalan scrollbar
+                          radius: const Radius.circular(10), // Sudut melengkung scrollbar
+                          child: SingleChildScrollView(
+                            controller: scrollController, // Kontrol scroll
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Frequently Asked Questions (FAQ)',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1572E8),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFAQItem(
+                                  icon: Icons.home,
+                                  question: 'Apa fungsi halaman Home?',
+                                  answer: 'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.category,
+                                  question: 'Apa saja menu yang tersedia?',
+                                  answer: 'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.info,
+                                  question: 'Apa itu Info Harian?',
+                                  answer: 'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.help_outline,
+                                  question: 'Bagaimana cara mengakses menu BPJS?',
+                                  answer: 'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.notifications,
+                                  question: 'Apa itu pengingat di Info Harian?',
+                                  answer: 'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red, // Warna latar belakang merah
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8), // Tombol kotak
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            child: const Text(
+                              'Tutup',
+                              style: TextStyle(
+                                color: Colors.white, // Teks putih
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.help_outline, color: Colors.white), // Ikon warna putih
+              label: const Text(
+                "FAQ",
+                style: TextStyle(color: Colors.white), // Teks warna putih
+              ),
+              backgroundColor: Colors.blue, // Warna tombol tetap biru
+            ),
+          ),
+          // SlideTransition Menu
+          SlideTransition(
+            position: _slideAnimation,
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.7,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white, // Background slider menjadi putih
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    bottomLeft: Radius.circular(20),
+                  ),
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.1), // Warna border lebih halus
+                    width: 1, // Ketebalan border 1px
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(-4, 0),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        "Menu",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black, // Warna teks menu menjadi hitam
+                        ),
+                      ),
+                    ),
+                    const Divider(color: Colors.grey),
+                    _buildMenuItem(
+                      context,
+                      title: "ID & Slip Salary",
+                      icon: Icons.badge,
+                      color: Colors.blue, // Warna menu menjadi biru
+                      onTap: () {
+                        // Aksi untuk ID & Slip Salary
+                      },
+                    ),
+                    const SizedBox(height: 16), // Jarak antar menu
+                    _buildMenuItem(
+                      context,
+                      title: "SK Kerja & Medical",
+                      icon: Icons.description,
+                      color: Colors.blue, // Warna menu menjadi biru
+                      onTap: () {
+                        // Aksi untuk SK Kerja & Medical
+                      },
+                    ),
+                    const SizedBox(height: 16), // Jarak antar menu
+                    _buildMenuItem(
+                      context,
+                      title: "Layanan Karyawan",
+                      icon: Icons.support_agent,
+                      color: Colors.blue, // Warna menu menjadi biru
+                      onTap: () {
+                        // Aksi untuk Layanan Karyawan
+                      },
+                    ),
+                    const SizedBox(height: 16), // Jarak antar menu
+                    _buildMenuItem(
+                      context,
+                      title: "HR Care",
+                      icon: Icons.headset_mic,
+                      color: Colors.blue, // Warna menu menjadi biru
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HRCareMenuPage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 0, // Hilangkan shadow dengan mengatur elevation menjadi 0
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.2), // Warna latar belakang ikon
+          child: Icon(icon, color: color), // Ikon dengan warna biru
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color, // Warna teks menu menjadi biru
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildFAQItem({
+    required IconData icon,
+    required String question,
+    required String answer,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF1572E8)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  question,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  answer,
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

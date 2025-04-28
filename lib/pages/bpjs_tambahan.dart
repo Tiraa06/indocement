@@ -244,10 +244,6 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1572E8),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
-                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -264,10 +260,6 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 255, 255, 255), // Border warna hitam
-                          width: 1, // Ketebalan border 1px
-                        ),
                       ),
                       child: const Icon(
                         Icons.info,
@@ -305,165 +297,192 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
               const SizedBox(height: 24),
 
               // BPJS Tambahan Section
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
+              const Text(
+                'BPJS Keluarga Tambahan',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+
+              // Dropdown untuk memilih anggota BPJS
+              const Text(
+                'Pilih Anggota BPJS',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              DropdownButton<String>(
+                value: selectedAnggotaBpjs,
+                hint: const Text('Pilih Anggota BPJS'),
+                isExpanded: true,
+                items: ['Ayah', 'Ibu', 'Ayah Mertua', 'Ibu Mertua']
+                    .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedAnggotaBpjs = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Kotak Upload Dokumen
+              Column(
+                children: [
+                  _buildBox(
+                    title: 'Upload KK',
+                    fieldName: 'UrlKkTambahan',
+                    anggotaBpjs: 'Tambahan',
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Tombol Kirim Dokumen BPJS Tambahan
+              ElevatedButton(
+                onPressed: () async {
+                  // Validasi: Pastikan dropdown dan dokumen diunggah
+                  if (selectedAnggotaBpjs == null) {
+                    _showPopup(
+                      context: context,
+                      title: 'Gagal',
+                      message: 'Pilih anggota BPJS terlebih dahulu.',
+                    );
+                    return;
+                  }
+
+                  if (selectedImages['UrlKkTambahan'] == null) {
+                    _showPopup(
+                      context: context,
+                      title: 'Gagal',
+                      message: 'Anda harus mengunggah KK.',
+                    );
+                    return;
+                  }
+
+                  final List<Map<String, dynamic>> documents = [
+                    {
+                      'fieldName': 'UrlKk',
+                      'file': selectedImages['UrlKkTambahan'],
+                    },
+                  ];
+
+                  try {
+                    await uploadBpjsWithArray(
+                      context: context,
+                      anggotaBpjs: selectedAnggotaBpjs!,
+                      documents: documents,
+                    );
+                    _showPopup(
+                      context: context,
+                      title: 'Berhasil',
+                      message: 'Dokumen BPJS berhasil diunggah.',
+                    );
+                  } catch (e) {
+                    print("❌ Error saat mengunggah dokumen: $e");
+                    _showPopup(
+                      context: context,
+                      title: 'Gagal',
+                      message: 'Terjadi kesalahan saat mengunggah dokumen.',
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1572E8),
+                  minimumSize: const Size(double.infinity, 50),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'BPJS Keluarga Tambahan',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Pilih Anggota BPJS',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButton<String>(
-                      value: selectedAnggotaBpjs,
-                      hint: const Text('Pilih Anggota BPJS'),
-                      isExpanded: true,
-                      items: ['Ayah', 'Ibu', 'Ayah Mertua', 'Ibu Mertua']
-                          .map((e) => DropdownMenuItem(
-                                value: e,
-                                child: Text(e),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedAnggotaBpjs = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildBox(
-                      title: 'Upload KK',
-                      fieldName: 'UrlKkTambahan',
-                      anggotaBpjs: 'Tambahan',
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Validasi dan pengunggahan dokumen
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: const Text(
-                        'Kirim Dokumen BPJS Tambahan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: const Text(
+                  'Kirim Dokumen BPJS Tambahan',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
 
               // Gaji Section
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Gaji',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildBox(
-                      title: 'Upload Surat Pemotongan Gaji',
-                      fieldName: 'UrlSuratPotongGaji',
-                      anggotaBpjs: 'Gaji',
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Validasi dan pengunggahan dokumen
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: const Text(
-                        'Kirim Surat Pemotongan Gaji',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              const Text(
+                'Gaji',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 8),
 
-              // Tombol Download di Luar Container
-              ElevatedButton(
+              // Upload Surat Pemotongan Gaji
+              _buildBox(
+                title: 'Upload Surat Pemotongan Gaji',
+                fieldName: 'UrlSuratPotongGaji',
+                anggotaBpjs: 'Gaji',
+              ),
+              const SizedBox(height: 16),
+
+              // Download Surat Pemotongan Gaji
+              ElevatedButton.icon(
                 onPressed: () {
                   _downloadSuratPotongGaji();
                 },
+                icon: const Icon(Icons.download),
+                label: const Text('Download Surat Pemotongan Gaji'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0), // Tinggi tombol
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // Sudut melengkung
-                  ),
-                  backgroundColor: const Color.fromARGB(255, 187, 16, 16), // Warna utama tombol
-                  elevation: 5, // Efek elevasi
+                  backgroundColor: const Color(0xFF1572E8),
+                  minimumSize: const Size(double.infinity, 50),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(
-                      Icons.download, // Ikon download
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 8), // Jarak antara ikon dan teks
-                    Text(
-                      'Download Surat Pemotongan Gaji',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 24),
+
+              // Tombol Kirim Dokumen Gaji
+              ElevatedButton(
+                onPressed: () async {
+                  // Validasi: Pastikan dokumen diunggah
+                  if (selectedImages['UrlSuratPotongGaji'] == null) {
+                    _showPopup(
+                      context: context,
+                      title: 'Gagal',
+                      message: 'Anda harus mengunggah Surat Pemotongan Gaji.',
+                    );
+                    return;
+                  }
+
+                  final List<Map<String, dynamic>> documents = [
+                    {
+                      'fieldName': 'UrlSuratPotongGaji',
+                      'file': selectedImages['UrlSuratPotongGaji'],
+                    },
+                  ];
+
+                  try {
+                    await uploadBpjsWithArray(
+                      context: context,
+                      anggotaBpjs: 'Gaji',
+                      documents: documents,
+                    );
+                    _showPopup(
+                      context: context,
+                      title: 'Berhasil',
+                      message: 'Surat Pemotongan Gaji berhasil diunggah.',
+                    );
+                  } catch (e) {
+                    print("❌ Error saat mengunggah dokumen: $e");
+                    _showPopup(
+                      context: context,
+                      title: 'Gagal',
+                      message: 'Terjadi kesalahan saat mengunggah dokumen.',
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1572E8),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text(
+                  'Kirim Surat Pemotongan Gaji',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],

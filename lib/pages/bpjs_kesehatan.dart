@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'bpjs_karyawan.dart'; // Import the BPJSKaryawanPage
 import 'bpjs_tambahan.dart'; // Import the BPJSTambahanPage
@@ -60,7 +61,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const MasterScreen()), // Navigasi ke halaman Master
+              MaterialPageRoute(builder: (context) => const BPJSPage()), // Navigasi ke halaman BPJS
             );
           },
         ),
@@ -75,302 +76,179 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
         iconTheme: const IconThemeData(
           color: Colors.white, // Warna putih untuk ikon back
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: _toggleMenu,
-          ),
-        ],
       ),
       body: Stack(
         children: [
-          // Main content
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  // Banner with BPJS.png, border radius, and shadow
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16.0),
-                    padding: const EdgeInsets.all(12.0), // Padding untuk memberi ruang di dalam container
-                    decoration: BoxDecoration(
-                      color: Colors.transparent, // Membuat container transparan
-                      borderRadius: BorderRadius.circular(16), // Sudut melengkung
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1), // Warna bayangan
-                          blurRadius: 10, // Radius blur bayangan
-                          offset: const Offset(0, 4), // Offset bayangan
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12), // Border radius untuk gambar
-                      child: Image.asset(
-                        'assets/images/banner_bpjs.jpg', // Path to BPJS.png
-                        height: 150, // Tinggi gambar
-                        fit: BoxFit.contain, // Menyesuaikan gambar
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Banner
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2), // Warna bayangan
+                        blurRadius: 8, // Radius blur bayangan
+                        offset: const Offset(0, 4), // Posisi bayangan
                       ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
+                    child: Image.asset(
+                      'assets/images/banner_bpjs.jpg', // Path ke gambar banner
+                      width: double.infinity, // Lebar penuh
+                      height: 150, // Tinggi banner
+                      fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
                     ),
                   ),
-                  // Deskripsi teks
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
-                    child: Text(
-                      'Akses cepat untuk informasi, pembayaran, dan dukungan BPJS. Pilih opsi di bawah untuk melanjutkan.',
-                      textAlign: TextAlign.center, // Teks rata tengah
-                      style: TextStyle(
-                        fontSize: 14, // Ukuran font lebih kecil
-                        color: Colors.black87, // Warna teks lebih gelap
-                        height: 1.5, // Jarak antar baris
-                      ),
-                    ),
+                ),
+
+                // Deskripsi
+                const Text(
+                  "Selamat datang di halaman BPJS Kesehatan. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
+                  textAlign: TextAlign.center, // Rata tengah
+                  style: TextStyle(
+                    fontSize: 16, // Perbesar ukuran teks
+                    fontWeight: FontWeight.w500, // Tambahkan ketebalan teks
+                    color: Colors.black87,
                   ),
-                  // Tambahkan jarak antar teks dan container
-                  const SizedBox(height: 30), // Jarak 16px
-                  // Container tiga kotak
-                  Container(
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Background color for the box
-                      borderRadius: BorderRadius.circular(16), // Rounded corners
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1), // Shadow color
-                          blurRadius: 10, // Blur radius for shadow
-                          offset: const Offset(0, 4), // Shadow offset
+                ),
+                const SizedBox(height: 16), // Jarak antara deskripsi dan menu
+
+                // Menu
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Menu BPJS Kesehatan Karyawan
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Flexible(
-                              flex: 1,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const BPJSKaryawanPage(),
-                                    ),
-                                  );
-                                },
-                                child: _buildMenuBox(
-                                  icon: Icons.family_restroom, // Icon for family
-                                  title: 'BPJS Kesehatan\nKeluarga Karyawan',
-                                  color: const Color(0xFF1572E8),
-                                  width: double.infinity, // Responsif
-                                  height: 140,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8), // Spacing between boxes
-                            Flexible(
-                              flex: 1,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const BPJSTambahanPage(),
-                                    ),
-                                  );
-                                },
-                                child: _buildMenuBox(
-                                  icon: Icons.group_add, // Icon for additional family
-                                  title: 'BPJS Kesehatan\nKeluarga Tambahan',
-                                  color: const Color(0xFF1572E8),
-                                  width: double.infinity, // Responsif
-                                  height: 140,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16), // Spacing between rows
-                        _buildMenuBox(
-                          icon: Icons.help_outline, // Icon for FAQ
-                          title: 'FAQ',
-                          color: const Color(0xFFE53935),
-                          width: double.infinity, // Responsif
-                          height: 140,
-                          isFullWidth: true,
+                        elevation: 2,
+                        child: ListTile(
+                          leading: const Icon(Icons.family_restroom, color: Colors.blue),
+                          title: const Text(
+                            "BPJS Kesehatan Keluarga Karyawan",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                           onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
-                                  ),
-                                  contentPadding: const EdgeInsets.all(16.0),
-                                  content: SizedBox(
-                                    width: MediaQuery.of(context).size.width * 0.9,
-                                    height: MediaQuery.of(context).size.height * 0.6,
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Frequently Asked Questions (FAQ)',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF1572E8),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _buildFAQItem(
-                                            question: 'Apa itu BPJS?',
-                                            answer: 'BPJS adalah Badan Penyelenggara Jaminan Sosial yang menyediakan layanan kesehatan bagi masyarakat Indonesia.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Bagaimana cara mendaftar BPJS?',
-                                            answer: 'Anda dapat mendaftar melalui aplikasi atau kantor BPJS terdekat.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Apa saja dokumen yang diperlukan?',
-                                            answer: 'Dokumen yang diperlukan meliputi KTP, KK, dan dokumen pendukung lainnya.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Bagaimana cara mengajukan klaim?',
-                                            answer: 'Klaim dapat diajukan melalui aplikasi atau langsung ke kantor BPJS.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Apakah BPJS mencakup semua jenis penyakit?',
-                                            answer: 'BPJS mencakup sebagian besar penyakit, namun ada beberapa pengecualian tertentu.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Bagaimana cara membayar iuran BPJS?',
-                                            answer: 'Iuran BPJS dapat dibayar melalui bank, aplikasi pembayaran, atau kantor BPJS.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Apa yang terjadi jika terlambat membayar iuran?',
-                                            answer: 'Jika terlambat membayar, status keanggotaan Anda dapat dinonaktifkan sementara hingga pembayaran dilakukan.',
-                                          ),
-                                          _buildFAQItem(
-                                            question: 'Bagaimana cara memperbarui data BPJS?',
-                                            answer: 'Data BPJS dapat diperbarui melalui aplikasi atau dengan mengunjungi kantor BPJS terdekat.',
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: const Text(
-                                        'Tutup',
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const BPJSKaryawanPage()),
                             );
                           },
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 10), // Jarak antar menu
+
+                      // Menu BPJS Kesehatan Tambahan
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: ListTile(
+                          leading: const Icon(Icons.group_add, color: Colors.green),
+                          title: const Text(
+                            "BPJS Kesehatan Keluarga Tambahan",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const BPJSTambahanPage()),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
-          // Animated modern menu
-          SlideTransition(
-            position: _slideAnimation,
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1572E8), Color(0xFF1E88E5)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    bottomLeft: Radius.circular(20),
-                  ),
-                  border: Border.all(
-                    color: Colors.black, // Warna border
-                    width: 2, // Ketebalan border 2px
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(-4, 0),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        "Menu",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+          // Floating FAQ button
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                      ),
+                      contentPadding: const EdgeInsets.all(16.0),
+                      content: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Frequently Asked Questions (FAQ)',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1572E8),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildFAQItem(
+                                question: 'Apa itu BPJS?',
+                                answer: 'BPJS adalah Badan Penyelenggara Jaminan Sosial yang menyediakan layanan kesehatan bagi masyarakat Indonesia.',
+                              ),
+                              _buildFAQItem(
+                                question: 'Bagaimana cara mendaftar BPJS?',
+                                answer: 'Anda dapat mendaftar melalui aplikasi atau kantor BPJS terdekat.',
+                              ),
+                              _buildFAQItem(
+                                question: 'Apa saja dokumen yang diperlukan?',
+                                answer: 'Dokumen yang diperlukan meliputi KTP, KK, dan dokumen pendukung lainnya.',
+                              ),
+                              _buildFAQItem(
+                                question: 'Bagaimana cara mengajukan klaim?',
+                                answer: 'Klaim dapat diajukan melalui aplikasi atau langsung ke kantor BPJS.',
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const Divider(color: Colors.white54),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.badge,
-                      text: "ID & Slip Salary",
-                      onTap: () {
-                        _toggleMenu();
-                      },
-                    ),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.description,
-                      text: "SK Kerja & Medical",
-                      onTap: () {
-                        _toggleMenu();
-                      },
-                    ),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.support_agent,
-                      text: "Layanan Karyawan",
-                      onTap: () {
-                        _toggleMenu();
-                      },
-                    ),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.headset_mic,
-                      text: "HR Care",
-                      onTap: () {
-                        _toggleMenu();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const HRCareMenuPage()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text(
+                            'Tutup',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.help_outline, color: Colors.white), // Ikon warna putih
+              label: const Text(
+                "FAQ",
+                style: TextStyle(color: Colors.white), // Teks warna putih
               ),
+              backgroundColor: Colors.blue, // Warna tombol tetap biru
             ),
           ),
         ],

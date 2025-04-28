@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'dart:async'; // Added for Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:signalr_netcore/signalr_client.dart';
+import 'package:dio/dio.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -12,144 +14,114 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController =
-      ScrollController(); // Added for scroll control
+  final ScrollController _scrollController = ScrollController();
   List<dynamic> _messages = [];
   Map<String, dynamic>? opponent;
   String? roomId;
   String? konsultasiId;
   int? idEmployee;
-  Timer? _pollingTimer; // Added for polling
+  late HubConnection _hubConnection;
+  final Dio _dio = Dio();
 
   @override
   void initState() {
     super.initState();
+    _initializeSignalR();
     _loadChatRoom();
-    // Start polling every 5 seconds to check for updates
-    _pollingTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      _loadChatRoom(isPolling: true);
+  }
+
+  void _initializeSignalR() {
+    print("Initializing SignalR connection...");
+    _hubConnection = HubConnectionBuilder()
+        .withUrl("http://213.35.123.110:5555/chatHub")
+        .build();
+
+    // Event untuk menerima pesan baru
+    _hubConnection.on("ReceiveMessage", (message) {
+      print("Received message via SignalR: $message");
+      if (message is List && message.isNotEmpty && message[0]['roomId'] == roomId) {
+        setState(() {
+          _messages.add(message[0]);
+        });
+        _scrollToBottom();
+      }
+    });
+
+    // Event untuk memperbarui status pesan
+    _hubConnection.on("UpdateMessageStatus", (statusUpdate) {
+      print("Received status update via SignalR: $statusUpdate");
+      final messageId = (statusUpdate as List<Map<String, dynamic>>)[0]['id'];
+      final newStatus = (statusUpdate as List<Map<String, dynamic>>)[0]['status'];
+      if (messageId != null && newStatus != null) {
+        _updateMessageStatusInUI(messageId, newStatus);
+      }
+    });
+
+    // Log saat koneksi berhasil
+
+    // Mulai koneksi SignalR
+    _hubConnection.start()?.then((_) {
+      print("SignalR connection established successfully.");
+    }).catchError((err) {
+      print("SignalR connection error: $err");
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
     });
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel(); // Cancel the timer to avoid memory leaks
-    _scrollController.dispose(); // Dispose the scroll controller
+    _hubConnection.stop();
+    _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadChatRoom({bool isPolling = false}) async {
+  Future<void> _loadChatRoom() async {
+    print("Loading chat room...");
     final prefs = await SharedPreferences.getInstance();
     idEmployee = prefs.getInt('idEmployee');
     roomId = prefs.getString('roomId');
     konsultasiId = prefs.getString('konsultasiId');
 
-    if (idEmployee == null) return;
+    print("Loaded preferences: idEmployee=$idEmployee, roomId=$roomId, konsultasiId=$konsultasiId");
 
-    // Check for existing consultation if roomId or konsultasiId is missing
+    if (idEmployee == null) {
+      print("idEmployee is null, aborting chat room load.");
+      return;
+    }
+
     if (roomId == null || konsultasiId == null) {
-      final existingConsultation =
-          await _checkExistingConsultation(idEmployee!);
-      if (existingConsultation != null) {
-        setState(() {
-          roomId = existingConsultation['ChatRoomId']?.toString();
-          konsultasiId = existingConsultation['KonsultasiId']?.toString();
-        });
-        if (roomId != null && konsultasiId != null) {
-          await prefs.setString('roomId', roomId!);
-          await prefs.setString('konsultasiId', konsultasiId!);
-        }
-      }
+      print("Room ID or Konsultasi ID is null, creating new consultation...");
+      await _createKonsultasi(idEmployee!);
     }
 
     if (roomId != null) {
       final url = Uri.parse(
           'http://213.35.123.110:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+      print("Fetching messages from: $url");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final newMessages = data['Messages'] ?? [];
-        final newOpponent = data['Opponent'];
-
-        // Only update state if messages or opponent have changed to avoid unnecessary rebuilds
-        if (_messages.toString() != newMessages.toString() ||
-            opponent.toString() != newOpponent.toString()) {
-          double? previousOffset;
-          if (isPolling && _scrollController.hasClients) {
-            previousOffset =
-                _scrollController.offset; // Save scroll position during polling
-          }
-
-          setState(() {
-            _messages = newMessages;
-            opponent = newOpponent;
-          });
-
-          // Restore scroll position after update
-          if (isPolling &&
-              previousOffset != null &&
-              _scrollController.hasClients) {
-            _scrollController.jumpTo(previousOffset);
-          } else {
-            // Scroll to bottom for initial load or after sending a message
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_scrollController.hasClients) {
-                _scrollController
-                    .jumpTo(_scrollController.position.maxScrollExtent);
-              }
-            });
-          }
-
-          // Update message status for unread messages from the opponent
-          for (var msg in _messages) {
-            if (msg['SenderId'] != idEmployee && msg['Status'] != 'Dibaca') {
-              await _updateMessageStatus(msg['Id'], 'Dibaca');
-            }
-          }
-        }
+        print("Messages fetched successfully: $data");
+        setState(() {
+          _messages = data['Messages'] ?? [];
+          opponent = data['Opponent'];
+        });
+        _scrollToBottom();
       } else {
-        print("Room tidak ditemukan, mencoba membuat baru.");
+        print("Failed to fetch messages, status code: ${response.statusCode}");
         await _createKonsultasi(idEmployee!);
         await _loadChatRoom();
       }
-    } else {
-      await _createKonsultasi(idEmployee!);
-      await _loadChatRoom();
     }
-  }
-
-  Future<Map<String, dynamic>?> _checkExistingConsultation(
-      int idEmployee) async {
-    try {
-      final url = Uri.parse(
-          'http://213.35.123.110:5555/api/Konsultasis/employee/$idEmployee');
-      final response = await http.get(url);
-
-      print("Response from GET /api/Konsultasis/employee/$idEmployee: "
-          "Status: ${response.statusCode}, Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is List && data.isNotEmpty) {
-          print("Found consultation: ${data[0]}");
-          return data[0]; // Return the most recent consultation
-        } else if (data is Map<String, dynamic> && data.isNotEmpty) {
-          print("Found consultation: $data");
-          return data; // Return the single consultation
-        } else {
-          print("Tidak ada konsultasi ditemukan untuk idEmployee: $idEmployee");
-        }
-      } else {
-        print("Failed to fetch consultation for idEmployee: $idEmployee, "
-            "Status: ${response.statusCode}, Body: ${response.body}");
-      }
-    } catch (e) {
-      print(
-          "Error saat memeriksa konsultasi untuk idEmployee: $idEmployee: $e");
-    }
-    return null; // No existing consultation found
   }
 
   Future<void> _createKonsultasi(int idEmployee) async {
@@ -171,54 +143,84 @@ class _ChatPageState extends State<ChatPage> {
         await prefs.setString('konsultasiId', konsultasiId!);
       }
     } else {
-      final error = jsonDecode(response.body);
-      if (error['Message'] == "Room chat sudah ada.") {
-        // Handle case where room already exists
-        roomId = error['ChatRoomId']?.toString();
-        if (roomId != null) {
-          await prefs.setString('roomId', roomId!);
-          // Optionally fetch konsultasiId from existing consultation
-          final existingConsultation =
-              await _checkExistingConsultation(idEmployee);
-          if (existingConsultation != null) {
-            konsultasiId = existingConsultation['KonsultasiId']?.toString();
-            if (konsultasiId != null) {
-              await prefs.setString('konsultasiId', konsultasiId!);
-            }
-          }
-        }
-      } else {
-        print("Gagal membuat konsultasi: ${response.body}");
-      }
+      print("Gagal membuat konsultasi: ${response.body}");
     }
   }
 
   Future<void> _sendMessage() async {
-    if (_messageController.text.isEmpty || idEmployee == null) return;
+    if (_messageController.text.isEmpty || idEmployee == null) {
+      print("Message is empty or idEmployee is null, aborting send.");
+      return;
+    }
 
-    final url =
-        Uri.parse('http://213.35.123.110:5555/api/ChatMessages/send-message');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'roomId': roomId,
-        'senderId': idEmployee,
-        'message': _messageController.text
-      }),
-    );
+    final messageText = _messageController.text.trim();
+    final tempMessage = {
+      'Id': DateTime.now().millisecondsSinceEpoch, // Temporary unique ID
+      'SenderId': idEmployee,
+      'Message': messageText,
+      'CreatedAt': DateTime.now().toIso8601String(),
+      'Status': 'Terkirim', // Default status
+    };
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      _messageController.clear();
-      await _loadChatRoom(); // Refresh messages after sending
-    } else {
-      final error = jsonDecode(response.body);
-      if (error['Message'] == "Chat room tidak ditemukan.") {
-        await _createKonsultasi(idEmployee!);
-        await _sendMessage();
+    print("Sending message: $tempMessage");
+
+    setState(() {
+      _messages.add(tempMessage); // Add the message to the UI immediately
+      _scrollToBottom(); // Scroll to the bottom
+    });
+
+    _messageController.clear(); // Clear the input field
+
+    try {
+      final response = await _dio.post(
+        'http://213.35.123.110:5555/api/ChatMessages/send-message',
+        data: {
+          'roomId': roomId,
+          'senderId': idEmployee,
+          'message': messageText,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final sentMessage = response.data;
+        print("Message sent successfully: $sentMessage");
+        setState(() {
+          // Update the temporary message with the actual server response
+          final index = _messages.indexWhere((msg) => msg['Id'] == tempMessage['Id']);
+          if (index != -1) {
+            _messages[index] = sentMessage;
+          }
+        });
       } else {
-        print("Gagal mengirim pesan: ${response.body}");
+        print("Failed to send message, status code: ${response.statusCode}");
       }
+    } catch (e) {
+      print("Error sending message: $e");
+      setState(() {
+        // Remove the temporary message if sending fails
+        _messages.removeWhere((msg) => msg['Id'] == tempMessage['Id']);
+      });
+    }
+  }
+
+  Future<void> _loadMessages() async {
+    if (roomId == null || idEmployee == null) return;
+
+    try {
+      final response = await _dio.get(
+        'http://213.35.123.110:5555/api/ChatMessages/room/$roomId',
+        queryParameters: {'currentUserId': idEmployee},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        setState(() {
+          _messages = data['Messages'] ?? [];
+          opponent = data['Opponent'];
+        });
+      }
+    } catch (e) {
+      print("Error loading messages: $e");
     }
   }
 
@@ -230,6 +232,17 @@ class _ChatPageState extends State<ChatPage> {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'status': status}),
     );
+  }
+
+  void _updateMessageStatusInUI(int messageId, String newStatus) {
+    setState(() {
+      for (var msg in _messages) {
+        if (msg['Id'] == messageId) {
+          msg['Status'] = newStatus;
+          break;
+        }
+      }
+    });
   }
 
   String _formatTime(String? timeString) {
@@ -285,7 +298,7 @@ class _ChatPageState extends State<ChatPage> {
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/chat_background.png'),
+            image: AssetImage('assets/images/chat_background.jpg'),
             fit: BoxFit.cover,
             opacity: 0.1,
           ),
@@ -294,7 +307,7 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             Expanded(
               child: ListView.builder(
-                controller: _scrollController, // Attach scroll controller
+                controller: _scrollController,
                 padding: EdgeInsets.symmetric(vertical: 10),
                 itemCount: _messages.length,
                 itemBuilder: (_, index) {

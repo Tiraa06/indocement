@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http; // Tambahkan ini
+import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'dart:convert'; // Tambahkan ini
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
@@ -290,7 +291,7 @@ class Categories extends StatelessWidget {
             Navigator.pop(context); // Tutup loading
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const MenuPage()),
+              MaterialPageRoute(builder: (_) => const BPJSPage()), // Navigasi ke halaman BPJSPage
             );
           });
         } else if (idEsl == 5 || idEsl == 6) {
@@ -318,37 +319,16 @@ class Categories extends StatelessWidget {
                       style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text("Tutup", style: TextStyle(color: Colors.white)),
-                          ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Permintaan akses telah dikirim')),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text("Minta Akses", style: TextStyle(color: Colors.white)),
-                          ),
-                        ),
-                      ],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text("Tutup", style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
