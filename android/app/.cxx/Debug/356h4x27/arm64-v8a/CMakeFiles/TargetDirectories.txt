@@ -1,0 +1,2 @@
+C:/Users/SIJA-/OneDrive/Desktop/Documents/pt_solu/indocement_apk/android/app/.cxx/Debug/356h4x27/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/SIJA-/OneDrive/Desktop/Documents/pt_solu/indocement_apk/android/app/.cxx/Debug/356h4x27/arm64-v8a/CMakeFiles/rebuild_cache.dir

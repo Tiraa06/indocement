@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http; // Tambahkan ini
+import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'dart:convert'; // Tambahkan ini
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
@@ -42,23 +43,155 @@ class MasterScreen extends StatelessWidget {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("FAQ"),
-                    content: const Text(
-                        "Berisi pertanyaan yang sering ditanyakan oleh karyawan."),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Tutup"),
+                  builder: (BuildContext context) {
+                    final ScrollController scrollController = ScrollController();
+
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
                       ),
-                    ],
-                  ),
+                      contentPadding: const EdgeInsets.all(16.0),
+                      content: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.95, // Lebih panjang (95% dari lebar layar)
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: Scrollbar(
+                          controller: scrollController, // Kontrol scrollbar
+                          thumbVisibility: false, // Hilang jika tidak di-scroll
+                          thickness: 3, // Ketebalan scrollbar
+                          radius: const Radius.circular(10), // Sudut melengkung scrollbar
+                          child: SingleChildScrollView(
+                            controller: scrollController, // Kontrol scroll
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Frequently Asked Questions (FAQ)',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1572E8),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFAQItem(
+                                  icon: Icons.home,
+                                  question: 'Apa fungsi halaman Home?',
+                                  answer: 'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.category,
+                                  question: 'Apa saja menu yang tersedia?',
+                                  answer: 'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.info,
+                                  question: 'Apa itu Info Harian?',
+                                  answer: 'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.help_outline,
+                                  question: 'Bagaimana cara mengakses menu BPJS?',
+                                  answer: 'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.notifications,
+                                  question: 'Apa itu pengingat di Info Harian?',
+                                  answer: 'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red, // Warna latar belakang merah
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8), // Tombol kotak
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            child: const Text(
+                              'Tutup',
+                              style: TextStyle(
+                                color: Colors.white, // Teks putih
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
-              icon: const Icon(Icons.help_outline),
-              label: const Text("FAQ"),
-              backgroundColor: Colors.blue,
+              icon: const Icon(Icons.help_outline, color: Colors.white), // Ikon warna putih
+              label: const Text(
+                "FAQ",
+                style: TextStyle(color: Colors.white), // Teks warna putih
+              ),
+              backgroundColor: Colors.blue, // Warna tombol tetap biru
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFAQItem({
+    required IconData icon,
+    required String question,
+    required String answer,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: const Color(0xFF1572E8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  question,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.arrow_right,
+                color: Colors.grey,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  answer,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -137,7 +270,6 @@ class Categories extends StatelessWidget {
 
   Future<void> _checkAccess(BuildContext context) async {
     try {
-      // Ambil ID pengguna yang sedang login dari SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final int? idEmployee = prefs.getInt('idEmployee');
 
@@ -145,34 +277,62 @@ class Categories extends StatelessWidget {
         throw Exception('ID pengguna tidak ditemukan. Silakan login ulang.');
       }
 
-      // Ambil data Employee berdasarkan ID pengguna yang sedang login
       final employeeResponse = await http.get(
         Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
       );
 
       if (employeeResponse.statusCode == 200) {
         final employeeData = json.decode(employeeResponse.body);
-        final int idEsl = employeeData['IdEsl']; // Ambil IdEsl dari data Employee
+        final int idEsl = employeeData['IdEsl'];
 
-        // Periksa akses berdasarkan IdEsl
-        if (idEsl >= 1 && idEsl <= 5) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MenuPage()),
-          );
-        } else if (idEsl == 6 || idEsl == 7) {
+        if (idEsl >= 1 && idEsl <= 4) {
+          _showLoading(context); // Tampilkan loading
+          Future.delayed(const Duration(seconds: 2), () {
+            Navigator.pop(context); // Tutup loading
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BPJSPage()), // Navigasi ke halaman BPJSPage
+            );
+          });
+        } else if (idEsl == 5 || idEsl == 6) {
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Text("Akses Ditolak"),
-              content: const Text(
-                  "Anda memerlukan izin dari PIC untuk mengakses halaman ini."),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Tutup"),
+            builder: (context) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.red, size: 60),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Akses Belum Diberikan",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Anda memerlukan izin dari PIC untuk mengakses halaman ini.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text("Tutup", style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         } else {
@@ -240,12 +400,20 @@ class Categories extends StatelessWidget {
                 text: category["text"]!,
                 press: () {
                   if (category["text"] == "HR Care") {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => HRCareMenuPage()),
-                    );
+                    _showLoading(context); // Tampilkan loading
+                    Future.delayed(const Duration(seconds: 2), () {
+                      Navigator.pop(context); // Tutup loading
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HRCareMenuPage()),
+                      );
+                    });
                   } else if (category["text"] == "BPJS") {
                     _checkAccess(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Menu ${category["text"]} belum tersedia')),
+                    );
                   }
                 },
               );
@@ -453,4 +621,52 @@ class SectionTitle extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showLoading(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Tidak bisa ditutup dengan klik di luar
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16), // Sudut melengkung
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animasi Loading
+              const CircularProgressIndicator(
+                color: Colors.blue, // Warna indikator loading
+              ),
+              const SizedBox(height: 16),
+
+              // Teks Loading
+              const Text(
+                "Memuat halaman...",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Teks Deskripsi
+              const Text(
+                "Harap tunggu sebentar",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
