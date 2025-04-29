@@ -13,7 +13,7 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  List<dynamic> _messages = [];
+  final List<dynamic> _messages = [];
   Map<String, dynamic>? opponent;
   String? roomId;
   String? konsultasiId;
