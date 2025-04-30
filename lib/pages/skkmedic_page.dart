@@ -79,12 +79,15 @@ class SKKMedicPage extends StatelessWidget {
                     "Surat Keterangan Kerja",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                   onTap: () {
                     // Navigasi ke halaman Surat Keterangan Kerja
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SuratKeteranganKerjaPage()),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              const SuratKeteranganKerjaPage()),
                     );
                   },
                 ),
@@ -98,13 +101,21 @@ class SKKMedicPage extends StatelessWidget {
                 ),
                 elevation: 2,
                 child: ListTile(
-                  leading: const Icon(Icons.medical_services, color: Colors.green),
+                  leading:
+                      const Icon(Icons.medical_services, color: Colors.green),
                   title: const Text(
                     "Update Medical Suami/Istri",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                   onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              const MedicPasutriPage()), // Navigasi ke TambahDataPasutriPage
+                    );
                   },
                 ),
               ),
