@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:indocement_apk/pages/edit_profile.dart';
-import 'notification.dart'; // Impor halaman notifikasi
+import 'notification.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -55,10 +55,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (employeeId == null || employeeId <= 0) {
       print('Invalid or missing employeeId: $employeeId');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('ID karyawan tidak valid, silakan login ulang')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('ID karyawan tidak valid, silakan login ulang')),
+        );
+      }
       return;
     }
 
@@ -97,15 +99,20 @@ class _ProfilePageState extends State<ProfilePage> {
         print('Updated employeeName: $_employeeName');
       } else {
         print('Failed to fetch employee data: ${response.statusCode}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data: ${response.statusCode}')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Gagal memuat data: ${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
       print('Error fetching employee data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: $e')),
+        );
+      }
     }
   }
 

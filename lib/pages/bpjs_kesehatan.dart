@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
-import 'package:indocement_apk/pages/master.dart';
 import 'bpjs_karyawan.dart'; // Import the BPJSKaryawanPage
 import 'bpjs_tambahan.dart'; // Import the BPJSTambahanPage
-import 'hr_menu.dart';
-import 'hr_menu.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});

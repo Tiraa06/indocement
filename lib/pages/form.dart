@@ -38,7 +38,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
     _loadProfileData();
     _fetchDepartments();
     _messageController.addListener(_updateLinesAndWords);
-    _updateTime();
+    // _updateTime();
   }
 
   Future<void> _loadProfileData() async {
@@ -91,14 +91,14 @@ class _KeluhanPageState extends State<KeluhanPage> {
     });
   }
 
-  void _updateTime() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 7));
-    final formatter = DateFormat('dd MMMM yyyy, HH:mm:ss');
-    setState(() {
-      _currentTime = formatter.format(now);
-    });
-    Future.delayed(const Duration(seconds: 1), _updateTime);
-  }
+  // void _updateTime() {
+  //   final now = DateTime.now().toUtc().add(const Duration(hours: 7));
+  //   final formatter = DateFormat('dd MMMM yyyy, HH:mm:ss');
+  //   setState(() {
+  //     _currentTime = formatter.format(now);
+  //   });
+  //   Future.delayed(const Duration(seconds: 1), _updateTime);
+  // }
 
   Future<void> _chooseFile() async {
     try {
@@ -220,7 +220,6 @@ class _KeluhanPageState extends State<KeluhanPage> {
       request.fields['subject'] = _subjectController.text;
       request.fields['NamaDepartement'] = _department!;
 
-      // Tambahkan daftar nama file yang dipisahkan dengan koma
       if (_selectedFiles.isNotEmpty) {
         final fileNames = _selectedFiles.map((file) => file.name).join(',');
         request.fields['NamaFile'] = fileNames;
@@ -275,20 +274,31 @@ class _KeluhanPageState extends State<KeluhanPage> {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double paddingValue = screenWidth < 400 ? 16.0 : 20.0;
+    final double paddingValue = screenWidth < 400 ? 16.0 : 24.0;
     final double fontSizeLabel = screenWidth < 400 ? 14.0 : 16.0;
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
           "HR Care",
-          style: GoogleFonts.roboto(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
             color: Colors.white,
           ),
         ),
-        backgroundColor: const Color(0xFF1572E8),
+        backgroundColor: const Color(0xFF1E88E5),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -296,326 +306,407 @@ class _KeluhanPageState extends State<KeluhanPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 30),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
+              // const SizedBox(height: 20),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 2,
-                      blurRadius: 5,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.access_time,
-                        color: Colors.black54, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      _currentTime.isEmpty
-                          ? 'Loading...'
-                          : 'WIB: $_currentTime',
-                      style: GoogleFonts.roboto(
-                        fontSize: fontSizeLabel,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+                // child: Padding(
+                //   padding: const EdgeInsets.all(16),
+                //   child: Row(
+                //     mainAxisAlignment: MainAxisAlignment.center,
+                //     children: [
+                //       const Icon(Icons.access_time,
+                //           color: Color(0xFF1E88E5), size: 22),
+                //       const SizedBox(width: 8),
+                //       Text(
+                //         _currentTime.isEmpty
+                //             ? 'Loading...'
+                //             : 'WIB: $_currentTime',
+                //         style: GoogleFonts.poppins(
+                //           fontSize: fontSizeLabel - 2,
+                //           color: Colors.black87,
+                //           fontWeight: FontWeight.w500,
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
               ),
-              const SizedBox(height: 20),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1572E8), Color(0xFF3B94F3)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+              const SizedBox(height: 24),
+              Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.3),
-                      spreadRadius: 2,
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: Text(
-                  "Form Keluhan",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nameController,
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  labelStyle: GoogleFonts.roboto(fontSize: fontSizeLabel),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  labelStyle: GoogleFonts.roboto(fontSize: fontSizeLabel),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _subjectController,
-                decoration: InputDecoration(
-                  labelText: 'Subject',
-                  labelStyle: GoogleFonts.roboto(fontSize: fontSizeLabel),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _department,
-                decoration: InputDecoration(
-                  labelText: 'Department',
-                  labelStyle: GoogleFonts.roboto(fontSize: fontSizeLabel),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-                items: _departments
-                    .map((dept) => DropdownMenuItem(
-                          value: dept,
-                          child: Text(
-                            dept,
-                            style: GoogleFonts.roboto(fontSize: fontSizeLabel),
-                          ),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _department = value;
-                  });
-                },
-                hint: Text(
-                  _departments.isEmpty
-                      ? 'Loading departments...'
-                      : 'Select Department',
-                  style: GoogleFonts.roboto(fontSize: fontSizeLabel),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Message',
-                    style: GoogleFonts.roboto(
-                        fontSize: fontSizeLabel, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _messageController,
-                    maxLines: 5,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      filled: true,
-                      fillColor: Colors.grey[100],
+                  child: Text(
+                    "Form Keluhan",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'LINES: $_lines - Words: $_words - saved',
-                    style: GoogleFonts.roboto(
-                        color: Colors.grey, fontSize: fontSizeLabel - 2),
-                    textAlign: TextAlign.right,
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Attachment',
-                    style: GoogleFonts.roboto(
-                      fontSize: fontSizeLabel,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+              const SizedBox(height: 24),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ElevatedButton(
-                        onPressed: _chooseFile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[200],
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                        child: Text(
-                          'Choose File',
-                          style:
-                              GoogleFonts.roboto(fontSize: fontSizeLabel - 2),
+                      TextField(
+                        controller: _nameController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          labelStyle: GoogleFonts.poppins(
+                            fontSize: fontSizeLabel,
+                            color: Colors.grey[700],
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _selectedFiles.isEmpty
-                              ? 'No file chosen'
-                              : '${_selectedFiles.length} file(s) selected',
-                          style: GoogleFonts.roboto(
-                              fontSize: fontSizeLabel - 2, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _emailController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Email Address',
+                          labelStyle: GoogleFonts.poppins(
+                            fontSize: fontSizeLabel,
+                            color: Colors.grey[700],
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _subjectController,
+                        decoration: InputDecoration(
+                          labelText: 'Subject',
+                          labelStyle: GoogleFonts.poppins(
+                            fontSize: fontSizeLabel,
+                            color: Colors.grey[700],
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _department,
+                        decoration: InputDecoration(
+                          labelText: 'Department',
+                          labelStyle: GoogleFonts.poppins(
+                            fontSize: fontSizeLabel,
+                            color: Colors.grey[700],
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        items: _departments
+                            .map((dept) => DropdownMenuItem(
+                                  value: dept,
+                                  child: Text(
+                                    dept,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: fontSizeLabel - 2,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _department = value;
+                          });
+                        },
+                        hint: Text(
+                          _departments.isEmpty
+                              ? 'Loading departments...'
+                              : 'Select Department',
+                          style: GoogleFonts.poppins(
+                            fontSize: fontSizeLabel - 2,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Message',
+                        style: GoogleFonts.poppins(
+                          fontSize: fontSizeLabel,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _messageController,
+                        maxLines: 5,
+                        decoration: InputDecoration(
+                          hintText: 'Type your message here...',
+                          hintStyle: GoogleFonts.poppins(
+                            color: Colors.grey[500],
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Lines: $_lines | Words: $_words | Saved',
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey[600],
+                          fontSize: fontSizeLabel - 2,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Attachment',
+                        style: GoogleFonts.poppins(
+                          fontSize: fontSizeLabel,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: _chooseFile,
+                            icon: const Icon(Icons.upload_file, size: 20),
+                            label: Text(
+                              'Choose File',
+                              style: GoogleFonts.poppins(
+                                fontSize: fontSizeLabel - 2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E88E5),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedFiles.isEmpty
+                                  ? 'No file chosen'
+                                  : '${_selectedFiles.length} file(s) selected',
+                              style: GoogleFonts.poppins(
+                                fontSize: fontSizeLabel - 2,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_selectedFiles.isNotEmpty)
+                        Column(
+                          children: _selectedFiles
+                              .map((file) => Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 4),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            file.name,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: fontSizeLabel - 2,
+                                              color: Colors.black87,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.close,
+                                              size: 20, color: Colors.red),
+                                          onPressed: () {
+                                            setState(() {
+                                              _selectedFiles.remove(file);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _addMoreFiles,
+                          icon: const Icon(Icons.add, size: 20),
+                          label: Text(
+                            'Add More',
+                            style: GoogleFonts.poppins(
+                              fontSize: fontSizeLabel - 2,
+                              color: const Color(0xFF1E88E5),
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Allowed extensions: jpg, gif, jpeg, png, txt, pdf (Max: 10MB)',
+                        style: GoogleFonts.poppins(
+                          fontSize: fontSizeLabel - 2,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  if (_selectedFiles.isNotEmpty) ...[
-                    ..._selectedFiles.map((file) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text(
-                            file.name,
-                            style: GoogleFonts.roboto(
-                                fontSize: fontSizeLabel - 2,
-                                color: Colors.black87),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )),
-                  ],
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: _addMoreFiles,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[200],
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                      ),
-                      child: Text(
-                        '+ Add More',
-                        style: GoogleFonts.roboto(fontSize: fontSizeLabel - 2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ALLOWED FILE EXTENSIONS: jpg, gif, jpeg, png, txt, pdf (Max size: 10MB)',
-                    style: GoogleFonts.roboto(
-                        fontSize: fontSizeLabel - 2, color: Colors.grey),
-                  ),
-                  if (_selectedFiles.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    ..._selectedFiles.map((file) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  file.name,
-                                  style: GoogleFonts.roboto(
-                                      fontSize: fontSizeLabel - 2),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close,
-                                    size: 20, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedFiles.remove(file);
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        )),
-                  ],
-                ],
+                ),
               ),
-              const SizedBox(height: 20),
-              Column(
+              const SizedBox(height: 24),
+              Row(
                 children: [
-                  SizedBox(
-                    width: double.infinity,
+                  Expanded(
                     child: ElevatedButton(
                       onPressed: _submitComplaint,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
+                        backgroundColor: const Color(0xFF1E88E5),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                          vertical: 16,
+                        ),
+                        elevation: 3,
                       ),
                       child: Text(
                         'SUBMIT',
-                        style: GoogleFonts.roboto(
-                            fontSize: fontSizeLabel, color: Colors.white),
+                        style: GoogleFonts.poppins(
+                          fontSize: fontSizeLabel,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: OutlinedButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        side: const BorderSide(color: Colors.grey),
+                        foregroundColor: Colors.black87,
+                        side: BorderSide(color: Colors.grey[400]!),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                          vertical: 16,
+                        ),
                       ),
                       child: Text(
-                        'Cancel',
-                        style: GoogleFonts.roboto(
-                            fontSize: fontSizeLabel, color: Colors.black),
+                        'CANCEL',
+                        style: GoogleFonts.poppins(
+                          fontSize: fontSizeLabel,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

@@ -180,7 +180,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
           },
         ),
         title: Text(
-          "BPJS", // Ganti teks menjadi BPJS
+          "Hr Care Menu", // Ganti teks menjadi BPJS
           style: GoogleFonts.roboto(
             fontWeight: FontWeight.bold,
             fontSize: 22,
@@ -218,7 +218,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
 
                 // Deskripsi
                 Text(
-                  "Selamat datang di BPJS 👋\nSilakan pilih layanan yang Anda butuhkan.",
+                  "Selamat datang di Hr Care 👋\nSilakan pilih layanan yang Anda butuhkan.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.roboto(
                     fontSize: 16,

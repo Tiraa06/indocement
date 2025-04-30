@@ -1,15 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http; // Tambahkan ini
+import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/bpjs_page.dart';
-import 'dart:convert'; // Tambahkan ini
+import 'package:indocement_apk/pages/id_card.dart';
+import 'dart:convert';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
-import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini
+import 'package:shared_preferences/shared_preferences.dart';
 
-class MasterScreen extends StatelessWidget {
+// Placeholder for InboxPage
+class InboxPage extends StatelessWidget {
+  const InboxPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Inbox",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF1E88E5),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
+      body: Center(
+        child: Text(
+          "Inbox Page (Under Construction)",
+          style: TextStyle(fontSize: 18, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+}
+
+class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
+
+  @override
+  _MasterScreenState createState() => _MasterScreenState();
+}
+
+class _MasterScreenState extends State<MasterScreen> {
+  int _selectedIndex = 0;
+
+  // List of pages for navigation
+  final List<Widget> _pages = [
+    const MasterContent(), // Original MasterScreen content
+    const InboxPage(),
+    const ProfilePage(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inbox),
+            label: 'Inbox',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xFF1E88E5),
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.w400,
+          fontSize: 12,
+        ),
+        elevation: 8,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+// Separated MasterScreen content into a new widget
+class MasterContent extends StatelessWidget {
+  const MasterContent({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +118,7 @@ class MasterScreen extends StatelessWidget {
       onWillPop: () async => false, // Cegah tombol back keluar
       child: Stack(
         children: [
-          const Scaffold(
+          Scaffold(
             body: SafeArea(
               child: SingleChildScrollView(
                 padding: EdgeInsets.zero,
@@ -44,23 +145,24 @@ class MasterScreen extends StatelessWidget {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    final ScrollController scrollController = ScrollController();
+                    final ScrollController scrollController =
+                        ScrollController();
 
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       contentPadding: const EdgeInsets.all(16.0),
                       content: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.95, // Lebih panjang (95% dari lebar layar)
+                        width: MediaQuery.of(context).size.width * 0.95,
                         height: MediaQuery.of(context).size.height * 0.6,
                         child: Scrollbar(
-                          controller: scrollController, // Kontrol scrollbar
-                          thumbVisibility: false, // Hilang jika tidak di-scroll
-                          thickness: 3, // Ketebalan scrollbar
-                          radius: const Radius.circular(10), // Sudut melengkung scrollbar
+                          controller: scrollController,
+                          thumbVisibility: false,
+                          thickness: 3,
+                          radius: const Radius.circular(10),
                           child: SingleChildScrollView(
-                            controller: scrollController, // Kontrol scroll
+                            controller: scrollController,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -76,27 +178,47 @@ class MasterScreen extends StatelessWidget {
                                 _buildFAQItem(
                                   icon: Icons.home,
                                   question: 'Apa fungsi halaman Home?',
-                                  answer: 'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                  answer:
+                                      'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.category,
                                   question: 'Apa saja menu yang tersedia?',
-                                  answer: 'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                  answer:
+                                      'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.info,
                                   question: 'Apa itu Info Harian?',
-                                  answer: 'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                  answer:
+                                      'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.help_outline,
-                                  question: 'Bagaimana cara mengakses menu BPJS?',
-                                  answer: 'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                  question:
+                                      'Bagaimana cara mengakses menu BPJS?',
+                                  answer:
+                                      'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.notifications,
-                                  question: 'Apa itu pengingat di Info Harian?',
-                                  answer: 'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                  question: 'Apa itu fitur HR Care?',
+                                  answer:
+                                      'HR Care adalah fitur untuk membantu karyawan berkomunikasi dengan HRD. Melalui HR Care, Anda dapat melakukan konsultasi dengan HRD melalui chat, serta menyampaikan keluhan menggunakan formulir khusus yang akan langsung diteruskan ke HRD.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.notifications,
+                                  question:
+                                      'Bagaimana cara menggunakan fitur konsultasi di HR Care?',
+                                  answer:
+                                      'Fitur konsultasi di HR Care memungkinkan Anda untuk berkonsultasi langsung dengan HRD melalui sistem chat. Saat Anda memulai konsultasi, sistem akan otomatis membuat ruang percakapan dengan HRD. Setelah itu, Anda dapat langsung melakukan chatting secara real-time untuk mendiskusikan kebutuhan atau pertanyaan Anda terkait kepegawaian',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.notifications,
+                                  question:
+                                      'Bagaimana cara menggunakan fitur keluhan di HR Care?',
+                                  answer:
+                                      'Pada fitur keluhan di HR Care, Anda akan mengisi formulir pengaduan dengan mencantumkan judul keluhan serta menjelaskan detail masalah pada bagian pesan. Anda juga dapat menambahkan foto atau bukti pendukung secara opsional jika diperlukan. Setelah formulir dikirimkan (submit), keluhan Anda akan langsung diteruskan ke HRD untuk ditindaklanjuti.',
                                 ),
                               ],
                             ),
@@ -110,16 +232,17 @@ class MasterScreen extends StatelessWidget {
                               Navigator.of(context).pop();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red, // Warna latar belakang merah
+                              backgroundColor: Colors.red,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8), // Tombol kotak
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
                             ),
                             child: const Text(
                               'Tutup',
                               style: TextStyle(
-                                color: Colors.white, // Teks putih
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -130,12 +253,12 @@ class MasterScreen extends StatelessWidget {
                   },
                 );
               },
-              icon: const Icon(Icons.help_outline, color: Colors.white), // Ikon warna putih
+              icon: const Icon(Icons.help_outline, color: Colors.white),
               label: const Text(
                 "FAQ",
-                style: TextStyle(color: Colors.white), // Teks warna putih
+                style: TextStyle(color: Colors.white),
               ),
-              backgroundColor: Colors.blue, // Warna tombol tetap biru
+              backgroundColor: Colors.blue,
             ),
           ),
         ],
@@ -209,14 +332,11 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo kiri
           Image.asset(
             'assets/images/logo2.png',
             width: 180,
             fit: BoxFit.contain,
           ),
-
-          // Profil kanan
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -286,12 +406,12 @@ class Categories extends StatelessWidget {
         final int idEsl = employeeData['IdEsl'];
 
         if (idEsl >= 1 && idEsl <= 4) {
-          _showLoading(context); // Tampilkan loading
+          _showLoading(context);
           Future.delayed(const Duration(seconds: 2), () {
-            Navigator.pop(context); // Tutup loading
+            Navigator.pop(context);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const BPJSPage()), // Navigasi ke halaman BPJSPage
+              MaterialPageRoute(builder: (_) => const BPJSPage()),
             );
           });
         } else if (idEsl == 5 || idEsl == 6) {
@@ -310,7 +430,8 @@ class Categories extends StatelessWidget {
                     const SizedBox(height: 16),
                     const Text(
                       "Akses Belum Diberikan",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -328,7 +449,8 @@ class Categories extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text("Tutup", style: TextStyle(color: Colors.white)),
+                      child: const Text("Tutup",
+                          style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -354,7 +476,7 @@ class Categories extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Map<String, String>> categories = [
       {"icon": "assets/icons/bpjs.svg", "text": "BPJS"},
-      {"icon": "assets/icons/id_card.svg", "text": "ID & Slip Salary"},
+      {"icon": "assets/icons/id_card.svg", "text": "ID Card"},
       {"icon": "assets/icons/document.svg", "text": "SK Kerja & Medical"},
       {"icon": "assets/icons/service.svg", "text": "Layanan Karyawan"},
       {"icon": "assets/icons/hr_care.svg", "text": "HR Care"},
@@ -400,19 +522,31 @@ class Categories extends StatelessWidget {
                 text: category["text"]!,
                 press: () {
                   if (category["text"] == "HR Care") {
-                    _showLoading(context); // Tampilkan loading
+                    _showLoading(context);
                     Future.delayed(const Duration(seconds: 2), () {
-                      Navigator.pop(context); // Tutup loading
+                      Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const HRCareMenuPage()),
+                        MaterialPageRoute(
+                            builder: (_) => const HRCareMenuPage()),
                       );
                     });
                   } else if (category["text"] == "BPJS") {
                     _checkAccess(context);
+                  } else if (category["text"] == "ID Card") {
+                    _showLoading(context);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => IdCardUploadPage()),
+                      );
+                    });
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Menu ${category["text"]} belum tersedia')),
+                      SnackBar(
+                          content:
+                              Text('Menu ${category["text"]} belum tersedia')),
                     );
                   }
                 },
@@ -626,24 +760,21 @@ class SectionTitle extends StatelessWidget {
 void _showLoading(BuildContext context) {
   showDialog(
     context: context,
-    barrierDismissible: false, // Tidak bisa ditutup dengan klik di luar
+    barrierDismissible: false,
     builder: (BuildContext context) {
       return Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16), // Sudut melengkung
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Animasi Loading
               const CircularProgressIndicator(
-                color: Colors.blue, // Warna indikator loading
+                color: Colors.blue,
               ),
               const SizedBox(height: 16),
-
-              // Teks Loading
               const Text(
                 "Memuat halaman...",
                 style: TextStyle(
@@ -653,8 +784,6 @@ void _showLoading(BuildContext context) {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Teks Deskripsi
               const Text(
                 "Harap tunggu sebentar",
                 style: TextStyle(
