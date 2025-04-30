@@ -7,8 +7,7 @@ import 'dart:convert';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini
-import 'package:indocement_apk/pages/id_page.dart'; // Import halaman IDPage
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Placeholder for InboxPage
 class InboxPage extends StatelessWidget {
@@ -535,16 +534,26 @@ class Categories extends StatelessWidget {
                     });
                   } else if (category["text"] == "BPJS") {
                     _checkAccess(context);
-                  } else if (category["text"] == "ID & Slip Salary") {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const IDPage()),
-                    );
+                  } else if (category["text"] == "ID Card") {
+                    _showLoading(context);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const IdCardUploadPage()),
+                      );
+                    });
                   } else if (category["text"] == "SK Kerja & Medical") {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SKKMedicPage()),
-                    );
+                    _showLoading(context);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SKKMedicPage()),
+                      );
+                    });
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

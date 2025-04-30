@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart'
-    as path; // Menggunakan alias untuk menghindari konflik
+import 'package:path/path.dart' as path; // Menggunakan alias untuk menghindari konflik
 import 'package:mime/mime.dart';
 
 class IdCardUploadPage extends StatefulWidget {
@@ -31,7 +30,7 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
       final mimeType = lookupMimeType(picked.path);
       if (mimeType != 'image/png' && mimeType != 'image/jpeg') {
         showDialog(
-          context: context, // BuildContext dari build method
+          context: context,
           builder: (dialogContext) => AlertDialog(
             title: const Text('Format Tidak Didukung'),
             content: const Text('Hanya file PNG atau JPG yang diperbolehkan.'),
@@ -221,7 +220,7 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
             if (file != null)
               Expanded(
                 child: Text(
-                  path.basename(file.path), // Menggunakan path.basename
+                  path.basename(file.path),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -244,7 +243,6 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Banner / Header
             // Banner / Header
             Padding(
               padding: const EdgeInsets.all(25.0),
