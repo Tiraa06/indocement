@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
+import 'package:indocement_apk/pages/pcir_page.dart';
 
 class BPJSPage extends StatefulWidget {
   const BPJSPage({super.key});
@@ -10,7 +11,8 @@ class BPJSPage extends StatefulWidget {
   State<BPJSPage> createState() => _BPJSPageState();
 }
 
-class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin {
+class _BPJSPageState extends State<BPJSPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
 
@@ -36,7 +38,8 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
-    _animationController.dispose(); // Hentikan controller saat widget dihancurkan
+    _animationController
+        .dispose(); // Hentikan controller saat widget dihancurkan
     super.dispose();
   }
 
@@ -57,7 +60,9 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const MasterScreen()), // Navigasi ke halaman Master
+              MaterialPageRoute(
+                  builder: (context) =>
+                      const MasterScreen()), // Navigasi ke halaman Master
             );
           },
         ),
@@ -90,7 +95,8 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
               children: [
                 // Banner
                 Container(
-                  margin: const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
+                  margin:
+                      const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16), // Sudut melengkung
                     boxShadow: [
@@ -102,7 +108,8 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
+                    borderRadius: BorderRadius.circular(
+                        16), // Sudut melengkung untuk gambar
                     child: Image.asset(
                       'assets/images/banner_bpjs_page.jpg', // Path ke gambar banner
                       width: double.infinity, // Lebar penuh
@@ -135,17 +142,20 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                         ),
                         elevation: 2,
                         child: ListTile(
-                          leading: const Icon(Icons.health_and_safety, color: Colors.blue),
+                          leading: const Icon(Icons.health_and_safety,
+                              color: Colors.blue),
                           title: const Text(
                             "BPJS Kesehatan",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          trailing: const Icon(Icons.arrow_forward_ios,
+                              color: Colors.grey),
                           onTap: () {
                             // Navigasi ke MenuPage
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const MenuPage()),
+                              MaterialPageRoute(
+                                  builder: (context) => const MenuPage()),
                             );
                           },
                         ),
@@ -164,11 +174,14 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                             "BPJS Ketenagakerjaan",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          trailing: const Icon(Icons.arrow_forward_ios,
+                              color: Colors.grey),
                           onTap: () {
                             // Aksi untuk BPJS Ketenagakerjaan
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Navigasi ke BPJS Ketenagakerjaan")),
+                              const SnackBar(
+                                  content:
+                                      Text("Navigasi ke BPJS Ketenagakerjaan")),
                             );
                           },
                         ),
@@ -182,16 +195,20 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                         ),
                         elevation: 2,
                         child: ListTile(
-                          leading: const Icon(Icons.account_balance, color: Colors.orange),
+                          leading: const Icon(Icons.assignment,
+                              color: Colors.orange), // Ikon untuk PCIR
                           title: const Text(
                             "PCIR",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                          trailing: const Icon(Icons.arrow_forward_ios,
+                              color: Colors.grey),
                           onTap: () {
-                            // Aksi untuk PCIR
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Navigasi ke PCIR")),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PCIRPage()), // Navigasi ke PCIRPage
                             );
                           },
                         ),
@@ -212,21 +229,25 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    final ScrollController scrollController = ScrollController();
+                    final ScrollController scrollController =
+                        ScrollController();
 
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                        borderRadius:
+                            BorderRadius.circular(16), // Sudut melengkung
                       ),
                       contentPadding: const EdgeInsets.all(16.0),
                       content: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.95, // Lebih panjang (95% dari lebar layar)
+                        width: MediaQuery.of(context).size.width *
+                            0.95, // Lebih panjang (95% dari lebar layar)
                         height: MediaQuery.of(context).size.height * 0.6,
                         child: Scrollbar(
                           controller: scrollController, // Kontrol scrollbar
                           thumbVisibility: false, // Hilang jika tidak di-scroll
                           thickness: 3, // Ketebalan scrollbar
-                          radius: const Radius.circular(10), // Sudut melengkung scrollbar
+                          radius: const Radius.circular(
+                              10), // Sudut melengkung scrollbar
                           child: SingleChildScrollView(
                             controller: scrollController, // Kontrol scroll
                             child: Column(
@@ -244,27 +265,33 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                                 _buildFAQItem(
                                   icon: Icons.home,
                                   question: 'Apa fungsi halaman Home?',
-                                  answer: 'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                  answer:
+                                      'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.category,
                                   question: 'Apa saja menu yang tersedia?',
-                                  answer: 'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                  answer:
+                                      'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.info,
                                   question: 'Apa itu Info Harian?',
-                                  answer: 'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                  answer:
+                                      'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.help_outline,
-                                  question: 'Bagaimana cara mengakses menu BPJS?',
-                                  answer: 'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                  question:
+                                      'Bagaimana cara mengakses menu BPJS?',
+                                  answer:
+                                      'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.notifications,
                                   question: 'Apa itu pengingat di Info Harian?',
-                                  answer: 'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                  answer:
+                                      'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
                                 ),
                               ],
                             ),
@@ -278,11 +305,14 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                               Navigator.of(context).pop();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red, // Warna latar belakang merah
+                              backgroundColor:
+                                  Colors.red, // Warna latar belakang merah
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8), // Tombol kotak
+                                borderRadius:
+                                    BorderRadius.circular(8), // Tombol kotak
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
                             ),
                             child: const Text(
                               'Tutup',
@@ -298,7 +328,8 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                   },
                 );
               },
-              icon: const Icon(Icons.help_outline, color: Colors.white), // Ikon warna putih
+              icon: const Icon(Icons.help_outline,
+                  color: Colors.white), // Ikon warna putih
               label: const Text(
                 "FAQ",
                 style: TextStyle(color: Colors.white), // Teks warna putih
@@ -321,7 +352,8 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                     bottomLeft: Radius.circular(20),
                   ),
                   border: Border.all(
-                    color: Colors.black.withOpacity(0.1), // Warna border lebih halus
+                    color: Colors.black
+                        .withOpacity(0.1), // Warna border lebih halus
                     width: 1, // Ketebalan border 1px
                   ),
                   boxShadow: [
@@ -385,7 +417,8 @@ class _BPJSPageState extends State<BPJSPage> with SingleTickerProviderStateMixin
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const HRCareMenuPage()),
+                          MaterialPageRoute(
+                              builder: (context) => const HRCareMenuPage()),
                         );
                       },
                     ),

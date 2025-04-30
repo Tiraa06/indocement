@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'bpjs_karyawan.dart'; // Import the BPJSKaryawanPage
 import 'bpjs_tambahan.dart'; // Import the BPJSTambahanPage
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -374,5 +376,25 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
       ),
       onTap: onTap,
     );
+  }
+}
+
+Future<bool> checkBpjsData(int idEmployee) async {
+  try {
+    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/$idEmployee');
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      // Periksa apakah UrlKk dan UrlSuratNikah sudah ada
+      if (data['UrlKk'] != null && data['UrlSuratNikah'] != null) {
+        return true; // Data sudah ada
+      }
+    }
+    return false; // Data belum ada
+  } catch (e) {
+    print("❌ Error saat memeriksa data BPJS: $e");
+    return false; // Anggap data belum ada jika terjadi kesalahan
   }
 }

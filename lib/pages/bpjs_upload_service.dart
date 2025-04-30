@@ -262,6 +262,49 @@ Future<void> uploadBpjsDocumentsMultipart({
   }
 }
 
+Future<void> updateBpjsDocuments({
+  required int idEmployee,
+  String? anggotaBpjs,
+  String? anakKe,
+  String? urlKk,
+  String? urlSuratNikah,
+  String? urlAkteLahir,
+  String? urlSuratPotongGaji,
+}) async {
+  try {
+    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/update');
+    final body = {
+      "IdEmployee": idEmployee,
+      "AnggotaBpjs": anggotaBpjs ?? "",
+      "AnakKe": anakKe ?? "",
+      "UrlKk": urlKk ?? "",
+      "UrlSuratNikah": urlSuratNikah ?? "",
+      "UrlAkteLahir": urlAkteLahir ?? "",
+      "UrlSuratPotongGaji": urlSuratPotongGaji ?? "",
+      "UpdatedAt": DateTime.now().toIso8601String(),
+    };
+
+    print("Payload: ${jsonEncode(body)}");
+
+    final response = await http.put(
+      uri,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      print("✅ Update berhasil!");
+    } else {
+      print("❌ Gagal update: ${response.statusCode}");
+      print("Respons: ${response.body}");
+      throw Exception("Gagal update: ${response.body}");
+    }
+  } catch (e) {
+    print("❌ Terjadi kesalahan: $e");
+    rethrow;
+  }
+}
+
 // Fungsi untuk mengompres gambar
 Future<XFile> _compressImage(File file) async {
   final dir = await getTemporaryDirectory();
