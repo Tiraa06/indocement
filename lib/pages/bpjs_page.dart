@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indocement_apk/pages/bpjs_ketenagakerjaan.dart';
 import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
@@ -177,11 +178,11 @@ class _BPJSPageState extends State<BPJSPage>
                           trailing: const Icon(Icons.arrow_forward_ios,
                               color: Colors.grey),
                           onTap: () {
-                            // Aksi untuk BPJS Ketenagakerjaan
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text("Navigasi ke BPJS Ketenagakerjaan")),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const BPJSKetenagakerjaanPage()),
                             );
                           },
                         ),

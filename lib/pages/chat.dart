@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signalr_netcore/signalr_client.dart';
+import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -46,31 +47,26 @@ class _ChatPageState extends State<ChatPage> {
         Future.delayed(const Duration(seconds: 5), _initializeSignalR);
       });
 
-      // Handler untuk ReceiveMessage
       _hubConnection?.on('ReceiveMessage', (arguments) {
         print('Received SignalR ReceiveMessage: $arguments');
         _handleMessage(arguments);
       });
 
-      // Handler untuk receiveMessage
       _hubConnection?.on('receiveMessage', (arguments) {
         print('Received SignalR receiveMessage: $arguments');
         _handleMessage(arguments);
       });
 
-      // Handler untuk NewMessage
       _hubConnection?.on('NewMessage', (arguments) {
         print('Received SignalR NewMessage: $arguments');
         _handleMessage(arguments);
       });
 
-      // Handler untuk Message
       _hubConnection?.on('Message', (arguments) {
         print('Received SignalR Message: $arguments');
         _handleMessage(arguments);
       });
 
-      // Handler untuk UpdateMessageStatus
       _hubConnection?.on('UpdateMessageStatus', (arguments) {
         print('Received SignalR UpdateMessageStatus: $arguments');
         if (arguments != null && arguments.isNotEmpty) {
@@ -87,6 +83,7 @@ class _ChatPageState extends State<ChatPage> {
                   }
                 }
               });
+              _saveMessagesLocally();
             } else {
               print('Invalid status update format: $statusUpdate');
             }
@@ -99,7 +96,6 @@ class _ChatPageState extends State<ChatPage> {
       await _hubConnection?.start();
       print('SignalR connection started. State: ${_hubConnection?.state}');
 
-      // Bergabung ke grup
       try {
         if (roomId != null) {
           await _hubConnection?.invoke('JoinRoom', args: [roomId!]);
@@ -149,10 +145,11 @@ class _ChatPageState extends State<ChatPage> {
       if (message is Map<String, dynamic> &&
           (message['roomId']?.toString() == roomId ||
               message['RoomId']?.toString() == roomId)) {
-        // Cek apakah pesan sudah ada berdasarkan Id
         final messageId = message['Id'] ?? message['id'];
         if (messageId != null &&
             !_messages.any((msg) => msg['Id'] == messageId)) {
+          final createdAt = message['CreatedAt'] ?? message['createdAt'];
+          final formattedTime = _formatTime(createdAt);
           setState(() {
             _messages.add({
               'Id': messageId,
@@ -161,13 +158,15 @@ class _ChatPageState extends State<ChatPage> {
                   message['Content'] ??
                   message['content'],
               'SenderId': message['SenderId'] ?? message['senderId'],
-              'CreatedAt': message['CreatedAt'] ?? message['createdAt'],
+              'CreatedAt': createdAt,
+              'FormattedTime': formattedTime,
               'Status': message['Status'] ?? message['status'] ?? 'Terkirim',
               'Sender': message['Sender'] ?? message['sender'],
               'roomId': message['roomId'] ?? message['RoomId'],
             });
           });
           print('Added new message to _messages: $message');
+          _saveMessagesLocally();
           _scrollToBottom();
           if (message['SenderId'] != idEmployee &&
               (message['Status'] ?? message['status']) != 'Dibaca') {
@@ -236,8 +235,52 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (roomId != null) {
+      await _loadLocalMessages();
       await _loadMessages();
       await _initializeSignalR();
+    }
+  }
+
+  Future<void> _loadLocalMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final messagesJson = prefs.getString('messages_$roomId');
+    if (messagesJson != null) {
+      try {
+        final messages = jsonDecode(messagesJson) as List<dynamic>;
+        setState(() {
+          _messages.clear();
+          for (var msg in messages) {
+            if (msg['Id'] != null && msg['CreatedAt'] != null) {
+              _messages.add({
+                ...msg,
+                'FormattedTime':
+                    msg['FormattedTime'] ?? _formatTime(msg['CreatedAt']),
+              });
+            } else {
+              print('Skipping invalid local message: $msg');
+            }
+          }
+        });
+        print('Loaded ${_messages.length} messages from local storage');
+        _scrollToBottom();
+      } catch (e) {
+        print('Error loading local messages: $e');
+        await prefs.remove('messages_$roomId');
+      }
+    }
+  }
+
+  Future<void> _saveMessagesLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final validMessages = _messages
+          .where((msg) => msg['Id'] != null && msg['CreatedAt'] != null)
+          .toList();
+      final messagesJson = jsonEncode(validMessages);
+      await prefs.setString('messages_$roomId', messagesJson);
+      print('Saved ${validMessages.length} messages to local storage');
+    } catch (e) {
+      print('Error saving messages to local storage: $e');
     }
   }
 
@@ -342,17 +385,36 @@ class _ChatPageState extends State<ChatPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          // Filter pesan untuk menghindari duplikasi berdasarkan Id
           final newMessages = (data['Messages'] ?? []) as List<dynamic>;
           for (var msg in newMessages) {
-            if (!_messages
-                .any((existingMsg) => existingMsg['Id'] == msg['Id'])) {
-              _messages.add(msg);
+            final messageId = msg['Id'];
+            print(
+                'Processing message ID: $messageId, CreatedAt: ${msg['CreatedAt']}');
+            if (msg['CreatedAt'] == null) {
+              print('Warning: Message ID $messageId has null CreatedAt');
+            }
+            final existingMsgIndex =
+                _messages.indexWhere((m) => m['Id'] == messageId);
+            if (existingMsgIndex == -1) {
+              final formattedTime = _formatTime(msg['CreatedAt']);
+              _messages.add({
+                ...msg,
+                'FormattedTime': formattedTime,
+              });
+            } else {
+              final existingMsg = _messages[existingMsgIndex];
+              _messages[existingMsgIndex] = {
+                ...msg,
+                'CreatedAt': existingMsg['CreatedAt'] ?? msg['CreatedAt'],
+                'FormattedTime': existingMsg['FormattedTime'] ??
+                    _formatTime(msg['CreatedAt']),
+              };
             }
           }
           opponent = data['Opponent'];
         });
         print('Loaded messages: ${_messages.length} messages');
+        _saveMessagesLocally();
         _scrollToBottom();
         for (var msg in _messages) {
           if (msg['SenderId'] != idEmployee && msg['Status'] != 'Dibaca') {
@@ -379,7 +441,6 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     try {
-      // Kirim pesan melalui SignalR
       await _hubConnection?.invoke('SendMessage', args: [
         {
           'roomId': roomId,
@@ -389,11 +450,8 @@ class _ChatPageState extends State<ChatPage> {
       ]);
       print('Message sent via SignalR: $messageText');
       _messageController.clear();
-      // Fallback: Muat ulang pesan untuk memperbarui UI (opsional, bisa dikomentari setelah SignalR stabil)
-      // await _loadMessages();
     } catch (e) {
       print('Error sending message via SignalR: $e');
-      // Fallback ke HTTP
       final url =
           Uri.parse('http://213.35.123.110:5555/api/ChatMessages/send-message');
       final response = await http.post(
@@ -411,7 +469,7 @@ class _ChatPageState extends State<ChatPage> {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         _messageController.clear();
-        await _loadMessages(); // Muat ulang pesan untuk memperbarui UI
+        await _loadMessages();
       } else if (jsonDecode(response.body)['Message'] ==
           'Chat room tidak ditemukan.') {
         await _createKonsultasi(idEmployee!);
@@ -445,6 +503,7 @@ class _ChatPageState extends State<ChatPage> {
             }
           }
         });
+        _saveMessagesLocally();
       } else {
         print('Failed to update message status: ${response.body}');
       }
@@ -455,20 +514,81 @@ class _ChatPageState extends State<ChatPage> {
 
   String _formatTime(String? timeString) {
     if (timeString == null || timeString.isEmpty) {
-      print(
-          'Warning: timeString is null or empty, using current time as fallback');
-      final now = DateTime.now();
-      return "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+      print('Warning: timeString is null or empty');
+      return '--:--';
     }
+
+    print('Attempting to parse timeString: $timeString');
+
+    // Normalisasi input: ubah ke huruf kecil dan trim
+    final normalizedTimeString = timeString.trim().toLowerCase();
+
+    // Coba parsing format lokal "dd MMMM yyyy HH.mm"
     try {
-      final dt = DateTime.parse(timeString).toLocal();
-      return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+      final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
+      final dateTime = formatter.parseLoose(normalizedTimeString).toLocal();
+      final formatted =
+          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+      print('Successfully parsed local timeString: $timeString -> $formatted');
+      return formatted;
     } catch (e) {
-      print(
-          'Error parsing timeString \'$timeString\': $e, using current time as fallback');
-      final now = DateTime.now();
-      return "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+      print('Error parsing local timeString \'$timeString\': $e');
     }
+
+    // Coba parsing format ISO
+    try {
+      final dateTime = DateTime.parse(timeString).toLocal();
+      final formatted =
+          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+      print('Successfully parsed ISO timeString: $timeString -> $formatted');
+      return formatted;
+    } catch (e) {
+      print('Error parsing ISO timeString \'$timeString\': $e');
+    }
+
+    // Parsing manual sebagai fallback
+    try {
+      // Format: "02 Mei 2025 03.54"
+      final parts = normalizedTimeString.split(' ');
+      if (parts.length == 4) {
+        final day = int.parse(parts[0]);
+        final monthStr = parts[1];
+        final year = int.parse(parts[2]);
+        final timeParts = parts[3].split('.');
+        final hour = int.parse(timeParts[0]);
+        final minute = int.parse(timeParts[1]);
+
+        // Konversi nama bulan ke angka
+        final monthMap = {
+          'januari': 1,
+          'februari': 2,
+          'maret': 3,
+          'april': 4,
+          'mei': 5,
+          'juni': 6,
+          'juli': 7,
+          'agustus': 8,
+          'september': 9,
+          'oktober': 10,
+          'november': 11,
+          'desember': 12
+        };
+        final month = monthMap[monthStr.toLowerCase()];
+        if (month == null) throw FormatException('Invalid month: $monthStr');
+
+        final dateTime = DateTime(year, month, day, hour, minute).toLocal();
+        final formatted =
+            "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+        print(
+            'Successfully parsed manual timeString: $timeString -> $formatted');
+        return formatted;
+      }
+    } catch (e) {
+      print('Error parsing manual timeString \'$timeString\': $e');
+    }
+
+    print('All parsing attempts failed for timeString: $timeString');
+    return '--:--';
   }
 
   @override
@@ -525,11 +645,12 @@ class _ChatPageState extends State<ChatPage> {
                   final message = msg['Message'] ?? '[Pesan kosong]';
                   final sender = msg['Sender'];
                   final senderName = sender?['EmployeeName'] ?? '';
-                  final createdAt = msg['CreatedAt'];
+                  final formattedTime =
+                      msg['FormattedTime'] ?? _formatTime(msg['CreatedAt']);
                   final status = msg['Status'] ?? 'Terkirim';
 
                   print(
-                      'Message $index: createdAt = $createdAt, formatted time = ${_formatTime(createdAt)}');
+                      'Message $index: createdAt = ${msg['CreatedAt']}, formatted time = $formattedTime');
 
                   return Padding(
                     padding:
@@ -594,7 +715,7 @@ class _ChatPageState extends State<ChatPage> {
                                   spacing: 4,
                                   children: [
                                     Text(
-                                      _formatTime(createdAt),
+                                      formattedTime,
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.grey[600],

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_selector/file_selector.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class KeluhanPage extends StatefulWidget {
@@ -28,7 +27,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
   int _lines = 0;
   int _words = 0;
 
-  String _currentTime = '';
+  final String _currentTime = '';
 
   int? _employeeId;
 

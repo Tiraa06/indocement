@@ -7,7 +7,7 @@ import 'package:path/path.dart' as path; // Menggunakan alias untuk menghindari 
 import 'package:mime/mime.dart';
 
 class IdCardUploadPage extends StatefulWidget {
-  const IdCardUploadPage({Key? key}) : super(key: key);
+  const IdCardUploadPage({super.key});
 
   @override
   State<IdCardUploadPage> createState() => _IdCardUploadPageState();
