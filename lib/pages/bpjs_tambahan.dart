@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart'; // Untuk mendapatkan nama file utama
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'bpjs_upload_service.dart';
 
 class BPJSTambahanPage extends StatefulWidget {
@@ -17,6 +20,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
   String? selectedAnggotaBpjs; // Menyimpan pilihan dropdown
   bool _isPopupVisible = false; // Menyimpan status apakah popup sedang ditampilkan
+  bool isDownloaded = false; // Menyimpan status apakah file sudah didownload
 
   @override
   void initState() {
@@ -41,6 +45,107 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       setState(() {
         selectedImages[fieldName] = File(pickedFile.path);
       });
+    }
+  }
+
+  Future<void> downloadFile() async {
+    if (idEmployee == null) {
+      _showPopup(
+        context: this.context,
+        title: 'Gagal',
+        message: 'ID karyawan belum tersedia.',
+      );
+      return;
+    }
+
+    final dio = Dio();
+    final String fileUrl =
+        'http://213.35.123.110:5555/api/Bpjs/generate-salary-deduction/$idEmployee';
+
+    try {
+      // Minta izin penyimpanan
+      if (Platform.isAndroid) {
+        var status = await Permission.storage.request();
+        if (!status.isGranted) {
+          throw Exception('Izin penyimpanan tidak diberikan');
+        }
+      }
+
+      // Tampilkan dialog loading
+      showDialog(
+        context: this.context,
+        barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Downloading...'),
+              ],
+            ),
+          );
+        },
+      );
+
+      // Download file menggunakan Dio
+      final response = await dio.get(
+        fileUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      if (Platform.isAndroid) {
+        // Tentukan path folder Download
+        final directory = Directory('/storage/emulated/0/Download');
+        if (!directory.existsSync()) {
+          directory.createSync(recursive: true);
+        }
+
+        // Simpan file di folder Download
+        final filePath = '${directory.path}/salary_deduction_$idEmployee.pdf';
+        final file = File(filePath);
+        await file.writeAsBytes(response.data!);
+
+        // Tutup dialog loading
+        Navigator.of(this.context).pop();
+
+        // Tampilkan notifikasi berhasil
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          SnackBar(content: Text('File berhasil didownload ke folder Download!')),
+        );
+
+        setState(() {
+          isDownloaded = true; // Tandai bahwa file sudah didownload
+        });
+      } else {
+        // Jika bukan Android, gunakan path default untuk penyimpanan (iOS)
+        final dir = await getApplicationDocumentsDirectory();
+        final filePath = '${dir.path}/salary_deduction_$idEmployee.pdf';
+        final file = File(filePath);
+
+        await file.writeAsBytes(response.data!);
+
+        // Tutup dialog loading
+        Navigator.of(this.context).pop();
+
+        // Tampilkan notifikasi berhasil
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          SnackBar(content: Text('File berhasil didownload ke $filePath')),
+        );
+
+        setState(() {
+          isDownloaded = true; // Tandai bahwa file sudah didownload
+        });
+      }
+    } catch (e) {
+      // Tutup dialog loading
+      Navigator.of(this.context).pop();
+
+      // Tampilkan notifikasi gagal
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Gagal download file: $e')),
+      );
     }
   }
 
@@ -411,78 +516,190 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
               const SizedBox(height: 8),
 
               // Upload Surat Pemotongan Gaji
-              _buildBox(
-                title: 'Upload Surat Pemotongan Gaji',
-                fieldName: 'UrlSuratPotongGaji',
-                anggotaBpjs: 'Gaji',
-              ),
-              const SizedBox(height: 16),
 
-              // Download Surat Pemotongan Gaji
+              // Tombol Download Surat Pemotongan Gaji
               ElevatedButton.icon(
-                onPressed: () {
-                  _downloadSuratPotongGaji();
-                },
-                icon: const Icon(Icons.download),
-                label: const Text('Download Surat Pemotongan Gaji'),
+                onPressed: downloadFile,
+                icon: const Icon(Icons.download, color: Colors.white),
+                label: const Text(
+                  'Download Surat Pemotongan Gaji',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1572E8),
                   minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Tombol Kirim Dokumen Gaji
-              ElevatedButton(
-                onPressed: () async {
-                  // Validasi: Pastikan dokumen diunggah
-                  if (selectedImages['UrlSuratPotongGaji'] == null) {
-                    _showPopup(
-                      context: context,
-                      title: 'Gagal',
-                      message: 'Anda harus mengunggah Surat Pemotongan Gaji.',
-                    );
-                    return;
-                  }
-
-                  final List<Map<String, dynamic>> documents = [
-                    {
-                      'fieldName': 'UrlSuratPotongGaji',
-                      'file': selectedImages['UrlSuratPotongGaji'],
-                    },
-                  ];
-
-                  try {
-                    await uploadBpjsWithArray(
-                      context: context,
-                      anggotaBpjs: 'Gaji',
-                      documents: documents,
-                    );
-                    _showPopup(
-                      context: context,
-                      title: 'Berhasil',
-                      message: 'Surat Pemotongan Gaji berhasil diunggah.',
-                    );
-                  } catch (e) {
-                    print("❌ Error saat mengunggah dokumen: $e");
-                    _showPopup(
-                      context: context,
-                      title: 'Gagal',
-                      message: 'Terjadi kesalahan saat mengunggah dokumen.',
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1572E8),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: const Text(
-                  'Kirim Surat Pemotongan Gaji',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+              // Form Upload Surat Pemotongan Gaji
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.black, // Border warna hitam
+                    width: 1, // Ketebalan border 1px
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Upload Surat Pemotongan Gaji',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Note di bawah judul
+                    const Text(
+                      'Catatan: Anda harus mendownload dan mengisi file terlebih dahulu sebelum mengupload.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red, // Warna merah untuk penekanan
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    GestureDetector(
+                      onTap: isDownloaded
+                          ? () async {
+                              final picker = ImagePicker();
+                              final pickedFile = await picker.pickImage(
+                                  source: ImageSource.gallery);
+
+                              if (pickedFile != null) {
+                                setState(() {
+                                  selectedImages['UrlSuratPotongGaji'] =
+                                      File(pickedFile.path);
+                                });
+                              }
+                            }
+                          : null, // Nonaktifkan jika file belum didownload
+                      child: Container(
+                        padding: const EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          color: isDownloaded
+                              ? Colors.white
+                              : Colors.grey[300], // Ubah warna jika nonaktif
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.black, // Border warna hitam
+                            width: 1, // Ketebalan border 1px
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: isDownloaded
+                                    ? const Color(0xFF1572E8)
+                                    : Colors.grey, // Ubah warna jika nonaktif
+                                borderRadius: BorderRadius.circular(8),
+                                image: selectedImages['UrlSuratPotongGaji'] != null
+                                    ? DecorationImage(
+                                        image: FileImage(
+                                            selectedImages['UrlSuratPotongGaji']!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: selectedImages['UrlSuratPotongGaji'] == null
+                                  ? const Icon(
+                                      Icons.upload_file,
+                                      size: 30,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Pilih File',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    selectedImages['UrlSuratPotongGaji'] != null
+                                        ? basename(selectedImages[
+                                                'UrlSuratPotongGaji']!
+                                            .path) // Hanya nama file
+                                        : 'Belum ada file yang dipilih',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: isDownloaded
+                          ? () async {
+                              if (selectedImages['UrlSuratPotongGaji'] == null) {
+                                _showPopup(
+                                  context: context,
+                                  title: 'Gagal',
+                                  message:
+                                      'Anda harus mengunggah Surat Pemotongan Gaji.',
+                                );
+                                return;
+                              }
+
+                              // Proses upload file
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('File berhasil diupload!')),
+                              );
+                            }
+                          : null, // Nonaktifkan jika file belum didownload
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDownloaded
+                            ? const Color(0xFF1572E8)
+                            : Colors.grey, // Ubah warna jika nonaktif
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      child: const Text(
+                        'Kirim Surat Pemotongan Gaji',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

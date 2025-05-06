@@ -49,5 +49,12 @@
 	<string>App membutuhkan akses ke penyimpanan untuk menyimpan file.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
 	<string>App membutuhkan akses ke dokumen untuk menyimpan file.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+	    <string>fetch</string>
+	    <string>remote-notification</string>
+	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>We need to send you notifications.</string>
 </dict>
 </plist>

@@ -8,8 +8,8 @@ class SKKMedicPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SK Kerja & Medical'),
         backgroundColor: const Color(0xFF1572E8),
+         iconTheme: const IconThemeData(color: Colors.white), // Tombol back warna putih
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -17,12 +17,10 @@ class SKKMedicPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Banner
+              // Banner Gambar
               Container(
                 margin: const EdgeInsets.only(bottom: 16.0),
-                padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1572E8),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -32,40 +30,29 @@ class SKKMedicPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.description, // Ikon untuk banner
-                      size: 48,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "SK Kerja & Medical",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Kelola Surat Keterangan Kerja dan Update Medical Suami/Istri dengan mudah.",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/images/banner_medicskk.png', // Path ke gambar banner
+                    fit: BoxFit.cover,
+                    height: 200, // Tinggi gambar
+                  ),
                 ),
               ),
+
+              // Penjelasan Halaman
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  "Halaman ini digunakan untuk mengelola Surat Keterangan Kerja dan memperbarui data medical suami/istri Anda.",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Menu Surat Keterangan Kerja
               Card(

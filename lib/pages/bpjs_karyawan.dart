@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -142,6 +143,96 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
       );
     } catch (e) {
       Navigator.of(context).pop();
+      print("❌ Error saat mengunggah dokumen: $e");
+      _showPopup(
+        context: context,
+        title: 'Gagal',
+        message: 'Terjadi kesalahan saat mengunggah dokumen.',
+      );
+    }
+  }
+
+  Future<void> uploadBpjsDocuments({
+    required BuildContext context,
+    required String anggotaBpjs,
+    required List<Map<String, dynamic>> documents,
+    String? anakKe,
+  }) async {
+    if (idEmployee == null) {
+      _showPopup(
+        context: context,
+        title: 'Gagal',
+        message: 'ID karyawan belum tersedia.',
+      );
+      return;
+    }
+
+    if (documents.isEmpty) {
+      _showPopup(
+        context: context,
+        title: 'Gagal',
+        message: 'Pilih minimal satu dokumen untuk diunggah.',
+      );
+      return;
+    }
+
+    showLoadingDialog(context);
+
+    try {
+      // Ambil data dari API untuk mendapatkan ID yang sesuai
+      final response = await Dio().get(
+        'http://213.35.123.110:5555/api/Bpjs',
+        queryParameters: {'idEmployee': idEmployee},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+
+        // Cari ID yang sesuai dengan AnggotaBpjs dan AnakKe (jika ada)
+        final matchingEntry = data.firstWhere(
+          (item) =>
+              item['IdEmployee'] == idEmployee &&
+              item['AnggotaBpjs'] == anggotaBpjs &&
+              (anakKe == null || item['AnakKe'] == anakKe),
+          orElse: () => null,
+        );
+
+        if (matchingEntry == null) {
+          throw Exception('Data untuk ID Employee dan kategori BPJS tidak ditemukan.');
+        }
+
+        final matchingId = matchingEntry['Id']; // Ambil ID yang sesuai
+
+        // Siapkan data untuk dikirim ke API
+        final formData = FormData.fromMap({
+          for (var doc in documents)
+            doc['fieldName']: await MultipartFile.fromFile(
+              (doc['file'] as File).path,
+              filename: basename((doc['file'] as File).path),
+            ),
+        });
+
+        // Kirim data ke API dengan endpoint dinamis
+        final uploadResponse = await Dio().put(
+          'http://213.35.123.110:5555/api/Bpjs/upload/$matchingId',
+          data: formData,
+        );
+
+        if (uploadResponse.statusCode == 200) {
+          Navigator.of(context).pop(); // Tutup loading dialog
+          _showPopup(
+            context: context,
+            title: 'Berhasil',
+            message: 'Dokumen BPJS berhasil diunggah.',
+          );
+        } else {
+          throw Exception('Gagal memperbarui data: ${uploadResponse.statusCode}');
+        }
+      } else {
+        throw Exception('Gagal memuat data dari API.');
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Tutup loading dialog
       print("❌ Error saat mengunggah dokumen: $e");
       _showPopup(
         context: context,

@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'package:http_parser/http_parser.dart';
 
 class MedicPasutriPage extends StatefulWidget {
   const MedicPasutriPage({super.key});
@@ -30,6 +31,24 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           throw Exception('Izin penyimpanan tidak diberikan');
         }
       }
+
+      // Tampilkan dialog loading
+      showDialog(
+        context: this.context,
+        barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Downloading...'),
+              ],
+            ),
+          );
+        },
+      );
 
       setState(() {
         isLoadingDownload = true;
@@ -58,6 +77,9 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           isDownloaded = true; // Tandai bahwa file sudah didownload
         });
 
+        // Tutup dialog loading
+        Navigator.of(this.context).pop();
+
         // Tampilkan notifikasi berhasil
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('File berhasil didownload ke folder Download!')),
@@ -75,8 +97,11 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           isDownloaded = true; // Tandai bahwa file sudah didownload
         });
 
+        // Tutup dialog loading
+        Navigator.of(this.context).pop();
+
         // Tampilkan notifikasi berhasil
-        ScaffoldMessenger.of(context as BuildContext).showSnackBar(
+        ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('File berhasil didownload ke $filePath')),
         );
       }
@@ -85,8 +110,11 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
         isLoadingDownload = false;
       });
 
+      // Tutup dialog loading
+      Navigator.of(this.context).pop();
+
       // Tampilkan notifikasi gagal
-      ScaffoldMessenger.of(context as BuildContext).showSnackBar(
+      ScaffoldMessenger.of(this.context).showSnackBar(
         SnackBar(content: Text('Gagal download file: $e')),
       );
     }
@@ -105,29 +133,126 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
 
   Future<void> uploadFile() async {
     if (uploadedFile == null) {
-      ScaffoldMessenger.of(context as BuildContext).showSnackBar(
-        const SnackBar(content: Text('Anda harus mengunggah Surat Keterangan terlebih dahulu.')),
+      showDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Peringatan'),
+            content: const Text('Anda harus mengunggah Surat Keterangan terlebih dahulu.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
       );
       return;
     }
 
-    // Simulasi proses upload
-    ScaffoldMessenger.of(context as BuildContext).showSnackBar(
-      const SnackBar(content: Text('Mengunggah file...')),
-    );
+    try {
+      // Tampilkan notifikasi proses upload
+      showDialog(
+        context: this.context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
 
-    await Future.delayed(const Duration(seconds: 2));
+      final dio = Dio();
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          uploadedFile!.path,
+          filename: basename(uploadedFile!.path), // Nama file
+          contentType: MediaType('application', 'pdf'), // Tipe file
+        ),
+        'idEmployee': 3, // ID karyawan
+      });
 
-    ScaffoldMessenger.of(context as BuildContext).showSnackBar(
-      const SnackBar(content: Text('File berhasil diupload!')),
-    );
+      // Kirim permintaan POST ke API
+      final response = await dio.post(
+        'http://213.35.123.110:5555/api/Medical/upload',
+        data: formData,
+        options: Options(
+          headers: {
+            'accept': '/',
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
+      );
+
+      Navigator.of(this.context).pop(); // Tutup dialog loading
+
+      if (response.statusCode == 200) {
+        showDialog(
+          context: this.context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Berhasil'),
+              content: const Text('File berhasil diupload!'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        showDialog(
+          context: this.context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Gagal'),
+              content: Text('Gagal mengunggah file: ${response.statusCode}'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      Navigator.of(this.context).pop(); // Tutup dialog loading
+      showDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Kesalahan'),
+            content: Text('Terjadi kesalahan: $e'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Medical Pasutri'),
+         iconTheme: const IconThemeData(color: Colors.white), // Tombol back warna putih
         backgroundColor: const Color(0xFF1572E8),
       ),
       body: SingleChildScrollView(
@@ -136,6 +261,59 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Container dengan Icon dan Teks
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.black, // Border warna hitam
+                    width: 1, // Ketebalan border 1px
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.note,
+                      size: 40,
+                      color: Color(0xFF1572E8),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Instruksi',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Silakan download file terlebih dahulu, lalu upload file yang sudah ditandatangani.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // Tombol Download
               ElevatedButton.icon(
                 onPressed: isLoadingDownload ? null : downloadFile,
@@ -148,8 +326,11 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Icon(Icons.download),
-                label: const Text('Download Medical PDF'),
+                    : const Icon(Icons.download, color: Colors.white),
+                label: const Text(
+                  'Download Medical PDF',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1572E8),
                   minimumSize: const Size(double.infinity, 50),

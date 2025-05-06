@@ -389,92 +389,9 @@ class Banner extends StatelessWidget {
 class Categories extends StatelessWidget {
   const Categories({super.key});
 
-  Future<void> _checkAccess(BuildContext context) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final int? idEmployee = prefs.getInt('idEmployee');
-
-      if (idEmployee == null) {
-        throw Exception('ID pengguna tidak ditemukan. Silakan login ulang.');
-      }
-
-      final employeeResponse = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
-      );
-
-      if (employeeResponse.statusCode == 200) {
-        final employeeData = json.decode(employeeResponse.body);
-        final int idEsl = employeeData['IdEsl'];
-
-        if (idEsl >= 1 && idEsl <= 4) {
-          _showLoading(context);
-          Future.delayed(const Duration(seconds: 2), () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BPJSPage()),
-            );
-          });
-        } else if (idEsl == 5 || idEsl == 6) {
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.info_outline, color: Colors.red, size: 60),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Akses Belum Diberikan",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Anda memerlukan izin dari PIC untuk mengakses halaman ini.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text("Tutup",
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('IdEsl tidak valid')),
-          );
-        }
-      } else {
-        throw Exception('Gagal memuat data Employee dari API');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Daftar kategori
     List<Map<String, String>> categories = [
       {"icon": "assets/icons/bpjs.svg", "text": "BPJS"},
       {"icon": "assets/icons/id_card.svg", "text": "ID Card"},
@@ -522,51 +439,94 @@ class Categories extends StatelessWidget {
                 iconPath: category["icon"]!,
                 text: category["text"]!,
                 press: () {
-                  if (category["text"] == "HR Care") {
-                    _showLoading(context);
-                    Future.delayed(const Duration(seconds: 2), () {
-                      Navigator.pop(context);
+                  _showLoading(context); // Tampilkan loading dialog
+                  Future.delayed(const Duration(seconds: 2), () {
+                    Navigator.pop(context); // Tutup loading dialog
+                    if (category["text"] == "BPJS") {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const HRCareMenuPage()),
+                          builder: (context) => const BPJSPage(),
+                        ),
                       );
-                    });
-                  } else if (category["text"] == "BPJS") {
-                    _checkAccess(context);
-                  } else if (category["text"] == "ID Card") {
-                    _showLoading(context);
-                    Future.delayed(const Duration(seconds: 2), () {
-                      Navigator.pop(context);
+                    } else if (category["text"] == "HR Care") {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const IdCardUploadPage()),
+                          builder: (_) => const HRCareMenuPage(),
+                        ),
                       );
-                    });
-                  } else if (category["text"] == "SK Kerja & Medical") {
-                    _showLoading(context);
-                    Future.delayed(const Duration(seconds: 2), () {
-                      Navigator.pop(context);
+                    } else if (category["text"] == "ID Card") {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const SKKMedicPage()),
+                          builder: (context) => const IdCardUploadPage(),
+                        ),
                       );
-                    });
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('Menu ${category["text"]} belum tersedia')),
-                    );
-                  }
+                    } else if (category["text"] == "SK Kerja & Medical") {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SKKMedicPage(),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Menu ${category["text"]} belum tersedia'),
+                        ),
+                      );
+                    }
+                  });
                 },
               );
             },
           ),
         ),
       ),
+    );
+  }
+
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Memuat halaman...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Harap tunggu sebentar",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

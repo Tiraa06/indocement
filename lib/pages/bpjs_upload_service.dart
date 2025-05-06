@@ -167,42 +167,65 @@ Future<void> uploadBpjsDocumentsCompressed({
 Future<void> uploadBpjsDocuments({
   required int idEmployee,
   required String anggotaBpjs,
+  required List<Map<String, dynamic>> documents,
   String? anakKe,
-  String? urlKk,
-  String? urlSuratNikah,
-  String? urlAkteLahir,
-  String? urlSuratPotongGaji,
 }) async {
   try {
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload');
-    final body = {
-      "Id": 0,
-      "IdEmployee": idEmployee,
-      "TglPengajuan": DateTime.now().toIso8601String(),
-      "AnggotaBpjs": anggotaBpjs,
-      "AnakKe": anakKe ?? "",
-      "UrlKk": urlKk ?? "",
-      "UrlSuratNikah": urlSuratNikah ?? "",
-      "UrlAkteLahir": urlAkteLahir ?? "",
-      "UrlSuratPotongGaji": urlSuratPotongGaji ?? "",
-      "CreatedAt": DateTime.now().toIso8601String(),
-      "UpdatedAt": DateTime.now().toIso8601String(),
-    };
-
-    print("Payload: ${jsonEncode(body)}");
-
-    final response = await http.post(
-      uri,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(body),
+    // Ambil data dari API untuk mendapatkan ID yang sesuai
+    final response = await http.get(
+      Uri.parse('http://213.35.123.110:5555/api/Bpjs?idEmployee=$idEmployee'),
     );
 
     if (response.statusCode == 200) {
-      print("✅ Upload berhasil!");
+      final List<dynamic> data = jsonDecode(response.body);
+
+      // Cari ID yang sesuai dengan AnggotaBpjs dan AnakKe (jika ada)
+      final matchingEntry = data.firstWhere(
+        (item) =>
+            item['IdEmployee'] == idEmployee &&
+            item['AnggotaBpjs'] == anggotaBpjs &&
+            (anakKe == null || item['AnakKe'] == anakKe),
+        orElse: () => null,
+      );
+
+      if (matchingEntry == null) {
+        throw Exception('Data untuk ID Employee dan kategori BPJS tidak ditemukan.');
+      }
+
+      final matchingId = matchingEntry['Id']; // Ambil ID yang sesuai
+
+      // Siapkan data untuk dikirim ke API
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload/$matchingId'),
+      );
+
+      // Tambahkan dokumen ke request
+      for (var doc in documents) {
+        request.files.add(await http.MultipartFile.fromPath(
+          doc['fieldName'],
+          (doc['file'] as File).path,
+        ));
+      }
+
+      // Tambahkan field tambahan
+      request.fields['idEmployee'] = idEmployee.toString();
+      request.fields['anggotaBpjs'] = anggotaBpjs;
+      if (anakKe != null) {
+        request.fields['anakKe'] = anakKe;
+      }
+
+      // Kirim data ke API
+      final uploadResponse = await request.send();
+
+      if (uploadResponse.statusCode == 200) {
+        print("✅ Dokumen berhasil diunggah ke ID $matchingId");
+      } else {
+        final responseBody = await uploadResponse.stream.bytesToString();
+        throw Exception("Gagal upload: ${uploadResponse.statusCode}, Respons: $responseBody");
+      }
     } else {
-      print("❌ Gagal upload: ${response.statusCode}");
-      print("Respons: ${response.body}");
-      throw Exception("Gagal upload: ${response.body}");
+      throw Exception('Gagal memuat data dari API: ${response.statusCode}');
     }
   } catch (e) {
     print("❌ Terjadi kesalahan: $e");
