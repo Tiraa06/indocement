@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
+import 'package:indocement_apk/pages/hr_menu.dart';
+import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/master.dart';
-import 'chat.dart';
-import 'form.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:indocement_apk/pages/skkmedic_page.dart';
+import 'package:indocement_apk/pages/schedule_shift.dart';
 
-class HRCareMenuPage extends StatefulWidget {
-  const HRCareMenuPage({super.key});
+class LayananMenuPage extends StatefulWidget {
+  const LayananMenuPage({super.key});
 
   @override
-  State<HRCareMenuPage> createState() => _HRCareMenuPageState();
+  State<LayananMenuPage> createState() => _LayananMenuPageState();
 }
 
-class _HRCareMenuPageState extends State<HRCareMenuPage>
+class _LayananMenuPageState extends State<LayananMenuPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
-  late String _dateTime;
 
   @override
   void initState() {
@@ -37,14 +35,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-
-    _updateTime();
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return false;
-      _updateTime();
-      return true;
-    });
   }
 
   @override
@@ -61,107 +51,9 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
     }
   }
 
-  void _updateTime() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 7));
-    setState(() {
-      _dateTime =
-          "${now.day}/${now.month}/${now.year} - ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')} WIB";
-    });
-  }
-
-  Future<void> _checkAccess(BuildContext context) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final int? idEmployee = prefs.getInt('idEmployee');
-
-      if (idEmployee == null) {
-        throw Exception('ID pengguna tidak ditemukan. Silakan login ulang.');
-      }
-
-      final employeeResponse = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
-      );
-
-      if (employeeResponse.statusCode == 200) {
-        final employeeData = json.decode(employeeResponse.body);
-        final int idEsl = employeeData['IdEsl'];
-
-        if (idEsl >= 1 && idEsl <= 4) {
-          _showLoading(context);
-          Future.delayed(const Duration(seconds: 2), () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BPJSPage()),
-            );
-          });
-        } else if (idEsl == 5 || idEsl == 6) {
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.info_outline, color: Colors.red, size: 60),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Akses Belum Diberikan",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Anda memerlukan izin dari PIC untuk mengakses halaman ini.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text("Tutup",
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('IdEsl tidak valid')),
-          );
-        }
-      } else {
-        throw Exception('Gagal memuat data Employee dari API');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
-      );
-    }
-  }
-
-  void _showLoading(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-      },
+  void _navigateToFeature(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Menu $feature belum tersedia')),
     );
   }
 
@@ -171,8 +63,8 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
       builder: (context, constraints) {
         final double screenWidth = constraints.maxWidth;
         final double screenHeight = constraints.maxHeight;
-        final double paddingValue = screenWidth * 0.04; // 4% of screen width
-        final double baseFontSize = screenWidth * 0.04; // 4% for font scaling
+        final double paddingValue = screenWidth * 0.04;
+        final double baseFontSize = screenWidth * 0.04;
 
         return Scaffold(
           appBar: AppBar(
@@ -186,10 +78,10 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
               },
             ),
             title: Text(
-              "HR Care",
+              "Layanan Karyawan",
               style: GoogleFonts.roboto(
                 fontWeight: FontWeight.bold,
-                fontSize: baseFontSize * 1.25, // ~20 on 500px screen
+                fontSize: baseFontSize * 1.25,
                 color: Colors.white,
               ),
             ),
@@ -224,18 +116,18 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: Image.asset(
-                          'assets/images/banner_hr.jpg',
+                          'assets/images/banner_layanan.png',
                           width: double.infinity,
-                          height: screenHeight * 0.2, // Responsive height
+                          height: screenHeight * 0.2,
                           fit: BoxFit.cover,
                         ),
                       ),
                     ),
                     Text(
-                      "Selamat datang di HR Care. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
+                      "Selamat datang di Layanan Karyawan. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.roboto(
-                        fontSize: baseFontSize * 0.9, // ~16 on 500px screen
+                        fontSize: baseFontSize * 0.9,
                         fontWeight: FontWeight.w500,
                         color: Colors.black87,
                       ),
@@ -244,88 +136,77 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                     Expanded(
                       child: ListView(
                         children: [
-                          Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                            child: ListTile(
-                              leading:
-                                  const Icon(Icons.message, color: Colors.blue),
-                              title: const Text(
-                                "Konsultasi Dengan HR",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios,
-                                  color: Colors.grey),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const ChatPage()),
-                                );
-                              },
-                            ),
+                          _buildMenuItem(
+                            icon: Icons.monetization_on,
+                            title: "Uang Duka",
+                            color: Colors.blue,
+                            onTap: () => _navigateToFeature("Uang Duka"),
                           ),
                           SizedBox(height: paddingValue * 0.5),
-                          Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                            child: ListTile(
-                              leading:
-                                  const Icon(Icons.report, color: Colors.red),
-                              title: const Text(
-                                "Keluhan Karyawan",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios,
-                                  color: Colors.grey),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const KeluhanPage()),
-                                );
-                              },
-                            ),
+                          _buildMenuItem(
+                            icon: Icons.calendar_today,
+                            title: "Cuti",
+                            color: Colors.green,
+                            onTap: () => _navigateToFeature("Cuti"),
                           ),
                           SizedBox(height: paddingValue * 0.5),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              vertical: paddingValue,
-                              horizontal: paddingValue * 0.8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5FB),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 8,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.access_time,
-                                    color: Color(0xFF1572E8), size: 32),
-                                SizedBox(width: paddingValue * 0.8),
-                                Expanded(
-                                  child: Text(
-                                    _dateTime,
-                                    style: GoogleFonts.roboto(
-                                      fontSize: baseFontSize *
-                                          1.0, // ~18 on 500px screen
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          _buildMenuItem(
+                            icon: Icons.schedule,
+                            title: "Schedule Shift",
+                            color: Colors.orange,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ScheduleShiftPage()),
+                              );
+                            },
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          _buildMenuItem(
+                            icon: Icons.fingerprint,
+                            title: "Absensi",
+                            color: Colors.purple,
+                            onTap: () => _navigateToFeature("Absensi"),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          _buildMenuItem(
+                            icon: Icons.account_balance_wallet,
+                            title: "Dispensasi/Kovensasi",
+                            color: Colors.teal,
+                            onTap: () =>
+                                _navigateToFeature("Dispensasi/Kovensasi"),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          _buildMenuItem(
+                            icon: Icons.folder,
+                            title: "File Aktif",
+                            color: Colors.blueGrey,
+                            onTap: () => _navigateToFeature("File Aktif"),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          _buildMenuItem(
+                            icon: Icons.school,
+                            title: "Bea Siswa",
+                            color: Colors.red,
+                            onTap: () => _navigateToFeature("Bea Siswa"),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          _buildMenuItem(
+                            icon: Icons.star,
+                            title: "Penghargaan Masa Kerja",
+                            color: Colors.amber,
+                            onTap: () =>
+                                _navigateToFeature("Penghargaan Masa Kerja"),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          _buildMenuItem(
+                            icon: Icons.group,
+                            title: "Internal Recruitment",
+                            color: Colors.indigo,
+                            onTap: () =>
+                                _navigateToFeature("Internal Recruitment"),
                           ),
                         ],
                       ),
@@ -484,42 +365,55 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                         ),
                         const Divider(color: Colors.grey),
                         _buildMenuItem(
-                          context,
-                          title: "BPJS",
                           icon: Icons.health_and_safety,
+                          title: "BPJS",
                           color: Colors.blue,
                           onTap: () {
-                            _checkAccess(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const BPJSPage()),
+                            );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
-                          context,
-                          title: "ID & Slip Salary",
                           icon: Icons.badge,
+                          title: "ID & Slip Salary",
                           color: Colors.blue,
                           onTap: () {
-                            // Aksi untuk ID & Slip Salary
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const IdCardUploadPage()),
+                            );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
-                          context,
-                          title: "SK Kerja & Medical",
                           icon: Icons.description,
+                          title: "SK Kerja & Medical",
                           color: Colors.blue,
                           onTap: () {
-                            // Aksi untuk SK Kerja & Medical
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const SKKMedicPage()),
+                            );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
-                          context,
-                          title: "Layanan Karyawan",
-                          icon: Icons.support_agent,
+                          icon: Icons.headset_mic,
+                          title: "HR Care",
                           color: Colors.blue,
                           onTap: () {
-                            // Aksi untuk Layanan Karyawan
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const HRCareMenuPage()),
+                            );
                           },
                         ),
                       ],
@@ -534,10 +428,9 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required String title,
+  Widget _buildMenuItem({
     required IconData icon,
+    required String title,
     required Color color,
     required VoidCallback onTap,
   }) {
@@ -545,17 +438,14 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      elevation: 0,
+      elevation: 2,
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
-        ),
+        leading: Icon(icon, color: color),
         title: Text(
           title,
           style: TextStyle(
-            fontSize: 16,
             fontWeight: FontWeight.bold,
+            fontSize: 16,
             color: color,
           ),
         ),

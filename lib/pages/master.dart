@@ -1,51 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/id_card.dart';
-import 'dart:convert';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// Placeholder for InboxPage
-class InboxPage extends StatelessWidget {
-  const InboxPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Inbox",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1E88E5),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: Center(
-        child: Text(
-          "Inbox Page (Under Construction)",
-          style: TextStyle(fontSize: 18, color: Colors.black87),
-        ),
-      ),
-    );
-  }
-}
+import 'package:indocement_apk/pages/inbox.dart';
+import 'package:indocement_apk/pages/layanan_menu.dart'; // Add import for LayananMenuPage
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -57,9 +18,8 @@ class MasterScreen extends StatefulWidget {
 class _MasterScreenState extends State<MasterScreen> {
   int _selectedIndex = 0;
 
-  // List of pages for navigation
   final List<Widget> _pages = [
-    const MasterContent(), // Original MasterScreen content
+    const MasterContent(),
     const InboxPage(),
     const ProfilePage(),
   ];
@@ -109,14 +69,13 @@ class _MasterScreenState extends State<MasterScreen> {
   }
 }
 
-// Separated MasterScreen content into a new widget
 class MasterContent extends StatelessWidget {
   const MasterContent({super.key});
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // Cegah tombol back keluar
+      onWillPop: () async => false,
       child: Stack(
         children: [
           Scaffold(
@@ -136,8 +95,6 @@ class MasterContent extends StatelessWidget {
               ),
             ),
           ),
-
-          // Floating FAQ button
           Positioned(
             bottom: 20,
             right: 20,
@@ -391,7 +348,6 @@ class Categories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Daftar kategori
     List<Map<String, String>> categories = [
       {"icon": "assets/icons/bpjs.svg", "text": "BPJS"},
       {"icon": "assets/icons/id_card.svg", "text": "ID Card"},
@@ -439,9 +395,9 @@ class Categories extends StatelessWidget {
                 iconPath: category["icon"]!,
                 text: category["text"]!,
                 press: () {
-                  _showLoading(context); // Tampilkan loading dialog
+                  _showLoading(context);
                   Future.delayed(const Duration(seconds: 2), () {
-                    Navigator.pop(context); // Tutup loading dialog
+                    Navigator.pop(context);
                     if (category["text"] == "BPJS") {
                       Navigator.push(
                         context,
@@ -470,10 +426,18 @@ class Categories extends StatelessWidget {
                           builder: (context) => const SKKMedicPage(),
                         ),
                       );
+                    } else if (category["text"] == "Layanan Karyawan") {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LayananMenuPage(),
+                        ),
+                      );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Menu ${category["text"]} belum tersedia'),
+                          content:
+                              Text('Menu ${category["text"]} belum tersedia'),
                         ),
                       );
                     }
@@ -727,47 +691,4 @@ class SectionTitle extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showLoading(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(
-                color: Colors.blue,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                "Memuat halaman...",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                "Harap tunggu sebentar",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
 }

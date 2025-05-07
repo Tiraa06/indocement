@@ -259,7 +259,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
           await dir.create(recursive: true);
         }
 
-        final filePath = '${dir.path}/skk-${noSkk}.pdf';
+        final filePath = '${dir.path}/skk-$noSkk.pdf';
         final file = File(filePath);
 
         final httpResponse = await http.get(Uri.parse(url));
@@ -528,7 +528,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                     const SizedBox(height: 12),
                                   ],
                                 ))
-                            .toList(),
+                            ,
                     ],
                   ),
                 ),
