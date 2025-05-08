@@ -149,7 +149,7 @@ class _ChatPageState extends State<ChatPage> {
         if (messageId != null &&
             !_messages.any((msg) => msg['Id'] == messageId)) {
           final createdAt = message['CreatedAt'] ?? message['createdAt'];
-          final formattedTime = _formatTime(createdAt);
+          final timestamp = _formatTimestamp(createdAt);
           setState(() {
             _messages.add({
               'Id': messageId,
@@ -159,7 +159,8 @@ class _ChatPageState extends State<ChatPage> {
                   message['content'],
               'SenderId': message['SenderId'] ?? message['senderId'],
               'CreatedAt': createdAt,
-              'FormattedTime': formattedTime,
+              'FormattedTime': timestamp['time'],
+              'FormattedDate': timestamp['date'],
               'Status': message['Status'] ?? message['status'] ?? 'Terkirim',
               'Sender': message['Sender'] ?? message['sender'],
               'roomId': message['roomId'] ?? message['RoomId'],
@@ -211,6 +212,16 @@ class _ChatPageState extends State<ChatPage> {
     roomId = prefs.getString('roomId');
     konsultasiId = prefs.getString('konsultasiId');
 
+    if (roomId != null && idEmployee != null) {
+      final isRoomValid = await _verifyRoomExists(roomId!, idEmployee!);
+      if (!isRoomValid) {
+        print('Room $roomId is no longer valid. Clearing local data.');
+        await _clearLocalChatData(prefs);
+        roomId = null;
+        konsultasiId = null;
+      }
+    }
+
     if (roomId == null || konsultasiId == null) {
       final existingConsultation =
           await _checkExistingConsultation(idEmployee!);
@@ -241,6 +252,45 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<bool> _verifyRoomExists(String roomId, int idEmployee) async {
+    try {
+      final url = Uri.parse(
+          'http://213.35.123.110:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+      final response = await http.get(url);
+
+      print(
+          'Verifying room $roomId: Status: ${response.statusCode}, Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return true;
+      } else if (response.statusCode == 404) {
+        print('Room $roomId not found on server.');
+        return false;
+      } else {
+        print(
+            'Error verifying room $roomId: Status: ${response.statusCode}, Body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error verifying room $roomId: $e');
+      return false;
+    }
+  }
+
+  Future<void> _clearLocalChatData(SharedPreferences prefs) async {
+    await prefs.remove('roomId');
+    await prefs.remove('konsultasiId');
+    if (roomId != null) {
+      await prefs.remove('messages_$roomId');
+    }
+    setState(() {
+      _messages.clear();
+      roomId = null;
+      konsultasiId = null;
+    });
+    print('Cleared local chat data.');
+  }
+
   Future<void> _loadLocalMessages() async {
     final prefs = await SharedPreferences.getInstance();
     final messagesJson = prefs.getString('messages_$roomId');
@@ -251,10 +301,11 @@ class _ChatPageState extends State<ChatPage> {
           _messages.clear();
           for (var msg in messages) {
             if (msg['Id'] != null && msg['CreatedAt'] != null) {
+              final timestamp = _formatTimestamp(msg['CreatedAt']);
               _messages.add({
                 ...msg,
-                'FormattedTime':
-                    msg['FormattedTime'] ?? _formatTime(msg['CreatedAt']),
+                'FormattedTime': msg['FormattedTime'] ?? timestamp['time'],
+                'FormattedDate': msg['FormattedDate'] ?? timestamp['date'],
               });
             } else {
               print('Skipping invalid local message: $msg');
@@ -395,19 +446,22 @@ class _ChatPageState extends State<ChatPage> {
             }
             final existingMsgIndex =
                 _messages.indexWhere((m) => m['Id'] == messageId);
+            final timestamp = _formatTimestamp(msg['CreatedAt']);
             if (existingMsgIndex == -1) {
-              final formattedTime = _formatTime(msg['CreatedAt']);
               _messages.add({
                 ...msg,
-                'FormattedTime': formattedTime,
+                'FormattedTime': timestamp['time'],
+                'FormattedDate': timestamp['date'],
               });
             } else {
               final existingMsg = _messages[existingMsgIndex];
               _messages[existingMsgIndex] = {
                 ...msg,
                 'CreatedAt': existingMsg['CreatedAt'] ?? msg['CreatedAt'],
-                'FormattedTime': existingMsg['FormattedTime'] ??
-                    _formatTime(msg['CreatedAt']),
+                'FormattedTime':
+                    existingMsg['FormattedTime'] ?? timestamp['time'],
+                'FormattedDate':
+                    existingMsg['FormattedDate'] ?? timestamp['date'],
               };
             }
           }
@@ -422,7 +476,10 @@ class _ChatPageState extends State<ChatPage> {
           }
         }
       } else if (response.statusCode == 404) {
-        print('Room not found, attempting to create new consultation');
+        print(
+            'Room not found, clearing local data and creating new consultation');
+        final prefs = await SharedPreferences.getInstance();
+        await _clearLocalChatData(prefs);
         await _createKonsultasi(idEmployee!);
         await _loadChatRoom();
       } else {
@@ -472,6 +529,8 @@ class _ChatPageState extends State<ChatPage> {
         await _loadMessages();
       } else if (jsonDecode(response.body)['Message'] ==
           'Chat room tidak ditemukan.') {
+        final prefs = await SharedPreferences.getInstance();
+        await _clearLocalChatData(prefs);
         await _createKonsultasi(idEmployee!);
         await _loadChatRoom();
         await _sendMessage();
@@ -512,44 +571,82 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  String _formatTime(String? timeString) {
+  Map<String, String> _formatTimestamp(String? timeString) {
     if (timeString == null || timeString.isEmpty) {
-      print('Warning: timeString is null or empty');
-      return '--:--';
+      print('Warning: timeString is null or empty for timestamp formatting');
+      return {'date': 'Unknown Date', 'time': '--:--'};
     }
 
-    print('Attempting to parse timeString: $timeString');
+    print('Attempting to parse timeString for timestamp: $timeString');
 
-    // Normalisasi input: ubah ke huruf kecil dan trim
-    final normalizedTimeString = timeString.trim().toLowerCase();
+    // Normalize whitespace and split
+    final normalizedString = timeString.trim().replaceAll(RegExp(r'\s+'), ' ');
+    print('Normalized timeString: $normalizedString');
 
-    // Coba parsing format lokal "dd MMMM yyyy HH.mm"
+    // Try direct extraction for format: "dd MMMM yyyy HH.mm"
+    try {
+      final parts = normalizedString.split(' ');
+      print('Split parts: $parts');
+      if (parts.length == 4) {
+        final day = parts[0];
+        final month = parts[1];
+        final year = parts[2];
+        final timePart = parts[3];
+        print(
+            'Extracted day: $day, month: $month, year: $year, timePart: $timePart');
+
+        final timeParts = timePart.split('.');
+        print('Split time parts: $timeParts');
+        if (timeParts.length == 2) {
+          final hour = timeParts[0].padLeft(2, '0');
+          final minute = timeParts[1].padLeft(2, '0');
+          final formattedDate = '$day $month $year';
+          final formattedTime = '$hour:$minute';
+          print(
+              'Successfully extracted timestamp: $timeString -> date: $formattedDate, time: $formattedTime');
+          return {'date': formattedDate, 'time': formattedTime};
+        } else {
+          print('Invalid time part format: $timePart');
+        }
+      } else {
+        print('Unexpected number of parts: ${parts.length}');
+      }
+    } catch (e) {
+      print('Error extracting timestamp \'$timeString\': $e');
+    }
+
+    // Fallback to DateFormat parsing
     try {
       final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
-      final dateTime = formatter.parseLoose(normalizedTimeString).toLocal();
-      final formatted =
+      final dateTime = formatter.parseLoose(timeString).toLocal();
+      final formattedDate =
+          DateFormat('dd MMMM yyyy', 'id_ID').format(dateTime);
+      final formattedTime =
           "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
-      print('Successfully parsed local timeString: $timeString -> $formatted');
-      return formatted;
+      print(
+          'Successfully parsed local timestamp: $timeString -> date: $formattedDate, time: $formattedTime');
+      return {'date': formattedDate, 'time': formattedTime};
     } catch (e) {
-      print('Error parsing local timeString \'$timeString\': $e');
+      print('Error parsing local timestamp \'$timeString\': $e');
     }
 
-    // Coba parsing format ISO
+    // Fallback to ISO 8601 parsing
     try {
       final dateTime = DateTime.parse(timeString).toLocal();
-      final formatted =
+      final formattedDate =
+          DateFormat('dd MMMM yyyy', 'id_ID').format(dateTime);
+      final formattedTime =
           "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
-      print('Successfully parsed ISO timeString: $timeString -> $formatted');
-      return formatted;
+      print(
+          'Successfully parsed ISO timestamp: $timeString -> date: $formattedDate, time: $formattedTime');
+      return {'date': formattedDate, 'time': formattedTime};
     } catch (e) {
-      print('Error parsing ISO timeString \'$timeString\': $e');
+      print('Error parsing ISO timestamp \'$timeString\': $e');
     }
 
-    // Parsing manual sebagai fallback
+    // Fallback to manual parsing
     try {
-      // Format: "02 Mei 2025 03.54"
-      final parts = normalizedTimeString.split(' ');
+      final parts = normalizedString.toLowerCase().split(' ');
       if (parts.length == 4) {
         final day = int.parse(parts[0]);
         final monthStr = parts[1];
@@ -558,7 +655,6 @@ class _ChatPageState extends State<ChatPage> {
         final hour = int.parse(timeParts[0]);
         final minute = int.parse(timeParts[1]);
 
-        // Konversi nama bulan ke angka
         final monthMap = {
           'januari': 1,
           'februari': 2,
@@ -577,18 +673,20 @@ class _ChatPageState extends State<ChatPage> {
         if (month == null) throw FormatException('Invalid month: $monthStr');
 
         final dateTime = DateTime(year, month, day, hour, minute).toLocal();
-        final formatted =
+        final formattedDate =
+            DateFormat('dd MMMM yyyy', 'id_ID').format(dateTime);
+        final formattedTime =
             "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
         print(
-            'Successfully parsed manual timeString: $timeString -> $formatted');
-        return formatted;
+            'Successfully parsed manual timestamp: $timeString -> date: $formattedDate, time: $formattedTime');
+        return {'date': formattedDate, 'time': formattedTime};
       }
     } catch (e) {
-      print('Error parsing manual timeString \'$timeString\': $e');
+      print('Error parsing manual timestamp \'$timeString\': $e');
     }
 
     print('All parsing attempts failed for timeString: $timeString');
-    return '--:--';
+    return {'date': 'Unknown Date', 'time': '--:--'};
   }
 
   @override
@@ -645,12 +743,14 @@ class _ChatPageState extends State<ChatPage> {
                   final message = msg['Message'] ?? '[Pesan kosong]';
                   final sender = msg['Sender'];
                   final senderName = sender?['EmployeeName'] ?? '';
-                  final formattedTime =
-                      msg['FormattedTime'] ?? _formatTime(msg['CreatedAt']);
+                  final formattedTime = msg['FormattedTime'] ??
+                      _formatTimestamp(msg['CreatedAt'])['time'];
+                  final formattedDate = msg['FormattedDate'] ??
+                      _formatTimestamp(msg['CreatedAt'])['date'];
                   final status = msg['Status'] ?? 'Terkirim';
 
                   print(
-                      'Message $index: createdAt = ${msg['CreatedAt']}, formatted time = $formattedTime');
+                      'Message $index: createdAt = ${msg['CreatedAt']}, formatted time = $formattedTime, formatted date = $formattedDate');
 
                   return Padding(
                     padding:
@@ -715,7 +815,7 @@ class _ChatPageState extends State<ChatPage> {
                                   spacing: 4,
                                   children: [
                                     Text(
-                                      formattedTime,
+                                      '$formattedDate $formattedTime',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.grey[600],

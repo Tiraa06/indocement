@@ -7,47 +7,10 @@ import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
+import 'package:indocement_apk/pages/inbox.dart'; // Import the functional InboxPage
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-
-// Placeholder for InboxPage
-class InboxPage extends StatelessWidget {
-  const InboxPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Inbox",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1E88E5),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: Center(
-        child: Text(
-          "Inbox Page (Under Construction)",
-          style: TextStyle(fontSize: 18, color: Colors.black87),
-        ),
-      ),
-    );
-  }
-}
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -61,7 +24,7 @@ class _MasterScreenState extends State<MasterScreen> {
 
   final List<Widget> _pages = [
     const MasterContent(),
-    const InboxPage(),
+    const InboxPage(), // Use the functional InboxPage from inbox.dart
     const ProfilePage(),
   ];
 
@@ -130,7 +93,8 @@ class _MasterContentState extends State<MasterContent> {
   Future<void> _fetchProfilePhoto() async {
     try {
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/26'), // Ganti ID sesuai kebutuhan
+        Uri.parse(
+            'http://213.35.123.110:5555/api/Employees/26'), // Ganti ID sesuai kebutuhan
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -168,7 +132,8 @@ class _MasterContentState extends State<MasterContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HomeHeader(urlFoto: _urlFoto), // Kirim URL foto ke HomeHeader
+                    HomeHeader(
+                        urlFoto: _urlFoto), // Kirim URL foto ke HomeHeader
                     const BannerCarousel(),
                     const Categories(),
                     const DailyInfo(),
@@ -310,7 +275,8 @@ class HomeHeader extends StatelessWidget {
               radius: 22,
               backgroundImage: urlFoto != null && urlFoto!.isNotEmpty
                   ? NetworkImage(urlFoto!) // Tampilkan gambar dari URL
-                  : const AssetImage('assets/images/profile.png') // Gambar default
+                  : const AssetImage(
+                          'assets/images/profile.png') // Gambar default
                       as ImageProvider,
               backgroundColor: Colors.transparent,
             ),
@@ -717,32 +683,4 @@ void _showLoading(BuildContext context) {
       );
     },
   );
-}
-
-class MasterPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Halaman Master',
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1572E8),
-      ),
-      body: Center(
-        child: Text(
-          'Selamat Datang di Halaman Master',
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
-  }
 }

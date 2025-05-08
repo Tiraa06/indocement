@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path; // Menggunakan alias untuk menghindari konflik
+import 'package:path/path.dart' as path;
 import 'package:mime/mime.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Added for initializeDateFormatting
 
 class IdCardUploadPage extends StatefulWidget {
   const IdCardUploadPage({super.key});
@@ -15,7 +19,7 @@ class IdCardUploadPage extends StatefulWidget {
 
 class _IdCardUploadPageState extends State<IdCardUploadPage> {
   String _selectedStatus = 'Baru';
-  final int idEmployee = 3;
+  int? idEmployee;
 
   File? fotoBaru;
   File? fotoRusak;
@@ -23,32 +27,112 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
 
   final picker = ImagePicker();
   bool isLoading = false;
+  bool isDateFormattingInitialized = false;
 
-  Future<void> pickImage(Function(File) onPicked) async {
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployeeId();
+    _initializeDateFormatting();
+  }
+
+  Future<void> _initializeDateFormatting() async {
+    await initializeDateFormatting('id_ID', null);
+    setState(() {
+      isDateFormattingInitialized = true;
+    });
+  }
+
+  Future<void> _loadEmployeeId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      idEmployee = prefs.getInt('idEmployee');
+    });
+    if (idEmployee == null) {
+      print('Error: idEmployee is null');
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text('Gagal memuat ID karyawan. Silakan login ulang.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> pickImage(Function(File) onPicked,
+      {bool allowPdf = false}) async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       final mimeType = lookupMimeType(picked.path);
-      if (mimeType != 'image/png' && mimeType != 'image/jpeg') {
-        showDialog(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Format Tidak Didukung'),
-            content: const Text('Hanya file PNG atau JPG yang diperbolehkan.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-        return;
+      if (allowPdf) {
+        if (mimeType != 'image/png' &&
+            mimeType != 'image/jpeg' &&
+            mimeType != 'application/pdf') {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Format Tidak Didukung'),
+              content: const Text(
+                  'Hanya file PNG, JPG, atau PDF yang diperbolehkan.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+      } else {
+        if (mimeType != 'image/png' && mimeType != 'image/jpeg') {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Format Tidak Didukung'),
+              content:
+                  const Text('Hanya file PNG atau JPG yang diperbolehkan.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
       }
       onPicked(File(picked.path));
     }
   }
 
   Future<void> submitForm(BuildContext dialogContext) async {
+    if (idEmployee == null) {
+      showDialog(
+        context: dialogContext,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content:
+              const Text('ID karyawan tidak ditemukan. Silakan login ulang.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     // Validasi
     if (fotoBaru == null) {
       showDialog(
@@ -88,6 +172,24 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
         builder: (context) => AlertDialog(
           title: const Text('Validasi Gagal'),
           content: const Text('Mohon upload surat kehilangan.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (!isDateFormattingInitialized) {
+      showDialog(
+        context: dialogContext,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text(
+              'Data format tanggal sedang diinisialisasi. Coba lagi sebentar.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -147,12 +249,22 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
       setState(() => isLoading = false);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(responseBody);
+        final tglPengajuan = responseData['TglPengajuan'];
+        String formattedDate = 'Tanggal tidak tersedia';
+        if (tglPengajuan != null) {
+          final dateTime = DateTime.parse(tglPengajuan).toLocal();
+          formattedDate =
+              DateFormat('dd MMMM yyyy HH:mm', 'id_ID').format(dateTime);
+        }
+
         showDialog(
           context: dialogContext,
           builder: (context) => AlertDialog(
             title: const Text('Pengajuan Berhasil'),
-            content:
-                const Text('Pengajuan ID Card Anda telah berhasil disubmit.'),
+            content: Text(
+              'Pengajuan ID Card Anda telah berhasil disubmit.\nTanggal Pengajuan: $formattedDate',
+            ),
             actions: [
               TextButton(
                 onPressed: () {
@@ -203,7 +315,8 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     }
   }
 
-  Widget buildUploadSection(String label, File? file, Function(File) onPicked) {
+  Widget buildUploadSection(String label, File? file, Function(File) onPicked,
+      {bool allowPdf = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -212,7 +325,7 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
         Row(
           children: [
             ElevatedButton.icon(
-              onPressed: () => pickImage(onPicked),
+              onPressed: () => pickImage(onPicked, allowPdf: allowPdf),
               icon: const Icon(Icons.upload_file),
               label: Text(file == null ? 'Pilih Gambar' : 'Ganti'),
             ),
@@ -311,7 +424,8 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                         (f) => setState(() => fotoRusak = f)),
                   if (_selectedStatus == 'Hilang')
                     buildUploadSection('Surat Kehilangan', suratKehilangan,
-                        (f) => setState(() => suratKehilangan = f)),
+                        (f) => setState(() => suratKehilangan = f),
+                        allowPdf: true),
 
                   // Tombol Submit
                   const SizedBox(height: 20),
