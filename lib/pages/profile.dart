@@ -81,10 +81,32 @@ class _ProfilePageState extends State<ProfilePage> {
               ? data['EmployeeName']
               : _employeeName;
           _jobTitle = data['JobTitle'] ?? _jobTitle;
-          _urlFoto = data['UrlFoto'] ?? _urlFoto;
+
+          // Tambahkan URL dasar jika UrlFoto adalah path relatif
+          if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
+            if (data['UrlFoto'].startsWith('/')) {
+              _urlFoto = 'http://213.35.123.110:5555${data['UrlFoto']}';
+            } else {
+              _urlFoto = data['UrlFoto'];
+            }
+          } else {
+            _urlFoto = null;
+          }
+
           _email = data['Email'] ?? _email;
           _telepon = data['Telepon'] ?? _telepon;
         });
+
+        // Validasi apakah URL gambar dapat dimuat
+        if (_urlFoto != null) {
+          final imageResponse = await http.head(Uri.parse(_urlFoto!));
+          if (imageResponse.statusCode != 200) {
+            print('Image URL is invalid or not accessible: $_urlFoto');
+            setState(() {
+              _urlFoto = null; // Gunakan ikon profil jika URL tidak valid
+            });
+          }
+        }
 
         await prefs.setString('employeeName', _employeeName);
         await prefs.setString('jobTitle', _jobTitle);
@@ -155,64 +177,43 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             children: [
               const SizedBox(height: 24),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundImage: profileImage,
-                    backgroundColor: Colors.grey[200],
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _employeeName.isNotEmpty
-                            ? _employeeName
-                            : "Nama Tidak Tersedia",
-                        style: GoogleFonts.roboto(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width - 120,
-                        ),
-                        child: Text(
-                          _jobTitle.isNotEmpty
-                              ? _jobTitle
-                              : "Departemen Tidak Tersedia",
-                          style: GoogleFonts.roboto(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _email.isNotEmpty ? _email : "Email Tidak Tersedia",
-                        style: GoogleFonts.roboto(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _telepon.isNotEmpty
-                            ? _telepon
-                            : "Telepon Tidak Tersedia",
-                        style: GoogleFonts.roboto(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: profileImage,
+                backgroundColor: Colors.grey[200],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _employeeName.isNotEmpty ? _employeeName : "Nama Tidak Tersedia",
+                style: GoogleFonts.roboto(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _jobTitle.isNotEmpty ? _jobTitle : "Departemen Tidak Tersedia",
+                style: GoogleFonts.roboto(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _email.isNotEmpty ? _email : "Email Tidak Tersedia",
+                style: GoogleFonts.roboto(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _telepon.isNotEmpty ? _telepon : "Telepon Tidak Tersedia",
+                style: GoogleFonts.roboto(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
               ),
               const SizedBox(height: 20),
               const Divider(),

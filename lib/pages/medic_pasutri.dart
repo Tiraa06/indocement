@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:media_store_plus/media_store_plus.dart'; // Ensure this import is present
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MedicPasutriPage extends StatefulWidget {
   const MedicPasutriPage({super.key});
@@ -15,105 +17,82 @@ class MedicPasutriPage extends StatefulWidget {
 }
 
 class _MedicPasutriPageState extends State<MedicPasutriPage> {
-  final String fileUrl = 'http://213.35.123.110:5555/templates/medical.pdf'; // URL file
-  bool isLoadingDownload = false; // Untuk menampilkan indikator loading download
+  final String fileUrl =
+      'http://213.35.123.110:5555/templates/medical.pdf'; // URL file
+  bool isLoadingDownload =
+      false; // Untuk menampilkan indikator loading download
   bool isDownloaded = false; // Status apakah file sudah didownload
   File? uploadedFile; // Menyimpan file yang diunggah
+  bool isUploading = false; // Status apakah sedang mengunggah file
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAndSaveIdEmployeeFromMedical(); // Ambil dan simpan IdEmployee saat halaman dimuat
+  }
 
   Future<void> downloadFile() async {
     final dio = Dio();
 
     try {
-      // Minta izin penyimpanan
-      if (Platform.isAndroid) {
-        var status = await Permission.storage.request();
-        if (!status.isGranted) {
-          throw Exception('Izin penyimpanan tidak diberikan');
-        }
+      // Ambil IdEmployee dari SharedPreferences
+      final idEmployee = await getIdEmployee();
+      if (idEmployee == null) {
+        throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
       }
 
-      // Tampilkan dialog loading
+      // Tampilkan popup dengan progress bar
       showDialog(
         context: this.context,
-        barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
+        barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
+            title: const Text('Mengunduh File'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: const [
-                CircularProgressIndicator(),
+                LinearProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Downloading...'),
+                Text('Sedang mengunduh file, harap tunggu...'),
               ],
             ),
           );
         },
       );
 
-      setState(() {
-        isLoadingDownload = true;
-      });
+      final url =
+          'http://213.35.123.110:5555/api/Medical/generate-medical-document/$idEmployee';
 
-      // Download file menggunakan Dio
-      final response = await dio.get(
-        fileUrl,
+      final response = await dio.post(
+        url,
         options: Options(responseType: ResponseType.bytes),
       );
 
-      if (Platform.isAndroid) {
-        // Tentukan path folder Download
+      Navigator.of(this.context).pop(); // Tutup popup setelah selesai
+
+      if (response.statusCode == 200) {
         final directory = Directory('/storage/emulated/0/Download');
         if (!directory.existsSync()) {
           directory.createSync(recursive: true);
         }
 
-        // Simpan file di folder Download
-        final filePath = '${directory.path}/medical.pdf';
+        final filePath = '${directory.path}/medical_$idEmployee.pdf';
         final file = File(filePath);
         await file.writeAsBytes(response.data!);
 
+        // Tandai bahwa file sudah diunduh
         setState(() {
-          isLoadingDownload = false;
-          isDownloaded = true; // Tandai bahwa file sudah didownload
+          isDownloaded = true;
         });
 
-        // Tutup dialog loading
-        Navigator.of(this.context).pop();
-
-        // Tampilkan notifikasi berhasil
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('File berhasil didownload ke folder Download!')),
-        );
-      } else {
-        // Jika bukan Android, gunakan path default untuk penyimpanan (iOS)
-        final dir = await getApplicationDocumentsDirectory();
-        final filePath = '${dir.path}/medical.pdf';
-        final file = File(filePath);
-
-        await file.writeAsBytes(response.data!);
-
-        setState(() {
-          isLoadingDownload = false;
-          isDownloaded = true; // Tandai bahwa file sudah didownload
-        });
-
-        // Tutup dialog loading
-        Navigator.of(this.context).pop();
-
-        // Tampilkan notifikasi berhasil
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('File berhasil didownload ke $filePath')),
         );
+      } else {
+        throw Exception('Gagal mengunduh file: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() {
-        isLoadingDownload = false;
-      });
-
-      // Tutup dialog loading
-      Navigator.of(this.context).pop();
-
-      // Tampilkan notifikasi gagal
+      Navigator.of(this.context).pop(); // Tutup popup jika terjadi kesalahan
       ScaffoldMessenger.of(this.context).showSnackBar(
         SnackBar(content: Text('Gagal download file: $e')),
       );
@@ -138,7 +117,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Peringatan'),
-            content: const Text('Anda harus mengunggah Surat Keterangan terlebih dahulu.'),
+            content: const Text('Anda harus memilih file terlebih dahulu.'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -153,97 +132,144 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       return;
     }
 
+    setState(() {
+      isUploading = true; // Mulai proses upload
+    });
+
     try {
-      // Tampilkan notifikasi proses upload
-      showDialog(
-        context: this.context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        },
-      );
+      // Ambil IdEmployee dari SharedPreferences
+      final idEmployee = await getIdEmployee();
+      if (idEmployee == null) {
+        throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
+      }
 
       final dio = Dio();
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           uploadedFile!.path,
-          filename: basename(uploadedFile!.path), // Nama file
-          contentType: MediaType('application', 'pdf'), // Tipe file
+          filename: basename(uploadedFile!.path),
         ),
-        'idEmployee': 3, // ID karyawan
+        'idEmployee': idEmployee,
       });
 
-      // Kirim permintaan POST ke API
       final response = await dio.post(
         'http://213.35.123.110:5555/api/Medical/upload',
         data: formData,
         options: Options(
           headers: {
-            'accept': '/',
+            'accept': '*/*',
             'Content-Type': 'multipart/form-data',
           },
         ),
       );
 
-      Navigator.of(this.context).pop(); // Tutup dialog loading
-
       if (response.statusCode == 200) {
-        showDialog(
-          context: this.context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Berhasil'),
-              content: const Text('File berhasil diupload!'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          const SnackBar(content: Text('File berhasil diupload!')),
         );
       } else {
-        showDialog(
-          context: this.context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Gagal'),
-              content: Text('Gagal mengunggah file: ${response.statusCode}'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
+        throw Exception('Gagal mengunggah file: ${response.statusCode}');
       }
     } catch (e) {
-      Navigator.of(this.context).pop(); // Tutup dialog loading
-      showDialog(
-        context: this.context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Kesalahan'),
-            content: Text('Terjadi kesalahan: $e'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('OK'),
-              ),
-            ],
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Gagal upload file: $e')),
+      );
+    } finally {
+      setState(() {
+        isUploading = false; // Selesai proses upload
+      });
+    }
+  }
+
+  Future<void> requestStoragePermission() async {
+    if (await Permission.storage.request().isGranted) {
+      // Izin diberikan
+    } else {
+      throw Exception('Izin penyimpanan tidak diberikan.');
+    }
+  }
+
+  Future<void> saveIdEmployee(int idEmployee) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('idEmployee', idEmployee);
+  }
+
+  Future<int?> getIdEmployee() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('idEmployee');
+  }
+
+  Future<void> fetchAndSaveIdEmployee() async {
+    try {
+      // Panggil API untuk mendapatkan idEmployee
+      final response = await Dio().get(
+        'http://213.35.123.110:5555/api/Employee/get-id', // Ganti dengan endpoint API yang sesuai
+      );
+
+      print('Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final idEmployee = response.data['idEmployee'];
+        if (idEmployee != null) {
+          // Simpan idEmployee ke SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('idEmployee', idEmployee);
+
+          setState(() {
+            // Perbarui state jika diperlukan
+          });
+
+          ScaffoldMessenger.of(this.context).showSnackBar(
+            SnackBar(content: Text('ID Employee berhasil disimpan: $idEmployee')),
           );
-        },
+        } else {
+          throw Exception('ID Employee tidak ditemukan di respons API.');
+        }
+      } else {
+        throw Exception('Gagal mendapatkan ID Employee: ${response.statusCode}');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Gagal mendapatkan ID Employee: $e')),
+      );
+    }
+  }
+
+  Future<void> fetchAndSaveIdEmployeeFromMedical() async {
+    try {
+      // Panggil API untuk mendapatkan data Medical
+      final response = await Dio().get(
+        'http://213.35.123.110:5555/api/Medical',
+      );
+
+      if (response.statusCode == 200) {
+        // Periksa apakah respons adalah array
+        if (response.data is List && response.data.isNotEmpty) {
+          // Ambil elemen pertama dari array
+          final firstItem = response.data[0];
+          final idEmployee = firstItem['IdEmployee'];
+
+          if (idEmployee != null) {
+            // Simpan IdEmployee ke SharedPreferences
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.setInt('idEmployee', idEmployee);
+
+            setState(() {
+              // Perbarui state jika diperlukan
+            });
+          } else {
+            throw Exception('ID Employee tidak ditemukan di respons API.');
+          }
+        } else {
+          throw Exception('Respons API kosong atau tidak valid.');
+        }
+      } else {
+        throw Exception('Gagal mendapatkan ID Employee: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e'); // Log kesalahan
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Gagal mendapatkan ID Employee: $e')),
       );
     }
   }
@@ -252,7 +278,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-         iconTheme: const IconThemeData(color: Colors.white), // Tombol back warna putih
+        iconTheme:
+            const IconThemeData(color: Colors.white), // Tombol back warna putih
         backgroundColor: const Color(0xFF1572E8),
       ),
       body: SingleChildScrollView(
@@ -364,7 +391,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                   children: [
                     const Text(
                       'Upload Surat Keterangan yang Sudah di Tanda Tangan',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -424,7 +452,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                   const SizedBox(height: 8),
                                   Text(
                                     uploadedFile != null
-                                        ? basename(uploadedFile!.path) // Hanya nama file
+                                        ? basename(uploadedFile!
+                                            .path) // Hanya nama file
                                         : 'Belum ada file yang dipilih',
                                     style: const TextStyle(
                                       fontSize: 14,
@@ -440,19 +469,30 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: isDownloaded ? uploadFile : null,
+                      onPressed: isDownloaded && !isUploading ? uploadFile : null, // Tombol hanya aktif jika file sudah diunduh dan tidak sedang mengunggah
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDownloaded ? const Color(0xFF1572E8) : Colors.grey,
+                        backgroundColor: isDownloaded
+                            ? const Color(0xFF1572E8) // Warna biru jika aktif
+                            : Colors.grey, // Warna abu-abu jika tidak aktif
                         minimumSize: const Size(double.infinity, 50),
                       ),
-                      child: const Text(
-                        'Kirim Surat Keterangan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: isUploading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Kirim Surat Keterangan',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ],
                 ),

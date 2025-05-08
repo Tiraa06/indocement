@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:indocement_apk/pages/bpjs_karyawan.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart'; // Untuk mendapatkan nama file utama
-import 'bpjs_upload_service.dart';
+import 'package:dio/dio.dart';
 
 class TambahDataAnakPage extends StatefulWidget {
   const TambahDataAnakPage({super.key});
@@ -14,6 +15,10 @@ class TambahDataAnakPage extends StatefulWidget {
 
 class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
   int? idEmployee;
+  String? urlKk;
+  String? urlAkteLahir;
+  String? selectedAnakKe; // Menyimpan pilihan "Anak Ke"
+  bool isLoading = false;
   Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
 
   @override
@@ -22,11 +27,103 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
     _loadEmployeeId();
   }
 
-  void _loadEmployeeId() async {
+  Future<void> _loadEmployeeId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       idEmployee = prefs.getInt('idEmployee');
     });
+    if (idEmployee != null) {
+      _fetchUploadedData();
+    }
+  }
+
+  Future<void> _fetchUploadedData() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await Dio().get(
+        'http://213.35.123.110:5555/api/Bpjs',
+        queryParameters: {'idEmployee': idEmployee},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> dataList = response.data;
+
+        // Cari data berdasarkan AnggotaBpjs = "Anak"
+        final data = dataList.firstWhere(
+          (item) => item['AnggotaBpjs'] == 'Anak',
+          orElse: () => null,
+        );
+
+        if (data != null) {
+          // Simpan data ke SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('Id', data['Id']);
+          await prefs.setInt('IdEmployee', data['IdEmployee']);
+          await prefs.setString('AnggotaBpjs', data['AnggotaBpjs']);
+
+          setState(() {
+            urlKk = data['UrlKk'];
+            urlAkteLahir = data['UrlAkteLahir'];
+            selectedAnakKe = data['AnakKe'];
+          });
+        } else {
+          // Jika data tidak ditemukan, buat ID baru
+          await _createNewBpjsEntry();
+        }
+      } else {
+        throw Exception('Gagal memuat data dari API.');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Gagal mengambil data: $e')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _createNewBpjsEntry() async {
+    try {
+      final response = await Dio().post(
+        'http://213.35.123.110:5555/api/Bpjs',
+        data: {
+          'IdEmployee': idEmployee,
+          'AnggotaBpjs': 'Anak',
+          'AnakKe': null, // Nilai default untuk AnakKe
+          'UrlKk': null,
+          'UrlAkteLahir': null,
+        },
+      );
+
+      if (response.statusCode == 201) {
+        final data = response.data;
+
+        // Simpan data baru ke SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('Id', data['Id']);
+        await prefs.setInt('IdEmployee', data['IdEmployee']);
+        await prefs.setString('AnggotaBpjs', data['AnggotaBpjs']);
+
+        setState(() {
+          selectedAnakKe = data['AnakKe'];
+        });
+
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          const SnackBar(content: Text('ID baru berhasil dibuat untuk AnggotaBpjs "Anak".')),
+        );
+      } else {
+        throw Exception('Gagal membuat ID baru: ${response.statusCode}');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan saat membuat ID baru: $e')),
+      );
+    }
   }
 
   Future<void> pickImage({
@@ -42,299 +139,188 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
     }
   }
 
-  void _showPopup({
-    required BuildContext context,
-    required String title,
-    required String message,
-  }) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-      },
-    );
-  }
-
-  Future<void> uploadPasutriDocuments() async {
-    if (idEmployee == null) {
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Gagal',
-        message: 'ID karyawan belum tersedia.',
-      );
-      return;
-    }
-
-    if (selectedImages['UrlKk'] == null || selectedImages['UrlAkteLahir'] == null) {
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Gagal',
-        message: 'Anda harus mengunggah KK dan Akte Kelahiran.',
-      );
-      return;
-    }
-
-    showLoadingDialog(this.context); // Gunakan context dari State
-
+  Future<void> uploadDokumenAnak() async {
     try {
-      // Upload KK
-      await uploadBpjsDocumentCompressed(
-        idEmployee: idEmployee!,
-        anggotaBpjs: 'Anak',
-        fieldName: 'UrlKk',
-        file: selectedImages['UrlKk']!,
-      );
+      setState(() => isLoading = true);
 
-      // Upload Surat Nikah
-      await uploadBpjsDocumentCompressed(
-        idEmployee: idEmployee!,
-        anggotaBpjs: 'Anak',
-        fieldName: 'UrlAkteLahir',
-        file: selectedImages['UrlAkteLahir']!,
-      );
+      // Ambil data dari SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final int? id = prefs.getInt('Id');
+      final int? employeeId = prefs.getInt('IdEmployee');
+      final String? anggotaBpjs = prefs.getString('AnggotaBpjs');
 
-      Navigator.of(this.context).pop(); // Tutup loading dialog
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Berhasil',
-        message: 'Dokumen berhasil diunggah.',
-      );
-    } catch (e) {
-      Navigator.of(this.context).pop(); // Tutup loading dialog
-      print("❌ Error saat mengunggah dokumen: $e");
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Gagal',
-        message: 'Terjadi kesalahan saat mengunggah dokumen.',
-      );
-    }
-  }
-
-  Future<void> uploadBpjsWithArray({
-    required BuildContext context,
-    required String anggotaBpjs,
-    required List<Map<String, dynamic>> documents,
-    String? anakKe,
-  }) async {
-    if (idEmployee == null) {
-      _showPopup(
-        context: context,
-        title: 'Gagal',
-        message: 'ID karyawan belum tersedia.',
-      );
-      return;
-    }
-
-    List<File> files = [];
-    List<String> fieldNames = [];
-
-    // Konversi dokumen ke arrays untuk upload
-    for (var doc in documents) {
-      if (doc['file'] != null) {
-        files.add(doc['file'] as File);
-        fieldNames.add(doc['fieldName'] as String);
+      if (id == null || employeeId == null || anggotaBpjs == null || selectedAnakKe == null) {
+        throw Exception('Data ID, IdEmployee, AnggotaBpjs, atau AnakKe tidak ditemukan.');
       }
-    }
 
-    if (files.isEmpty) {
-      _showPopup(
-        context: context,
-        title: 'Gagal',
-        message: 'Pilih minimal satu dokumen untuk diunggah.',
+      // Siapkan data untuk dikirim ke API
+      final formData = FormData();
+
+      // Tambahkan file UrlKk ke FormData
+      if (selectedImages['UrlKk'] != null) {
+        formData.files.add(
+          MapEntry(
+            'Files',
+            await MultipartFile.fromFile(
+              selectedImages['UrlKk']!.path,
+              filename: basename(selectedImages['UrlKk']!.path),
+            ),
+          ),
+        );
+      }
+
+      // Tambahkan file UrlAkteLahir ke FormData
+      if (selectedImages['UrlAkteLahir'] != null) {
+        formData.files.add(
+          MapEntry(
+            'Files',
+            await MultipartFile.fromFile(
+              selectedImages['UrlAkteLahir']!.path,
+              filename: basename(selectedImages['UrlAkteLahir']!.path),
+            ),
+          ),
+        );
+      }
+
+      // Tambahkan field tambahan ke FormData
+      formData.fields.addAll([
+        MapEntry('idEmployee', employeeId.toString()),
+        MapEntry('FileTypes', 'UrlKk'),
+        MapEntry('FileTypes', 'UrlAkteLahir'),
+        MapEntry('AnggotaBpjs', anggotaBpjs),
+        MapEntry('AnakKe', selectedAnakKe!), // Tambahkan AnakKe
+      ]);
+
+      // Kirim data ke API dengan metode PUT
+      final uploadResponse = await Dio().put(
+        'http://213.35.123.110:5555/api/Bpjs/upload/$id',
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
       );
-      return;
-    }
 
-    if (files.length != fieldNames.length) {
-      _showPopup(
-        context: context,
-        title: 'Gagal',
-        message: 'Jumlah file dan tipe file tidak sesuai.',
-      );
-      return;
-    }
-
-    showLoadingDialog(context);
-
-    try {
-      await uploadBpjsDocumentsCompressed(
-        idEmployee: idEmployee!,
-        anggotaBpjs: anggotaBpjs,
-        fieldNames: fieldNames,
-        files: files,
-        anakKe: anakKe,
-      );
-
-      Navigator.of(context).pop();
-      _showPopup(
-        context: context,
-        title: 'Berhasil',
-        message: 'Dokumen BPJS ${anggotaBpjs == "Anak" ? "Istri" : "Anak"} berhasil diunggah.',
-      );
+      if (uploadResponse.statusCode == 200) {
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          const SnackBar(content: Text('File berhasil diunggah.')),
+        );
+        await _fetchUploadedData(); // Refresh data setelah upload
+      } else {
+        throw Exception('Upload gagal: ${uploadResponse.statusCode}');
+      }
     } catch (e) {
-      Navigator.of(context).pop();
-      print("❌ Error saat mengunggah dokumen: $e");
-      _showPopup(
-        context: context,
-        title: 'Gagal',
-        message: 'Terjadi kesalahan saat mengunggah dokumen.',
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
-  Future<void> uploadAndUpdateDataAnak() async {
-    if (idEmployee == null) {
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Gagal',
-        message: 'ID karyawan belum tersedia.',
-      );
-      return;
-    }
-
-    if (selectedImages['UrlKkAnak'] == null || selectedImages['UrlAkteLahir'] == null) {
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Gagal',
-        message: 'Anda harus mengunggah KK dan Akte Kelahiran.',
-      );
-      return;
-    }
-
-    showLoadingDialog(this.context); // Gunakan context dari State
-
-    try {
-      // Upload KK
-      await uploadBpjsDocumentCompressed(
-        idEmployee: idEmployee!,
-        anggotaBpjs: 'Anak',
-        fieldName: 'UrlKk',
-        file: selectedImages['UrlKkAnak']!,
-      );
-
-      // Upload Akta Lahir
-      await uploadBpjsDocumentCompressed(
-        idEmployee: idEmployee!,
-        anggotaBpjs: 'Anak',
-        fieldName: 'UrlAkteLahir',
-        file: selectedImages['UrlAkteLahir']!,
-      );
-
-      Navigator.of(this.context).pop(); // Tutup loading dialog
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Berhasil',
-        message: 'Dokumen berhasil diunggah.',
-      );
-    } catch (e) {
-      Navigator.of(this.context).pop(); // Tutup loading dialog
-      print("❌ Error saat mengunggah dokumen: $e");
-      _showPopup(
-        context: this.context, // Gunakan context dari State
-        title: 'Gagal',
-        message: 'Terjadi kesalahan saat mengunggah dokumen.',
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Update Data Anak'),
         backgroundColor: const Color(0xFF1572E8),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Tombol back putih
-          onPressed: () {
-            Navigator.pop(context); // Navigasi kembali
-          },
-        ),
-        elevation: 0, // Hilangkan bayangan AppBar
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Informasi BPJS Karyawan
-              Container(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1572E8),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'Perbarui Data',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Dropdown untuk Anak Ke
                     Container(
-                      width: 60,
-                      height: 60,
+                      margin: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        border: Border.all(color: Colors.black), // Border warna hitam
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 255, 255, 255), // Border warna putih
-                          width: 1, // Ketebalan border 1px
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedAnakKe,
+                          hint: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Text('Pilih Anak Ke-'),
+                          ),
+                          isExpanded: true,
+                          items: List.generate(5, (index) => (index + 1).toString())
+                              .map((e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      child: Text('Anak ke-$e'),
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedAnakKe = value;
+                            });
+                          },
                         ),
                       ),
-                      child: const Icon(
-                        Icons.info,
-                        size: 30,
-                        color: Colors.white,
-                      ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
+
+                    // Form Upload
+                    Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.black, // Border warna hitam
+                          width: 1, // Ketebalan border 1px
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Tambah Data Suami/Istri',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                        children: [
+                          const Text(
+                            'Upload Dokumen',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Halaman ini digunakan untuk mengunggah dokumen yang diperlukan untuk mengupload data suami/istri.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
+                          const SizedBox(height: 16),
+                          _buildBox(
+                            title: 'Upload Kartu Keluarga',
+                            fieldName: 'UrlKk',
+                          ),
+                          const SizedBox(height: 16),
+                          _buildBox(
+                            title: 'Upload Akte Lahir',
+                            fieldName: 'UrlAkteLahir',
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: () async {
+                              await uploadDokumenAnak();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1572E8),
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
+                            child: const Text(
+                              'Perbarui Data',
+                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                         ],
@@ -343,43 +329,54 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+    );
+  }
 
-              // Upload KK
-              _buildBox(
-                title: 'Upload KK',
-                fieldName: 'UrlKk',
-              ),
-              const SizedBox(height: 16),
+  Widget _buildUploadedFileBox(String? url, String label) {
+    if (url == null) {
+      return const SizedBox.shrink();
+    }
 
-              // Upload Surat Nikah
-              _buildBox(
-                title: 'Upload Akte Kelahiran',
-                fieldName: 'UrlAkteLahir',
-              ),
-              const SizedBox(height: 24),
-
-              // Tombol Kirim
-              ElevatedButton(
-                onPressed: uploadPasutriDocuments,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1572E8),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: const Text(
-                  'Kirim Dokumen',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-            ],
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.black, // Border warna hitam
+          width: 1, // Ketebalan border 1px
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  url.split('/').last,
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

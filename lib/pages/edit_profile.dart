@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
+import 'package:http_parser/http_parser.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String employeeName;
@@ -119,7 +121,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _workLocationController.text = employee['WorkLocation'] ?? '';
           _idSectionController.text = employee['IdSection']?.toString() ?? '';
           _idEslController.text = employee['IdEsl']?.toString() ?? '';
-          _photoUrl = employee['UrlFoto'] ?? _photoUrl;
+
+          // Tambahkan URL dasar jika UrlFoto adalah path relatif
+          if (employee['UrlFoto'] != null && employee['UrlFoto'].isNotEmpty) {
+            if (employee['UrlFoto'].startsWith('/')) {
+              _photoUrl = 'http://213.35.123.110:5555${employee['UrlFoto']}';
+            } else {
+              _photoUrl = employee['UrlFoto'];
+            }
+          } else {
+            _photoUrl = null; // Gunakan ikon profil jika URL tidak valid
+          }
         });
 
         await prefs.setString('employeeName', _employeeNameController.text);
@@ -213,6 +225,133 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      print('File path: ${image.path}');
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+
+      // Tampilkan popup konfirmasi
+      _showImageConfirmationPopup(File(image.path));
+    }
+  }
+
+  Future<void> _uploadImage(File image) async {
+    final employeeId = widget.employeeId;
+
+    if (employeeId == null) {
+      print('Employee ID is null');
+      return;
+    }
+
+    try {
+      final request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId/UrlFoto'),
+      );
+      request.files.add(await http.MultipartFile.fromPath(
+        'File',
+        image.path,
+        contentType: MediaType('image', 'jpeg'),
+      ));
+      request.headers.addAll({
+        'accept': '/',
+        'Content-Type': 'multipart/form-data',
+      });
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: $responseBody');
+
+      if (response.statusCode == 204) {
+        print('Image uploaded successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gambar berhasil diunggah')),
+        );
+        _fetchInitialData(); // Perbarui data profil
+      } else {
+        print('Failed to upload image: ${response.statusCode}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengunggah gambar: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
+
+  void _showImageConfirmationPopup(File image) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          contentPadding: const EdgeInsets.all(16.0),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8, // Lebar 80% layar
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    image,
+                    width: 200, // Lebar gambar
+                    height: 200, // Tinggi gambar
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Apakah anda yakin ingin mengganti foto profil?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Tutup popup
+                        _uploadImage(image); // Unggah gambar ke API
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.cancel, color: Colors.red, size: 32),
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Tutup popup
+                        setState(() {
+                          _selectedImage = null; // Batalkan gambar yang dipilih
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -288,14 +427,38 @@ class _EditProfilePageState extends State<EditProfilePage> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundImage: _photoUrl != null && _photoUrl!.isNotEmpty
-                      ? NetworkImage(_photoUrl!)
-                      : const AssetImage('assets/images/picture.jpg')
-                          as ImageProvider,
+                  backgroundImage: _selectedImage != null
+                      ? FileImage(_selectedImage!) as ImageProvider
+                      : (_photoUrl != null && _photoUrl!.isNotEmpty
+                          ? NetworkImage(_photoUrl!)
+                          : const AssetImage('assets/images/picture.jpg')),
                   backgroundColor: Colors.grey[200],
+                  child: _selectedImage == null &&
+                          (_photoUrl == null || _photoUrl!.isEmpty)
+                      ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                      : null,
                 ),
                 if (_isUploading) const CircularProgressIndicator(),
               ],
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isEditing ? _pickImage : null, // Pilih gambar jika sedang mengedit
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1572E8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              ),
+              child: Text(
+                'Edit Profile',
+                style: GoogleFonts.roboto(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             _buildSectionCard('Informasi Pribadi', [
@@ -378,15 +541,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1572E8),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                 ),
-                child: Text('Simpan Perubahan',
-                    style: GoogleFonts.roboto(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.white)),
+                child: Text(
+                  'Simpan Perubahan',
+                  style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
               ),
           ],
         ),

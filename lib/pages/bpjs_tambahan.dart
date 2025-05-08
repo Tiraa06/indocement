@@ -19,6 +19,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   int? idEmployee;
   Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
   String? selectedAnggotaBpjs; // Menyimpan pilihan dropdown
+  String? selectedRelationship; // Menyimpan pilihan relationship
   bool _isPopupVisible = false; // Menyimpan status apakah popup sedang ditampilkan
   bool isDownloaded = false; // Menyimpan status apakah file sudah didownload
 
@@ -58,9 +59,18 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       return;
     }
 
+    if (selectedRelationship == null) {
+      _showPopup(
+        context: this.context,
+        title: 'Gagal',
+        message: 'Pilih hubungan keluarga terlebih dahulu.',
+      );
+      return;
+    }
+
     final dio = Dio();
     final String fileUrl =
-        'http://213.35.123.110:5555/api/Bpjs/generate-salary-deduction/$idEmployee';
+        'http://213.35.123.110:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
 
     try {
       // Minta izin penyimpanan
@@ -95,49 +105,29 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         options: Options(responseType: ResponseType.bytes),
       );
 
-      if (Platform.isAndroid) {
-        // Tentukan path folder Download
-        final directory = Directory('/storage/emulated/0/Download');
-        if (!directory.existsSync()) {
-          directory.createSync(recursive: true);
-        }
-
-        // Simpan file di folder Download
-        final filePath = '${directory.path}/salary_deduction_$idEmployee.pdf';
-        final file = File(filePath);
-        await file.writeAsBytes(response.data!);
-
-        // Tutup dialog loading
-        Navigator.of(this.context).pop();
-
-        // Tampilkan notifikasi berhasil
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('File berhasil didownload ke folder Download!')),
-        );
-
-        setState(() {
-          isDownloaded = true; // Tandai bahwa file sudah didownload
-        });
-      } else {
-        // Jika bukan Android, gunakan path default untuk penyimpanan (iOS)
-        final dir = await getApplicationDocumentsDirectory();
-        final filePath = '${dir.path}/salary_deduction_$idEmployee.pdf';
-        final file = File(filePath);
-
-        await file.writeAsBytes(response.data!);
-
-        // Tutup dialog loading
-        Navigator.of(this.context).pop();
-
-        // Tampilkan notifikasi berhasil
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('File berhasil didownload ke $filePath')),
-        );
-
-        setState(() {
-          isDownloaded = true; // Tandai bahwa file sudah didownload
-        });
+      // Tentukan path folder Download
+      final directory = Directory('/storage/emulated/0/Download');
+      if (!directory.existsSync()) {
+        directory.createSync(recursive: true);
       }
+
+      // Simpan file di folder Download
+      final filePath =
+          '${directory.path}/salary_deduction_${idEmployee}_$selectedRelationship.pdf';
+      final file = File(filePath);
+      await file.writeAsBytes(response.data!);
+
+      // Tutup dialog loading
+      Navigator.of(this.context).pop();
+
+      // Tampilkan notifikasi berhasil
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('File berhasil didownload ke folder Download!')),
+      );
+
+      setState(() {
+        isDownloaded = true; // Tandai bahwa file sudah didownload
+      });
     } catch (e) {
       // Tutup dialog loading
       Navigator.of(this.context).pop();
@@ -430,7 +420,9 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                   });
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // Dropdown untuk memilih hubungan keluarga
 
               // Kotak Upload Dokumen
               Column(
@@ -515,7 +507,29 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
               ),
               const SizedBox(height: 8),
 
-              // Upload Surat Pemotongan Gaji
+              // Dropdown untuk memilih hubungan keluarga
+              const Text(
+                'Pilih Hubungan Keluarga',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              DropdownButton<String>(
+                value: selectedRelationship,
+                hint: const Text('Pilih Hubungan Keluarga'),
+                isExpanded: true,
+                items: ['Ayah', 'Ibu', 'Ayah Mertua', 'Ibu Mertua']
+                    .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedRelationship = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
 
               // Tombol Download Surat Pemotongan Gaji
               ElevatedButton.icon(

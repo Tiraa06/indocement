@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart'; // Tambahkan ini untuk mendapatkan nama file utama
 import 'bpjs_upload_service.dart';
@@ -319,7 +320,21 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: const Color(0xFF1572E8)),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1572E8),
+        title: const Text('BPJS Karyawan'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MenuPage(), // Ganti dengan halaman BPJS Kesehatan
+              ),
+            );
+          },
+        ),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
