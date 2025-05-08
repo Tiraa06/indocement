@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/id_card.dart';
+import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
@@ -120,17 +121,30 @@ class MasterContent extends StatefulWidget {
 
 class _MasterContentState extends State<MasterContent> {
   String? _urlFoto;
+  String? _employeeName;
+  String? _jobTitle;
+  String? _email;
+  String? _telepon;
 
   @override
   void initState() {
     super.initState();
-    _fetchProfilePhoto();
+    _fetchProfilePhoto(); // Ambil foto profil berdasarkan idEmployee
+    _loadProfileData();   // Ambil data profil berdasarkan idEmployee
   }
 
   Future<void> _fetchProfilePhoto() async {
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final employeeId = prefs.getInt('idEmployee'); // Ambil idEmployee dari SharedPreferences
+
+      if (employeeId == null || employeeId <= 0) {
+        print('Invalid or missing employeeId: $employeeId');
+        return;
+      }
+
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/26'), // Ganti ID sesuai kebutuhan
+        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -152,6 +166,42 @@ class _MasterContentState extends State<MasterContent> {
       }
     } catch (e) {
       print('Error fetching profile photo: $e');
+    }
+  }
+
+  Future<void> _loadProfileData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final employeeId = prefs.getInt('idEmployee'); // Ambil idEmployee dari SharedPreferences
+
+    if (employeeId == null || employeeId <= 0) {
+      print('Invalid or missing employeeId: $employeeId');
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _employeeName = data['EmployeeName'] ?? "Nama Tidak Tersedia";
+          _jobTitle = data['JobTitle'] ?? "Departemen Tidak Tersedia";
+          _urlFoto = data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty
+              ? (data['UrlFoto'].startsWith('/')
+                  ? 'http://213.35.123.110:5555${data['UrlFoto']}'
+                  : data['UrlFoto'])
+              : null;
+          _email = data['Email'] ?? "Email Tidak Tersedia";
+          _telepon = data['Telepon'] ?? "Telepon Tidak Tersedia";
+        });
+      } else {
+        print('Failed to fetch profile data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching profile data: $e');
     }
   }
 
@@ -405,9 +455,10 @@ class Categories extends StatelessWidget {
                         ),
                       );
                     } else if (category["text"] == "Layanan Karyawan") {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Menu Layanan Karyawan belum tersedia'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LayananMenuPage(),
                         ),
                       );
                     } else if (category["text"] == "Lainnya") {
