@@ -25,7 +25,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
   // Form controllers and state
   final _formKey = GlobalKey<FormState>();
   List<Map<String, dynamic>> _employees = [];
-  List<Map<String, dynamic>> _selectedPairs =
+  final List<Map<String, dynamic>> _selectedPairs =
       []; // Store pairs of employees with their shifts
   DateTime? _selectedDate;
   final _keteranganController = TextEditingController();

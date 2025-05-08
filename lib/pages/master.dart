@@ -8,47 +8,11 @@ import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
+import 'package:indocement_apk/pages/inbox.dart'; // Import the functional InboxPage
+import 'package:indocement_apk/pages/layanan_menu.dart'; // Import LayananMenuPage
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-
-// Placeholder for InboxPage
-class InboxPage extends StatelessWidget {
-  const InboxPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Inbox",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1E88E5),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: Center(
-        child: Text(
-          "Inbox Page (Under Construction)",
-          style: TextStyle(fontSize: 18, color: Colors.black87),
-        ),
-      ),
-    );
-  }
-}
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -57,8 +21,11 @@ class MasterScreen extends StatefulWidget {
   _MasterScreenState createState() => _MasterScreenState();
 }
 
-class _MasterScreenState extends State<MasterScreen> {
+class _MasterScreenState extends State<MasterScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
 
   final List<Widget> _pages = [
     const MasterContent(),
@@ -66,10 +33,32 @@ class _MasterScreenState extends State<MasterScreen> {
     const ProfilePage(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      reverseDuration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    _animationController.forward().then((_) => _animationController.reverse());
   }
 
   @override
@@ -77,17 +66,107 @@ class _MasterScreenState extends State<MasterScreen> {
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: ScaleTransition(
+              scale: _selectedIndex == 0
+                  ? Tween<double>(begin: 1.0, end: 1.2).animate(_scaleAnimation)
+                  : const AlwaysStoppedAnimation(1.0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: Matrix4.translationValues(
+                    0, _selectedIndex == 0 ? -10 : 0, 0),
+                transformAlignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: _selectedIndex == 0
+                      ? BoxDecoration(
+                          color: const Color(0xFF1E88E5),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1E88E5).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        )
+                      : null,
+                  child: Icon(
+                    Icons.home,
+                    color: _selectedIndex == 0 ? Colors.white : Colors.grey,
+                  ),
+                ),
+              ),
+            ),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.inbox),
+            icon: ScaleTransition(
+              scale: _selectedIndex == 1
+                  ? Tween<double>(begin: 1.0, end: 1.2).animate(_scaleAnimation)
+                  : const AlwaysStoppedAnimation(1.0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: Matrix4.translationValues(
+                    0, _selectedIndex == 1 ? -10 : 0, 0),
+                transformAlignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: _selectedIndex == 1
+                      ? BoxDecoration(
+                          color: const Color(0xFF1E88E5),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1E88E5).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        )
+                      : null,
+                  child: Icon(
+                    Icons.inbox,
+                    color: _selectedIndex == 1 ? Colors.white : Colors.grey,
+                  ),
+                ),
+              ),
+            ),
             label: 'Inbox',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: ScaleTransition(
+              scale: _selectedIndex == 2
+                  ? Tween<double>(begin: 1.0, end: 1.2).animate(_scaleAnimation)
+                  : const AlwaysStoppedAnimation(1.0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: Matrix4.translationValues(
+                    0, _selectedIndex == 2 ? -10 : 0, 0),
+                transformAlignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: _selectedIndex == 2
+                      ? BoxDecoration(
+                          color: const Color(0xFF1E88E5),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1E88E5).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        )
+                      : null,
+                  child: Icon(
+                    Icons.person,
+                    color: _selectedIndex == 2 ? Colors.white : Colors.grey,
+                  ),
+                ),
+              ),
+            ),
             label: 'Profile',
           ),
         ],
@@ -218,7 +297,7 @@ class _MasterContentState extends State<MasterContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HomeHeader(urlFoto: _urlFoto), // Kirim URL foto ke HomeHeader
+                    HomeHeader(urlFoto: _urlFoto),
                     const BannerCarousel(),
                     const Categories(),
                     const DailyInfo(),
@@ -255,10 +334,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
   @override
   void initState() {
     super.initState();
-    // Inisialisasi PageController
     _pageController = PageController(initialPage: 0);
-
-    // Timer untuk slide otomatis setiap 3 detik
     _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
       if (_currentIndex < bannerImages.length - 1) {
         _currentIndex++;
@@ -275,7 +351,6 @@ class _BannerCarouselState extends State<BannerCarousel> {
 
   @override
   void dispose() {
-    // Hentikan timer dan dispose PageController
     _timer.cancel();
     _pageController.dispose();
     super.dispose();
@@ -286,7 +361,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 150, // Tinggi carousel
+          height: 150,
           child: PageView.builder(
             controller: _pageController,
             itemCount: bannerImages.length,
@@ -359,8 +434,8 @@ class HomeHeader extends StatelessWidget {
             child: CircleAvatar(
               radius: 22,
               backgroundImage: urlFoto != null && urlFoto!.isNotEmpty
-                  ? NetworkImage(urlFoto!) // Tampilkan gambar dari URL
-                  : const AssetImage('assets/images/profile.png') // Gambar default
+                  ? NetworkImage(urlFoto!)
+                  : const AssetImage('assets/images/profile.png')
                       as ImageProvider,
               backgroundColor: Colors.transparent,
             ),
@@ -455,6 +530,10 @@ class Categories extends StatelessWidget {
                         ),
                       );
                     } else if (category["text"] == "Layanan Karyawan") {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LayananMenuPage(),
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -768,32 +847,4 @@ void _showLoading(BuildContext context) {
       );
     },
   );
-}
-
-class MasterPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Halaman Master',
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1572E8),
-      ),
-      body: Center(
-        child: Text(
-          'Selamat Datang di Halaman Master',
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
-  }
 }
