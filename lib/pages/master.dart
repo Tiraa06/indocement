@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
@@ -5,8 +7,47 @@ import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
-import 'package:indocement_apk/pages/inbox.dart';
-import 'package:indocement_apk/pages/layanan_menu.dart'; // Add import for LayananMenuPage
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+
+// Placeholder for InboxPage
+class InboxPage extends StatelessWidget {
+  const InboxPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Inbox",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF1E88E5),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
+      body: Center(
+        child: Text(
+          "Inbox Page (Under Construction)",
+          style: TextStyle(fontSize: 18, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+}
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -69,8 +110,50 @@ class _MasterScreenState extends State<MasterScreen> {
   }
 }
 
-class MasterContent extends StatelessWidget {
+// Separated MasterScreen content into a new widget
+class MasterContent extends StatefulWidget {
   const MasterContent({super.key});
+
+  @override
+  State<MasterContent> createState() => _MasterContentState();
+}
+
+class _MasterContentState extends State<MasterContent> {
+  String? _urlFoto;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfilePhoto();
+  }
+
+  Future<void> _fetchProfilePhoto() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://213.35.123.110:5555/api/Employees/26'), // Ganti ID sesuai kebutuhan
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
+            if (data['UrlFoto'].startsWith('/')) {
+              _urlFoto = 'http://213.35.123.110:5555${data['UrlFoto']}';
+            } else {
+              _urlFoto = data['UrlFoto'];
+            }
+          } else {
+            _urlFoto = null; // Gunakan ikon profil jika URL tidak valid
+          }
+        });
+      } else {
+        print('Failed to fetch profile photo: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching profile photo: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,194 +168,15 @@ class MasterContent extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HomeHeader(),
-                    Banner(),
-                    Categories(),
-                    DailyInfo(),
-                    SizedBox(height: 48),
+                    HomeHeader(urlFoto: _urlFoto), // Kirim URL foto ke HomeHeader
+                    const BannerCarousel(),
+                    const Categories(),
+                    const DailyInfo(),
+                    const SizedBox(height: 48),
                   ],
                 ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    final ScrollController scrollController =
-                        ScrollController();
-
-                    return AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      contentPadding: const EdgeInsets.all(16.0),
-                      content: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.95,
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        child: Scrollbar(
-                          controller: scrollController,
-                          thumbVisibility: false,
-                          thickness: 3,
-                          radius: const Radius.circular(10),
-                          child: SingleChildScrollView(
-                            controller: scrollController,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Frequently Asked Questions (FAQ)',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1572E8),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                _buildFAQItem(
-                                  icon: Icons.home,
-                                  question: 'Apa fungsi halaman Home?',
-                                  answer:
-                                      'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.category,
-                                  question: 'Apa saja menu yang tersedia?',
-                                  answer:
-                                      'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.info,
-                                  question: 'Apa itu Info Harian?',
-                                  answer:
-                                      'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.help_outline,
-                                  question:
-                                      'Bagaimana cara mengakses menu BPJS?',
-                                  answer:
-                                      'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.notifications,
-                                  question: 'Apa itu fitur HR Care?',
-                                  answer:
-                                      'HR Care adalah fitur untuk membantu karyawan berkomunikasi dengan HRD. Melalui HR Care, Anda dapat melakukan konsultasi dengan HRD melalui chat, serta menyampaikan keluhan menggunakan formulir khusus yang akan langsung diteruskan ke HRD.',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.notifications,
-                                  question:
-                                      'Bagaimana cara menggunakan fitur konsultasi di HR Care?',
-                                  answer:
-                                      'Fitur konsultasi di HR Care memungkinkan Anda untuk berkonsultasi langsung dengan HRD melalui sistem chat. Saat Anda memulai konsultasi, sistem akan otomatis membuat ruang percakapan dengan HRD. Setelah itu, Anda dapat langsung melakukan chatting secara real-time untuk mendiskusikan kebutuhan atau pertanyaan Anda terkait kepegawaian',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.notifications,
-                                  question:
-                                      'Bagaimana cara menggunakan fitur keluhan di HR Care?',
-                                  answer:
-                                      'Pada fitur keluhan di HR Care, Anda akan mengisi formulir pengaduan dengan mencantumkan judul keluhan serta menjelaskan detail masalah pada bagian pesan. Anda juga dapat menambahkan foto atau bukti pendukung secara opsional jika diperlukan. Setelah formulir dikirimkan (submit), keluhan Anda akan langsung diteruskan ke HRD untuk ditindaklanjuti.',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      actions: [
-                        Center(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 24, vertical: 12),
-                            ),
-                            child: const Text(
-                              'Tutup',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              icon: const Icon(Icons.help_outline, color: Colors.white),
-              label: const Text(
-                "FAQ",
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.blue,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFAQItem({
-    required IconData icon,
-    required String question,
-    required String answer,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: const Color(0xFF1572E8),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  question,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.arrow_right,
-                color: Colors.grey,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  answer,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -280,8 +184,108 @@ class MasterContent extends StatelessWidget {
   }
 }
 
+class BannerCarousel extends StatefulWidget {
+  const BannerCarousel({super.key});
+
+  @override
+  _BannerCarouselState createState() => _BannerCarouselState();
+}
+
+class _BannerCarouselState extends State<BannerCarousel> {
+  final List<String> bannerImages = [
+    'assets/images/banner1.jpg',
+    'assets/images/banner2.jpg',
+    'assets/images/banner3.jpg',
+  ];
+
+  int _currentIndex = 0;
+  late PageController _pageController;
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi PageController
+    _pageController = PageController(initialPage: 0);
+
+    // Timer untuk slide otomatis setiap 3 detik
+    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+      if (_currentIndex < bannerImages.length - 1) {
+        _currentIndex++;
+      } else {
+        _currentIndex = 0;
+      }
+      _pageController.animateToPage(
+        _currentIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    // Hentikan timer dan dispose PageController
+    _timer.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 150, // Tinggi carousel
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: bannerImages.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.0),
+                  child: Image.asset(
+                    bannerImages[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            bannerImages.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4.0),
+              height: 6.0,
+              width: _currentIndex == index ? 16.0 : 6.0,
+              decoration: BoxDecoration(
+                color: _currentIndex == index ? Colors.blue : Colors.grey,
+                borderRadius: BorderRadius.circular(3.0),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key});
+  final String? urlFoto;
+
+  const HomeHeader({super.key, this.urlFoto});
 
   @override
   Widget build(BuildContext context) {
@@ -302,42 +306,16 @@ class HomeHeader extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const ProfilePage()),
               );
             },
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 22,
-              backgroundImage: AssetImage('assets/images/picture.jpg'),
+              backgroundImage: urlFoto != null && urlFoto!.isNotEmpty
+                  ? NetworkImage(urlFoto!) // Tampilkan gambar dari URL
+                  : const AssetImage('assets/images/profile.png') // Gambar default
+                      as ImageProvider,
               backgroundColor: Colors.transparent,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class Banner extends StatelessWidget {
-  const Banner({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final List<String> bannerImages = [
-      'assets/images/banner1.jpg',
-      'assets/images/banner2.jpg',
-      'assets/images/banner3.jpg',
-    ];
-
-    return Container(
-      margin: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Image.asset(
-          bannerImages[0],
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: 100,
-        ),
       ),
     );
   }
@@ -427,10 +405,15 @@ class Categories extends StatelessWidget {
                         ),
                       );
                     } else if (category["text"] == "Layanan Karyawan") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LayananMenuPage(),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Menu Layanan Karyawan belum tersedia'),
+                        ),
+                      );
+                    } else if (category["text"] == "Lainnya") {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Menu Lainnya belum tersedia'),
                         ),
                       );
                     } else {
@@ -688,6 +671,77 @@ class SectionTitle extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+void _showLoading(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                color: Colors.blue,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Memuat halaman...",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Harap tunggu sebentar",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class MasterPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Halaman Master',
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(0xFF1572E8),
+      ),
+      body: Center(
+        child: Text(
+          'Selamat Datang di Halaman Master',
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 16,
+          ),
+        ),
       ),
     );
   }
