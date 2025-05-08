@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/pcir_anak.dart';
 import 'package:indocement_apk/pages/pcir_pasutri.dart';
+import 'package:indocement_apk/pages/pcir_pendidikan.dart';
 
 class PCIRPage extends StatefulWidget {
   const PCIRPage({super.key});
@@ -189,7 +190,12 @@ class _PCIRPageState extends State<PCIRPage>
                           trailing: const Icon(Icons.arrow_forward_ios,
                               color: Colors.grey),
                           onTap: () {
-                            // Navigasi ke halaman Update Pendidikan
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                              builder: (context) =>
+                              const TambahDataPendidikanPage()), // Navigasi ke TambahDataPasutriPage
+                            ); // Navigasi ke halaman Update Pendidikan
                           },
                         ),
                       ),

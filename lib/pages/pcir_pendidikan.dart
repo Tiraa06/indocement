@@ -1,337 +1,337 @@
 import 'package:flutter/material.dart';
-import 'package:indocement_apk/pages/pcir_anak.dart';
-import 'package:indocement_apk/pages/pcir_pasutri.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart';
+import 'package:http/http.dart' as http;
 
-class PCIRPage extends StatefulWidget {
-  const PCIRPage({super.key});
+class TambahDataPendidikanPage extends StatefulWidget {
+  const TambahDataPendidikanPage({super.key});
 
   @override
-  _PCIRPageState createState() => _PCIRPageState();
+  State<TambahDataPendidikanPage> createState() =>
+      _TambahDataPendidikanPageState();
 }
 
-class _PCIRPageState extends State<PCIRPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-  bool _isMenuVisible = false;
+class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
+  int? idEmployee;
+  File? selectedIjazah;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0), // Start off-screen to the right
-      end: Offset.zero, // End at the original position
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutCubic,
-    ));
+    _loadEmployeeId();
   }
 
-  void _toggleMenu() {
+  void _loadEmployeeId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isMenuVisible = !_isMenuVisible;
-      if (_isMenuVisible) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
+      idEmployee = prefs.getInt('idEmployee');
     });
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        selectedIjazah = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _showPopup({
+    required BuildContext context,
+    required String title,
+    required String message,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  Future<void> uploadIjazah() async {
+    if (idEmployee == null) {
+      _showPopup(
+        context: this.context,
+        title: 'Gagal',
+        message: 'ID karyawan tidak valid.',
+      );
+      return;
+    }
+
+    if (selectedIjazah == null || !selectedIjazah!.existsSync()) {
+      _showPopup(
+        context: this.context,
+        title: 'Gagal',
+        message: 'Anda harus mengunggah Ijazah yang valid.',
+      );
+      return;
+    }
+
+    showLoadingDialog(this.context);
+
+    try {
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse(
+            'http://213.35.123.110:5555/api/Employees/$idEmployee/UrlIjazahTerbaru'),
+      );
+
+      request.headers['Accept'] = '*/*';
+      // Placeholder for authentication, replace with actual token if required
+      request.headers['Authorization'] = 'Bearer YOUR_AUTH_TOKEN_HERE';
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file', // Changed to 'file' to test server compatibility
+          selectedIjazah!.path,
+          filename:
+              'UrlIjazahTerbaru_${idEmployee}_${DateTime.now().millisecondsSinceEpoch}${extension(selectedIjazah!.path)}',
+        ),
+      );
+
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      Navigator.of(this.context).pop();
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _showPopup(
+          context: this.context,
+          title: 'Berhasil',
+          message: 'Ijazah berhasil diunggah.',
+        );
+      } else {
+        _showPopup(
+          context: this.context,
+          title: 'Gagal',
+          message:
+              'Gagal mengunggah Ijazah: ${response.statusCode} - $responseBody',
+        );
+      }
+    } catch (e) {
+      Navigator.of(this.context).pop();
+      _showPopup(
+        context: this.context,
+        title: 'Gagal',
+        message: 'Terjadi kesalahan: ${e.toString()}',
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF1572E8),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back), // Ikon back
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context); // Kembali ke halaman sebelumnya
+            Navigator.pop(context);
           },
         ),
-        backgroundColor: const Color(0xFF1572E8), // Warna latar belakang header
-        title: const Text(
-          "PCIR",
-          style: TextStyle(
-            color: Colors.white, // Warna putih untuk judul
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        iconTheme: const IconThemeData(
-          color: Colors.white, // Warna putih untuk ikon back
-        ),
+        elevation: 0,
       ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Banner
-                Container(
-                  margin:
-                      const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2), // Warna bayangan
-                        blurRadius: 8, // Radius blur bayangan
-                        offset: const Offset(0, 4), // Posisi bayangan
-                      ),
-                    ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1572E8),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.black,
+                    width: 1,
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                        16), // Sudut melengkung untuk gambar
-                    child: Image.asset(
-                      'assets/images/banner_pcir.png', // Path ke gambar banner
-                      width: double.infinity, // Lebar penuh
-                      height: 150, // Tinggi banner
-                      fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
-                  ),
+                  ],
                 ),
-
-                // Deskripsi
-                const Text(
-                  "Selamat datang di halaman PCIR. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
-                  textAlign: TextAlign.center, // Rata tengah
-                  style: TextStyle(
-                    fontSize: 16, // Perbesar ukuran teks
-                    fontWeight: FontWeight.w500, // Tambahkan ketebalan teks
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16), // Jarak antara deskripsi dan menu
-
-                // Menu
-                Expanded(
-                  child: ListView(
-                    children: [
-                      // Menu Daftar Istri/Suami
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.person, color: Colors.blue),
-                          title: const Text(
-                            "Daftar Istri/Suami",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TambahDataPasutriPage()), // Navigasi ke TambahDataPasutriPage
-                            );
-                          },
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                          width: 1,
                         ),
                       ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu Daftar Anak
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading:
-                              const Icon(Icons.child_care, color: Colors.green),
-                          title: const Text(
-                            "Daftar Anak",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TambahDataAnakPage()), // Navigasi ke TambahDataPasutriPage
-                            );
-                          },
-                        ),
+                      child: const Icon(
+                        Icons.school,
+                        size: 30,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu Update Pendidikan
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading:
-                              const Icon(Icons.school, color: Colors.orange),
-                          title: const Text(
-                            "Update Pendidikan",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
-                          onTap: () {
-                            // Navigasi ke halaman Update Pendidikan
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Floating FAQ button
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
-                      ),
-                      contentPadding: const EdgeInsets.all(16.0),
-                      content: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.9,
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Frequently Asked Questions (FAQ)',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1572E8),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _buildFAQItem(
-                                question: 'Apa itu PCIR?',
-                                answer: 'PCIR adalah sistem untuk mengelola data keluarga karyawan.',
-                              ),
-                              _buildFAQItem(
-                                question: 'Bagaimana cara menambah data?',
-                                answer: 'Anda dapat menambah data melalui tombol tambah di halaman ini.',
-                              ),
-                              _buildFAQItem(
-                                question: 'Apa saja dokumen yang diperlukan?',
-                                answer: 'Dokumen yang diperlukan meliputi KK, Surat Nikah, dan dokumen pendukung lainnya.',
-                              ),
-                              _buildFAQItem(
-                                question: 'Bagaimana cara mengedit data?',
-                                answer: 'Anda dapat mengedit data dengan memilih data yang ingin diubah.',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'Tutup',
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Update Data Pendidikan',
                             style: TextStyle(
-                              color: Colors.red,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              icon: const Icon(Icons.help_outline, color: Colors.white),
-              label: const Text(
-                "FAQ",
-                style: TextStyle(color: Colors.white),
+                          SizedBox(height: 8),
+                          Text(
+                            'Halaman ini digunakan untuk mengunggah dokumen Ijazah terbaru.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              backgroundColor: Colors.blue,
-            ),
+              const SizedBox(height: 24),
+              _buildBox(
+                title: 'Upload Ijazah',
+                onTap: pickImage,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: uploadIjazah,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1572E8),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text(
+                  'Kirim Dokumen',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
-}
 
-Widget _buildFAQItem({
-  required String question,
-  required String answer,
-}) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.question_answer,
-              color: Color(0xFF1572E8),
-              size: 20,
+  Widget _buildBox({
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.black,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
-            const SizedBox(width: 8),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1572E8),
+                borderRadius: BorderRadius.circular(8),
+                image: selectedIjazah != null
+                    ? DecorationImage(
+                        image: FileImage(selectedIjazah!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: selectedIjazah == null
+                  ? const Icon(
+                      Icons.upload_file,
+                      size: 30,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                question,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectedIjazah != null
+                        ? basename(selectedIjazah!.path)
+                        : 'Belum ada file yang dipilih',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Icon(
-              Icons.arrow_right,
-              color: Colors.grey,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                answer,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/medic_pasutri.dart'; // Import halaman MedicPasutriPage
+import 'package:indocement_apk/pages/skk_form.dart'; // Import halaman MedicPasutriPage
 
 class SKKMedicPage extends StatelessWidget {
   const SKKMedicPage({super.key});
@@ -74,7 +75,7 @@ class SKKMedicPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                           builder: (context) =>
-                              const SuratKeteranganKerjaPage()),
+                              const SkkFormPage()),
                     );
                   },
                 ),

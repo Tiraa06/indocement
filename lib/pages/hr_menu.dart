@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'chat.dart';
@@ -16,7 +15,8 @@ class HRCareMenuPage extends StatefulWidget {
   State<HRCareMenuPage> createState() => _HRCareMenuPageState();
 }
 
-class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProviderStateMixin {
+class _HRCareMenuPageState extends State<HRCareMenuPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   late String _dateTime;
@@ -25,23 +25,20 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
   void initState() {
     super.initState();
 
-    // Inisialisasi AnimationController
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300), // Durasi animasi
+      duration: const Duration(milliseconds: 300),
     );
 
-    // Inisialisasi Slide Animation
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0), // Mulai dari luar layar (kanan)
-      end: Offset.zero, // Berakhir di posisi normal
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut, // Kurva animasi
+      curve: Curves.easeInOut,
     ));
 
     _updateTime();
-    // Update setiap detik
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
@@ -52,20 +49,20 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
 
   @override
   void dispose() {
-    _animationController.dispose(); // Hentikan controller saat widget dihancurkan
+    _animationController.dispose();
     super.dispose();
   }
 
   void _toggleMenu() {
     if (_animationController.isCompleted) {
-      _animationController.reverse(); // Tutup menu
+      _animationController.reverse();
     } else {
-      _animationController.forward(); // Buka menu
+      _animationController.forward();
     }
   }
 
   void _updateTime() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 7)); // WIB
+    final now = DateTime.now().toUtc().add(const Duration(hours: 7));
     setState(() {
       _dateTime =
           "${now.day}/${now.month}/${now.year} - ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')} WIB";
@@ -90,12 +87,12 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
         final int idEsl = employeeData['IdEsl'];
 
         if (idEsl >= 1 && idEsl <= 4) {
-          _showLoading(context); // Tampilkan loading
+          _showLoading(context);
           Future.delayed(const Duration(seconds: 2), () {
-            Navigator.pop(context); // Tutup loading
+            Navigator.pop(context);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const BPJSPage()), // Navigasi ke halaman BPJSPage
+              MaterialPageRoute(builder: (_) => const BPJSPage()),
             );
           });
         } else if (idEsl == 5 || idEsl == 6) {
@@ -114,7 +111,8 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
                     const SizedBox(height: 16),
                     const Text(
                       "Akses Belum Diberikan",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -132,7 +130,8 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text("Tutup", style: TextStyle(color: Colors.white)),
+                      child: const Text("Tutup",
+                          style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -168,266 +167,370 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Ikon back warna putih
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const MasterScreen()), // Navigasi ke halaman Master
-            );
-          },
-        ),
-        title: Text(
-          "Hr Care Menu", // Ganti teks menjadi BPJS
-          style: GoogleFonts.roboto(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.white, // Warna teks putih
-          ),
-        ),
-        backgroundColor: const Color(0xFF1572E8), // Warna latar belakang header
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white), // Ikon menu garis tiga warna putih
-            onPressed: () {
-              _toggleMenu(); // Buka atau tutup menu
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Banner
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/banner_hr.jpg',
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double screenWidth = constraints.maxWidth;
+        final double screenHeight = constraints.maxHeight;
+        final double paddingValue = screenWidth * 0.04; // 4% of screen width
+        final double baseFontSize = screenWidth * 0.04; // 4% for font scaling
 
-                // Deskripsi
-                Text(
-                  "Selamat datang di Hr Care 👋\nSilakan pilih layanan yang Anda butuhkan.",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // Menu Konsultasi Dengan HR
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung lebih besar
-                  ),
-                  elevation: 4, // Tambahkan sedikit bayangan
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16), // Padding lebih besar
-                    leading: CircleAvatar(
-                      radius: 35, // Perbesar ukuran lingkaran ikon
-                      backgroundColor: const Color(0xFF1572E8).withOpacity(0.2),
-                      child: SvgPicture.asset(
-                        'assets/icons/consultation.svg',
-                        height: 40, // Perbesar ikon
-                        width: 40,
-                        color: const Color(0xFF1572E8),
-                      ),
-                    ),
-                    title: Text(
-                      "Konsultasi Dengan HR",
-                      style: GoogleFonts.roboto(
-                        fontSize: 18, // Ukuran teks tetap
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1572E8),
-                      ),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 28), // Perbesar ikon panah
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChatPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20), // Jarak antar menu
-
-                // Menu Keluhan Karyawan
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung lebih besar
-                  ),
-                  elevation: 4, // Tambahkan sedikit bayangan
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16), // Padding lebih besar
-                    leading: CircleAvatar(
-                      radius: 35, // Perbesar ukuran lingkaran ikon
-                      backgroundColor: const Color(0xFFDE2328).withOpacity(0.2),
-                      child: SvgPicture.asset(
-                        'assets/icons/complaint.svg',
-                        height: 40, // Perbesar ikon
-                        width: 40,
-                        color: const Color(0xFFDE2328),
-                      ),
-                    ),
-                    title: Text(
-                      "Keluhan Karyawan",
-                      style: GoogleFonts.roboto(
-                        fontSize: 18, // Ukuran teks tetap
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFDE2328),
-                      ),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 28), // Perbesar ikon panah
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const KeluhanPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Jam dan Tanggal
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5FB),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.access_time,
-                          color: Color(0xFF1572E8), size: 32),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          _dateTime,
-                          style: GoogleFonts.roboto(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MasterScreen()),
+                );
+              },
             ),
+            title: Text(
+              "HR Care",
+              style: GoogleFonts.roboto(
+                fontWeight: FontWeight.bold,
+                fontSize: baseFontSize * 1.25, // ~20 on 500px screen
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: const Color(0xFF1572E8),
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: _toggleMenu,
+              ),
+            ],
           ),
-
-          // SlideTransition Menu
-          SlideTransition(
-            position: _slideAnimation,
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white, // Background slider menjadi putih
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    bottomLeft: Radius.circular(20),
-                  ),
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.1), // Warna border lebih halus
-                    width: 1, // Ketebalan border 1px
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(-4, 0),
-                    ),
-                  ],
-                ),
+          body: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(paddingValue),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        "Menu",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black, // Warna teks menu menjadi hitam
+                    Container(
+                      margin: EdgeInsets.only(bottom: paddingValue),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/banner_hr.jpg',
+                          width: double.infinity,
+                          height: screenHeight * 0.2, // Responsive height
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    const Divider(color: Colors.grey),
-                    _buildMenuItem(
-                      context,
-                      title: "BPJS",
-                      icon: Icons.health_and_safety,
-                      color: Colors.blue, // Warna menu menjadi biru
-                      onTap: () {
-                        _checkAccess(context); // Panggil fungsi akses
-                      },
+                    Text(
+                      "Selamat datang di HR Care. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(
+                        fontSize: baseFontSize * 0.9, // ~16 on 500px screen
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
                     ),
-                    const SizedBox(height: 16), // Jarak antar menu
-                    _buildMenuItem(
-                      context,
-                      title: "ID & Slip Salary",
-                      icon: Icons.badge,
-                      color: Colors.blue, // Warna menu menjadi biru
-                      onTap: () {
-                        // Aksi untuk ID & Slip Salary
-                      },
-                    ),
-                    const SizedBox(height: 16), // Jarak antar menu
-                    _buildMenuItem(
-                      context,
-                      title: "SK Kerja & Medical",
-                      icon: Icons.description,
-                      color: Colors.blue, // Warna menu menjadi biru
-                      onTap: () {
-                        // Aksi untuk SK Kerja & Medical
-                      },
-                    ),
-                    const SizedBox(height: 16), // Jarak antar menu
-                    _buildMenuItem(
-                      context,
-                      title: "Layanan Karyawan",
-                      icon: Icons.support_agent,
-                      color: Colors.blue, // Warna menu menjadi biru
-                      onTap: () {
-                        // Aksi untuk Layanan Karyawan
-                      },
+                    SizedBox(height: paddingValue * 0.5),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                            child: ListTile(
+                              leading:
+                                  const Icon(Icons.message, color: Colors.blue),
+                              title: const Text(
+                                "Konsultasi Dengan HR",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios,
+                                  color: Colors.grey),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const ChatPage()),
+                                );
+                              },
+                            ),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                            child: ListTile(
+                              leading:
+                                  const Icon(Icons.report, color: Colors.red),
+                              title: const Text(
+                                "Keluhan Karyawan",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios,
+                                  color: Colors.grey),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const KeluhanPage()),
+                                );
+                              },
+                            ),
+                          ),
+                          SizedBox(height: paddingValue * 0.5),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              vertical: paddingValue,
+                              horizontal: paddingValue * 0.8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5FB),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.access_time,
+                                    color: Color(0xFF1572E8), size: 32),
+                                SizedBox(width: paddingValue * 0.8),
+                                Expanded(
+                                  child: Text(
+                                    _dateTime,
+                                    style: GoogleFonts.roboto(
+                                      fontSize: baseFontSize *
+                                          1.0, // ~18 on 500px screen
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
+              Positioned(
+                bottom: 20,
+                right: 20,
+                child: FloatingActionButton.extended(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        final ScrollController scrollController =
+                            ScrollController();
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          contentPadding: const EdgeInsets.all(16.0),
+                          content: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.95,
+                            height: MediaQuery.of(context).size.height * 0.6,
+                            child: Scrollbar(
+                              controller: scrollController,
+                              thumbVisibility: false,
+                              thickness: 3,
+                              radius: const Radius.circular(10),
+                              child: SingleChildScrollView(
+                                controller: scrollController,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Frequently Asked Questions (FAQ)',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1572E8),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildFAQItem(
+                                      icon: Icons.home,
+                                      question: 'Apa fungsi halaman Home?',
+                                      answer:
+                                          'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                    ),
+                                    _buildFAQItem(
+                                      icon: Icons.category,
+                                      question: 'Apa saja menu yang tersedia?',
+                                      answer:
+                                          'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                    ),
+                                    _buildFAQItem(
+                                      icon: Icons.info,
+                                      question: 'Apa itu Info Harian?',
+                                      answer:
+                                          'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                    ),
+                                    _buildFAQItem(
+                                      icon: Icons.help_outline,
+                                      question:
+                                          'Bagaimana cara mengakses menu BPJS?',
+                                      answer:
+                                          'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                    ),
+                                    _buildFAQItem(
+                                      icon: Icons.notifications,
+                                      question:
+                                          'Apa itu pengingat di Info Harian?',
+                                      answer:
+                                          'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            Center(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 12),
+                                ),
+                                child: const Text(
+                                  'Tutup',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.help_outline, color: Colors.white),
+                  label: const Text(
+                    "FAQ",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: Colors.blue,
+                ),
+              ),
+              SlideTransition(
+                position: _slideAnimation,
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        bottomLeft: Radius.circular(20),
+                      ),
+                      border: Border.all(
+                        color: Colors.black.withOpacity(0.1),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(-4, 0),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text(
+                            "Menu",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        const Divider(color: Colors.grey),
+                        _buildMenuItem(
+                          context,
+                          title: "BPJS",
+                          icon: Icons.health_and_safety,
+                          color: Colors.blue,
+                          onTap: () {
+                            _checkAccess(context);
+                          },
+                        ),
+                        SizedBox(height: paddingValue * 0.5),
+                        _buildMenuItem(
+                          context,
+                          title: "ID & Slip Salary",
+                          icon: Icons.badge,
+                          color: Colors.blue,
+                          onTap: () {
+                            // Aksi untuk ID & Slip Salary
+                          },
+                        ),
+                        SizedBox(height: paddingValue * 0.5),
+                        _buildMenuItem(
+                          context,
+                          title: "SK Kerja & Medical",
+                          icon: Icons.description,
+                          color: Colors.blue,
+                          onTap: () {
+                            // Aksi untuk SK Kerja & Medical
+                          },
+                        ),
+                        SizedBox(height: paddingValue * 0.5),
+                        _buildMenuItem(
+                          context,
+                          title: "Layanan Karyawan",
+                          icon: Icons.support_agent,
+                          color: Colors.blue,
+                          onTap: () {
+                            // Aksi untuk Layanan Karyawan
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -442,22 +545,60 @@ class _HRCareMenuPageState extends State<HRCareMenuPage> with SingleTickerProvid
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      elevation: 0, // Hilangkan shadow dengan mengatur elevation menjadi 0
+      elevation: 0,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2), // Warna latar belakang ikon
-          child: Icon(icon, color: color), // Ikon dengan warna biru
+          backgroundColor: color.withOpacity(0.2),
+          child: Icon(icon, color: color),
         ),
         title: Text(
           title,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: color, // Warna teks menu menjadi biru
+            color: color,
           ),
         ),
         trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildFAQItem({
+    required IconData icon,
+    required String question,
+    required String answer,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF1572E8)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  question,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  answer,
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

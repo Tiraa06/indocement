@@ -5,14 +5,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class NotificationPage extends StatefulWidget {
-  const NotificationPage({super.key});
+class InboxPage extends StatefulWidget {
+  const InboxPage({super.key});
 
   @override
-  _NotificationPageState createState() => _NotificationPageState();
+  _InboxPageState createState() => _InboxPageState();
 }
 
-class _NotificationPageState extends State<NotificationPage> {
+class _InboxPageState extends State<InboxPage> {
   List<Map<String, dynamic>> _complaints = [];
   bool _isLoading = true;
   int? _employeeId;
@@ -93,7 +93,7 @@ class _NotificationPageState extends State<NotificationPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Notifications",
+          "Inbox",
           style: GoogleFonts.roboto(
             fontWeight: FontWeight.bold,
             fontSize: 22,

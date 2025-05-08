@@ -1,14 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/id_card.dart';
-import 'dart:convert';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:http/http.dart' as http;
 
 // Placeholder for InboxPage
 class InboxPage extends StatelessWidget {
@@ -58,9 +59,8 @@ class MasterScreen extends StatefulWidget {
 class _MasterScreenState extends State<MasterScreen> {
   int _selectedIndex = 0;
 
-  // List of pages for navigation
   final List<Widget> _pages = [
-    const MasterContent(), // Original MasterScreen content
+    const MasterContent(),
     const InboxPage(),
     const ProfilePage(),
   ];
@@ -158,7 +158,7 @@ class _MasterContentState extends State<MasterContent> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // Cegah tombol back keluar
+      onWillPop: () async => false,
       child: Stack(
         children: [
           Scaffold(
@@ -326,7 +326,6 @@ class Categories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Daftar kategori
     List<Map<String, String>> categories = [
       {"icon": "assets/icons/bpjs.svg", "text": "BPJS"},
       {"icon": "assets/icons/id_card.svg", "text": "ID Card"},
@@ -374,9 +373,9 @@ class Categories extends StatelessWidget {
                 iconPath: category["icon"]!,
                 text: category["text"]!,
                 press: () {
-                  _showLoading(context); // Tampilkan loading dialog
+                  _showLoading(context);
                   Future.delayed(const Duration(seconds: 2), () {
-                    Navigator.pop(context); // Tutup loading dialog
+                    Navigator.pop(context);
                     if (category["text"] == "BPJS") {
                       Navigator.push(
                         context,
@@ -405,10 +404,23 @@ class Categories extends StatelessWidget {
                           builder: (context) => const SKKMedicPage(),
                         ),
                       );
+                    } else if (category["text"] == "Layanan Karyawan") {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Menu Layanan Karyawan belum tersedia'),
+                        ),
+                      );
+                    } else if (category["text"] == "Lainnya") {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Menu Lainnya belum tersedia'),
+                        ),
+                      );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Menu ${category["text"]} belum tersedia'),
+                          content:
+                              Text('Menu ${category["text"]} belum tersedia'),
                         ),
                       );
                     }
