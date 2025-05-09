@@ -477,51 +477,66 @@ class _SkkFormPageState extends State<SkkFormPage> {
                           style: TextStyle(fontSize: 14, color: Colors.grey),
                         )
                       else
-                        ...skkData.map((data) => Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: skkData.length,
+                          separatorBuilder: (context, index) => const Divider(
+                            height: 24,
+                            thickness: 1,
+                            color: Colors.grey,
+                          ),
+                          itemBuilder: (context, index) {
+                            final data = skkData[index];
+                            final keperluan = data['Keperluan']?.toString() ??
+                                'Tidak diketahui';
+                            print(
+                                'Keperluan [$index]: $keperluan'); // Debugging
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Keperluan: ${data['Keperluan'] ?? 'Tidak diketahui'}',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
+                                Expanded(
+                                  child: Tooltip(
+                                    message: keperluan,
+                                    child: Text(
+                                      'Keperluan: $keperluan',
+                                      style: const TextStyle(fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    Text(
-                                      'Status: ${data['Status'] ?? 'Tidak diketahui'}',
-                                      style: const TextStyle(
-                                          fontSize: 14, color: Colors.grey),
+                                  ),
+                                ),
+                                ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(minWidth: 120),
+                                  child: Text(
+                                    'Status: ${data['Status'] ?? 'Tidak diketahui'}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
                                     ),
-                                  ],
+                                    textAlign: TextAlign.right,
+                                  ),
                                 ),
                                 if (data['UrlSkk'] != null)
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
-                                    child: ElevatedButton(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.download,
+                                        color: Color(0xFF1572E8),
+                                        size: 24,
+                                      ),
                                       onPressed: () => _downloadSkk(
-                                          data['NoSkk'], data['UrlSkk']),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF1572E8),
-                                        minimumSize:
-                                            const Size(double.infinity, 40),
+                                        data['NoSkk'],
+                                        data['UrlSkk'],
                                       ),
-                                      child: const Text(
-                                        'Download SKK',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
+                                      tooltip: 'Download SKK',
                                     ),
                                   ),
-                                const SizedBox(height: 12),
                               ],
-                            )),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),

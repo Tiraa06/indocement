@@ -8,7 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Added for initializeDateFormatting
+import 'package:intl/date_symbol_data_local.dart';
 
 class IdCardUploadPage extends StatefulWidget {
   const IdCardUploadPage({super.key});
@@ -231,7 +231,7 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
 
     if (_selectedStatus == 'Hilang' && suratKehilangan != null) {
       final suratMimeType =
-          lookupMimeType(suratKehilangan!.path) ?? 'image/png';
+          lookupMimeType(suratKehilangan!.path) ?? 'application/pdf';
       final suratMimeTypeData = suratMimeType.split('/');
       request.files.add(await http.MultipartFile.fromPath(
         'UrlSuratKehilangan',
@@ -320,24 +320,81 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => pickImage(onPicked, allowPdf: allowPdf),
-              icon: const Icon(Icons.upload_file),
-              label: Text(file == null ? 'Pilih Gambar' : 'Ganti'),
-            ),
-            const SizedBox(width: 12),
-            if (file != null)
-              Expanded(
-                child: Text(
-                  path.basename(file.path),
-                  overflow: TextOverflow.ellipsis,
-                ),
+        GestureDetector(
+          onTap: () => pickImage(onPicked, allowPdf: allowPdf),
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.black,
+                width: 1,
               ),
-          ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1572E8),
+                    borderRadius: BorderRadius.circular(8),
+                    image: file != null
+                        ? DecorationImage(
+                            image: FileImage(file),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: file == null
+                      ? const Icon(
+                          Icons.upload_file,
+                          size: 30,
+                          color: Colors.white,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pilih File',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        file != null
+                            ? path.basename(file.path)
+                            : 'Belum ada file yang dipilih',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 16),
       ],
