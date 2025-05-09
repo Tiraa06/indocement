@@ -534,10 +534,6 @@ class Categories extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const LayananMenuPage(),
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LayananMenuPage(),
                         ),
                       );
                     } else if (category["text"] == "Lainnya") {
