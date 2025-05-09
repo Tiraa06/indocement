@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/utils/whatsapp_helper.dart';
+import 'package:indocement_apk/pages/bpjs_page.dart';
 
 class BPJSKetenagakerjaanPage extends StatelessWidget {
   const BPJSKetenagakerjaanPage({super.key});
@@ -14,7 +15,7 @@ class BPJSKetenagakerjaanPage extends StatelessWidget {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const MasterScreen()),
+              MaterialPageRoute(builder: (context) => const BPJSPage()),
             );
           },
         ),
@@ -40,22 +41,22 @@ class BPJSKetenagakerjaanPage extends StatelessWidget {
                 Container(
                   margin: const EdgeInsets.only(bottom: 16.0),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.2), // Warna bayangan
+                        blurRadius: 8, // Radius blur bayangan
+                        offset: const Offset(0, 4), // Posisi bayangan
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
                     child: Image.asset(
-                      'assets/images/banner_ketenaga.png',
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
+                      'assets/images/banner_ketenaga.png', // Path ke gambar banner
+                      width: double.infinity, // Lebar penuh
+                      height: 250, // Tinggi banner diubah menjadi 250
+                      fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
                     ),
                   ),
                 ),

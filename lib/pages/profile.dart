@@ -156,7 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final profileImage = _urlFoto != null && _urlFoto!.isNotEmpty
         ? NetworkImage(_urlFoto!)
-        : const AssetImage('assets/images/picture.jpg') as ImageProvider;
+        : const AssetImage('assets/images/profile.png') as ImageProvider;
 
     return Scaffold(
       appBar: AppBar(

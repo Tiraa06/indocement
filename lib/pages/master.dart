@@ -530,10 +530,7 @@ class Categories extends StatelessWidget {
                         ),
                       );
                     } else if (category["text"] == "Layanan Karyawan") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LayananMenuPage(),
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(

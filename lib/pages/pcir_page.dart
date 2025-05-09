@@ -99,7 +99,7 @@ class _PCIRPageState extends State<PCIRPage>
                     child: Image.asset(
                       'assets/images/banner_pcir.png', // Path ke gambar banner
                       width: double.infinity, // Lebar penuh
-                      height: 150, // Tinggi banner
+                      height: 250, // Tinggi banner
                       fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
                     ),
                   ),
@@ -119,87 +119,54 @@ class _PCIRPageState extends State<PCIRPage>
 
                 // Menu
                 Expanded(
-                  child: ListView(
-                    children: [
-                      // Menu Daftar Istri/Suami
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.person, color: Colors.blue),
-                          title: const Text(
-                            "Daftar Istri/Suami",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, // Dua kolom
+                      crossAxisSpacing: 16, // Jarak horizontal antar kotak
+                      mainAxisSpacing: 16, // Jarak vertikal antar kotak
+                      childAspectRatio: 1, // Rasio aspek kotak (lebar = tinggi)
+                    ),
+                    itemCount: 3, // Jumlah menu
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return _buildMenuBox(
+                          icon: Icons.person,
+                          title: 'Daftar Istri/Suami',
+                          color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TambahDataPasutriPage()), // Navigasi ke TambahDataPasutriPage
+                              MaterialPageRoute(builder: (context) => const TambahDataPasutriPage()),
                             );
                           },
-                        ),
-                      ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu Daftar Anak
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading:
-                              const Icon(Icons.child_care, color: Colors.green),
-                          title: const Text(
-                            "Daftar Anak",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
+                        );
+                      } else if (index == 1) {
+                        return _buildMenuBox(
+                          icon: Icons.child_care,
+                          title: 'Daftar Anak',
+                          color: Colors.green,
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TambahDataAnakPage()), // Navigasi ke TambahDataPasutriPage
+                              MaterialPageRoute(builder: (context) => const TambahDataAnakPage()),
                             );
                           },
-                        ),
-                      ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu Update Pendidikan
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading:
-                              const Icon(Icons.school, color: Colors.orange),
-                          title: const Text(
-                            "Update Pendidikan",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
+                        );
+                      } else if (index == 2) {
+                        return _buildMenuBox(
+                          icon: Icons.school,
+                          title: 'Update Pendidikan',
+                          color: Colors.orange,
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                              builder: (context) =>
-                              const TambahDataPendidikanPage()), // Navigasi ke TambahDataPasutriPage
-                            ); // Navigasi ke halaman Update Pendidikan
+                              MaterialPageRoute(builder: (context) => const TambahDataPendidikanPage()),
+                            );
                           },
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ),
               ],
@@ -338,6 +305,46 @@ Widget _buildFAQItem({
           ],
         ),
       ],
+    ),
+  );
+}
+
+Widget _buildMenuBox({
+  required IconData icon,
+  required String title,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white, // Background putih
+        borderRadius: BorderRadius.circular(12), // Sudut melengkung
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1), // Bayangan lembut
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 40, color: color), // Ikon di tengah
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87, // Teks berwarna hitam
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

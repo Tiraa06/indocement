@@ -317,6 +317,63 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     );
   }
 
+  Widget _buildUploadButton({
+    required String title,
+    required VoidCallback onPressed,
+    required IconData icon,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 24, color: Colors.white),
+      label: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF1572E8), // Warna tombol
+        minimumSize: const Size(double.infinity, 50), // Lebar penuh
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), // Sudut melengkung
+        ),
+        elevation: 4, // Bayangan tombol
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -342,316 +399,218 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Informasi BPJS Karyawan
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1572E8),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 255, 255, 255), // Border warna hitam
-                          width: 1, // Ketebalan border 1px
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1572E8),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.info,
+                          size: 30,
+                          color: Colors.white,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.info,
-                        size: 30,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Informasi BPJS Karyawan',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Informasi BPJS Karyawan',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Halaman ini digunakan untuk mengunggah dokumen yang diperlukan untuk pengelolaan BPJS Karyawan.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
+                            SizedBox(height: 8),
+                            Text(
+                              'Halaman ini digunakan untuk mengunggah dokumen yang diperlukan untuk pengelolaan BPJS Karyawan.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
 
               // BPJS Istri Section
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
+              _buildSection(
+                title: 'BPJS Pasanagan',
+                children: [
+                  _buildBox(
+                    title: 'Upload KK',
+                    fieldName: 'UrlKk',
+                    anggotaBpjs: 'Pasangan',
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'BPJS Istri',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildBox(
-                      title: 'Upload KK',
-                      fieldName: 'UrlKk',
-                      anggotaBpjs: 'Pasangan',
-                    ),
-                    const SizedBox(height: 16),
-                    _buildBox(
-                      title: 'Upload Surat Nikah',
-                      fieldName: 'UrlSuratNikah',
-                      anggotaBpjs: 'Pasangan',
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Validasi dan pengunggahan dokumen
-                        if (selectedImages['UrlKk'] == null || selectedImages['UrlSuratNikah'] == null) {
-                          _showPopup(
-                            context: context,
-                            title: 'Gagal',
-                            message: 'Anda harus mengunggah KK dan Surat Nikah.',
-                          );
-                          return;
-                        }
+                  const SizedBox(height: 16),
+                  _buildBox(
+                    title: 'Upload Surat Nikah',
+                    fieldName: 'UrlSuratNikah',
+                    anggotaBpjs: 'Pasangan',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildUploadButton(
+                    title: 'Kirim Dokumen BPJS Pasangan',
+                    icon: Icons.upload_file,
+                    onPressed: () async {
+                      // Validasi dan pengunggahan dokumen
+                      if (selectedImages['UrlKk'] == null || selectedImages['UrlSuratNikah'] == null) {
+                        _showPopup(
+                          context: context,
+                          title: 'Gagal',
+                          message: 'Anda harus mengunggah KK dan Surat Nikah.',
+                        );
+                        return;
+                      }
 
-                        final List<Map<String, dynamic>> documents = [
-                          {
-                            'fieldName': 'UrlKk',
-                            'file': selectedImages['UrlKk'],
-                          },
-                          {
-                            'fieldName': 'UrlSuratNikah',
-                            'file': selectedImages['UrlSuratNikah'],
-                          },
-                        ];
+                      final List<Map<String, dynamic>> documents = [
+                        {
+                          'fieldName': 'UrlKk',
+                          'file': selectedImages['UrlKk'],
+                        },
+                        {
+                          'fieldName': 'UrlSuratNikah',
+                          'file': selectedImages['UrlSuratNikah'],
+                        },
+                      ];
 
-                        // Konversi dokumen ke arrays untuk upload
-                        List<File> files = [];
-                        List<String> fieldNames = [];
-                        for (var doc in documents) {
-                          files.add(doc['file'] as File);
-                          fieldNames.add(doc['fieldName'] as String);
-                        }
-
-                        showLoadingDialog(context);
-
-                        try {
-                          await uploadBpjsDocumentsCompressed(
-                            idEmployee: idEmployee!,
-                            anggotaBpjs: 'Pasangan',
-                            fieldNames: fieldNames,
-                            files: files,
-                          );
-
-                          Navigator.of(context).pop();
-                          _showPopup(
-                            context: context,
-                            title: 'Berhasil',
-                            message: 'Dokumen BPJS Istri berhasil diunggah.',
-                          );
-                        } catch (e) {
-                          Navigator.of(context).pop();
-                          print("❌ Error saat mengunggah dokumen: $e");
-                          _showPopup(
-                            context: context,
-                            title: 'Gagal',
-                            message: 'Terjadi kesalahan saat mengunggah dokumen.',
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: const Text(
-                        'Kirim Dokumen BPJS Istri',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                      try {
+                        await uploadBpjsWithArray(
+                          context: context,
+                          anggotaBpjs: 'Pasangan',
+                          documents: documents,
+                        );
+                      } catch (e) {
+                        print("❌ Error saat mengunggah dokumen: $e");
+                        _showPopup(
+                          context: context,
+                          title: 'Gagal',
+                          message: 'Terjadi kesalahan saat mengunggah dokumen.',
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 
               // BPJS Anak Section
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.black, // Border warna hitam
-                    width: 1, // Ketebalan border 1px
+              _buildSection(
+                title: 'BPJS Anak',
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedAnakKe,
+                        hint: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('Pilih Anak Ke-'),
+                        ),
+                        isExpanded: true,
+                        items: List.generate(5, (index) => (index + 1).toString())
+                            .map((e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text('Anak ke-$e'),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedAnakKe = value;
+                          });
+                        },
+                      ),
+                    ),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'BPJS Anak',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black), // Border warna hitam
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedAnakKe,
-                          hint: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('Pilih Anak Ke-'),
-                          ),
-                          isExpanded: true,
-                          items: List.generate(5, (index) => (index + 1).toString())
-                              .map((e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                                      child: Text('Anak ke-$e'),
-                                    ),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedAnakKe = value;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    _buildBox(
-                      title: 'Upload KK',
-                      fieldName: 'UrlKkAnak',
-                      anggotaBpjs: 'Anak',
-                    ),
-                    const SizedBox(height: 16),
-                    _buildBox(
-                      title: 'Upload Surat Keterangan Lahir',
-                      fieldName: 'UrlAkteLahir',
-                      anggotaBpjs: 'Anak',
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Validasi dan pengunggahan dokumen
-                        if (selectedAnakKe == null) {
-                          _showPopup(
-                            context: context,
-                            title: 'Gagal',
-                            message: 'Pilih Anak Ke berapa terlebih dahulu.',
-                          );
-                          return;
-                        }
+                  _buildBox(
+                    title: 'Upload KK',
+                    fieldName: 'UrlKkAnak',
+                    anggotaBpjs: 'Anak',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildBox(
+                    title: 'Upload Surat Keterangan Lahir',
+                    fieldName: 'UrlAkteLahir',
+                    anggotaBpjs: 'Anak',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildUploadButton(
+                    title: 'Kirim Dokumen BPJS Anak',
+                    icon: Icons.upload_file,
+                    onPressed: () async {
+                      // Validasi dan pengunggahan dokumen
+                      if (selectedAnakKe == null) {
+                        _showPopup(
+                          context: context,
+                          title: 'Gagal',
+                          message: 'Pilih Anak Ke berapa terlebih dahulu.',
+                        );
+                        return;
+                      }
 
-                        if (selectedImages['UrlKkAnak'] == null || selectedImages['UrlAkteLahir'] == null) {
-                          _showPopup(
-                            context: context,
-                            title: 'Gagal',
-                            message: 'Anda harus mengunggah KK dan Akta Lahir.',
-                          );
-                          return;
-                        }
+                      if (selectedImages['UrlKkAnak'] == null || selectedImages['UrlAkteLahir'] == null) {
+                        _showPopup(
+                          context: context,
+                          title: 'Gagal',
+                          message: 'Anda harus mengunggah KK dan Akta Lahir.',
+                        );
+                        return;
+                      }
 
-                        final List<Map<String, dynamic>> documents = [
-                          {
-                            'fieldName': 'UrlKk',
-                            'file': selectedImages['UrlKkAnak'],
-                          },
-                          {
-                            'fieldName': 'UrlAkteLahir',
-                            'file': selectedImages['UrlAkteLahir'],
-                          },
-                        ];
+                      final List<Map<String, dynamic>> documents = [
+                        {
+                          'fieldName': 'UrlKk',
+                          'file': selectedImages['UrlKkAnak'],
+                        },
+                        {
+                          'fieldName': 'UrlAkteLahir',
+                          'file': selectedImages['UrlAkteLahir'],
+                        },
+                      ];
 
-                        try {
-                          await uploadBpjsWithArray(
-                            context: context,
-                            anggotaBpjs: 'Anak',
-                            documents: documents,
-                            anakKe: selectedAnakKe,
-                          );
-                        } catch (e) {
-                          print("❌ Error saat mengunggah dokumen: $e");
-                          _showPopup(
-                            context: context,
-                            title: 'Gagal',
-                            message: 'Terjadi kesalahan saat mengunggah dokumen.',
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: const Text(
-                        'Kirim Dokumen BPJS Anak',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                      try {
+                        await uploadBpjsWithArray(
+                          context: context,
+                          anggotaBpjs: 'Anak',
+                          documents: documents,
+                          anakKe: selectedAnakKe,
+                        );
+                      } catch (e) {
+                        print("❌ Error saat mengunggah dokumen: $e");
+                        _showPopup(
+                          context: context,
+                          title: 'Gagal',
+                          message: 'Terjadi kesalahan saat mengunggah dokumen.',
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
             ],
           ),

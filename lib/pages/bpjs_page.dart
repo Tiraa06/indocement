@@ -17,23 +17,60 @@ class _BPJSPageState extends State<BPJSPage>
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
 
+  late List<Map<String, dynamic>> _menuItems;
+
   @override
   void initState() {
     super.initState();
 
-    // Inisialisasi AnimationController
+    _menuItems = [
+      {
+        'icon': Icons.health_and_safety,
+        'title': 'BPJS Kesehatan',
+        'color': Colors.blue,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MenuPage()),
+          );
+        },
+      },
+      {
+        'icon': Icons.work,
+        'title': 'BPJS Ketenagakerjaan',
+        'color': Colors.green,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BPJSKetenagakerjaanPage()),
+          );
+        },
+      },
+      {
+        'icon': Icons.assignment,
+        'title': 'PCIR',
+        'color': Colors.orange,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PCIRPage()),
+          );
+        },
+      },
+    ];
+
+    // Inisialisasi animasi
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300), // Durasi animasi
+      duration: const Duration(milliseconds: 300),
     );
 
-    // Inisialisasi Slide Animation
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0), // Mulai dari luar layar (kanan)
-      end: Offset.zero, // Berakhir di posisi normal
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut, // Kurva animasi
+      curve: Curves.easeInOut,
     ));
   }
 
@@ -78,14 +115,6 @@ class _BPJSPageState extends State<BPJSPage>
         iconTheme: const IconThemeData(
           color: Colors.white, // Warna putih untuk ikon
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu), // Ikon menu garis tiga
-            onPressed: () {
-              _toggleMenu(); // Buka atau tutup menu
-            },
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -112,9 +141,9 @@ class _BPJSPageState extends State<BPJSPage>
                     borderRadius: BorderRadius.circular(
                         16), // Sudut melengkung untuk gambar
                     child: Image.asset(
-                      'assets/images/banner_bpjs_page.jpg', // Path ke gambar banner
+                      'assets/images/bpjs_page.png', // Path ke gambar banner
                       width: double.infinity, // Lebar penuh
-                      height: 150, // Tinggi banner
+                      height: 250, // Tinggi banner diubah menjadi 250
                       fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
                     ),
                   ),
@@ -134,87 +163,25 @@ class _BPJSPageState extends State<BPJSPage>
 
                 // Menu
                 Expanded(
-                  child: ListView(
-                    children: [
-                      // Menu BPJS Kesehatan
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.health_and_safety,
-                              color: Colors.blue),
-                          title: const Text(
-                            "BPJS Kesehatan",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
-                          onTap: () {
-                            // Navigasi ke MenuPage
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const MenuPage()),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu BPJS Ketenagakerjaan
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.work, color: Colors.green),
-                          title: const Text(
-                            "BPJS Ketenagakerjaan",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const BPJSKetenagakerjaanPage()),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu PCIR
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.assignment,
-                              color: Colors.orange), // Ikon untuk PCIR
-                          title: const Text(
-                            "PCIR",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.grey),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PCIRPage()), // Navigasi ke PCIRPage
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, // Dua kolom
+                      crossAxisSpacing: 16, // Jarak horizontal antar kotak
+                      mainAxisSpacing: 16, // Jarak vertikal antar kotak
+                      childAspectRatio: 1, // Rasio aspek kotak (lebar = tinggi)
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _menuItems.length,
+                    itemBuilder: (context, index) {
+                      final menuItem = _menuItems[index];
+                      return _buildMenuItem(
+                        context,
+                        icon: menuItem['icon'] as IconData,
+                        title: menuItem['title'] as String,
+                        color: menuItem['color'] as Color,
+                        onTap: menuItem['onTap'] as VoidCallback,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -433,33 +400,46 @@ class _BPJSPageState extends State<BPJSPage>
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required String title,
+  Widget _buildMenuItem(BuildContext context, {
     required IconData icon,
+    required String title,
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 0, // Hilangkan shadow dengan mengatur elevation menjadi 0
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2), // Warna latar belakang ikon
-          child: Icon(icon, color: color), // Ikon dengan warna biru
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color, // Warna teks menu menjadi biru
+        child: Padding(
+          padding: const EdgeInsets.all(8.0), // Tambahkan padding di dalam kotak
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 40), // Ikon di tengah
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                softWrap: true, // Pastikan teks melanjutkan ke baris berikutnya
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
-        onTap: onTap,
       ),
     );
   }
@@ -502,3 +482,4 @@ class _BPJSPageState extends State<BPJSPage>
     );
   }
 }
+

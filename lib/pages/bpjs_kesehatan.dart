@@ -99,9 +99,9 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
                     child: Image.asset(
-                      'assets/images/banner_bpjs.jpg', // Path ke gambar banner
+                      'assets/images/bpjs_kesehatan.png', // Path ke gambar banner
                       width: double.infinity, // Lebar penuh
-                      height: 150, // Tinggi banner
+                      height: 250, // Tinggi banner diubah menjadi 250
                       fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
                     ),
                   ),
@@ -121,53 +121,42 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
 
                 // Menu
                 Expanded(
-                  child: ListView(
-                    children: [
-                      // Menu BPJS Kesehatan Karyawan
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.family_restroom, color: Colors.blue),
-                          title: const Text(
-                            "BPJS Kesehatan Keluarga Karyawan",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, // Dua kolom
+                      crossAxisSpacing: 16, // Jarak horizontal antar kotak
+                      mainAxisSpacing: 16, // Jarak vertikal antar kotak
+                      childAspectRatio: 1, // Rasio aspek kotak (lebar = tinggi)
+                    ),
+                    itemCount: 2, // Jumlah menu
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return _buildMenuBox(
+                          icon: Icons.family_restroom,
+                          title: 'BPJS Kesehatan Keluarga Karyawan',
+                          color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const BPJSKaryawanPage()),
                             );
                           },
-                        ),
-                      ),
-                      const SizedBox(height: 10), // Jarak antar menu
-
-                      // Menu BPJS Kesehatan Tambahan
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          leading: const Icon(Icons.group_add, color: Colors.green),
-                          title: const Text(
-                            "BPJS Kesehatan Keluarga Tambahan",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                        );
+                      } else if (index == 1) {
+                        return _buildMenuBox(
+                          icon: Icons.group_add,
+                          title: 'BPJS Kesehatan Keluarga Tambahan',
+                          color: Colors.green,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const BPJSTambahanPage()),
                             );
                           },
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ),
               ],
@@ -259,26 +248,17 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
     required IconData icon,
     required String title,
     required Color color,
-    double width = 100,
-    double height = 120,
-    bool isFullWidth = false,
-    Function()? onTap,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: isFullWidth ? double.infinity : width,
-        height: height,
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.black.withOpacity(0.2), // Warna border
-            width: 1, // Ketebalan border 1px
-          ),
+          color: Colors.white, // Background putih
+          borderRadius: BorderRadius.circular(12), // Sudut melengkung
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.1), // Bayangan lembut
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -287,19 +267,15 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: height * 0.3, // Ukuran ikon responsif berdasarkan tinggi kotak
-              color: Colors.white,
-            ),
+            Icon(icon, size: 40, color: color), // Ikon berwarna di tengah
             const SizedBox(height: 8),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
+              style: const TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                fontSize: height * 0.1, // Ukuran teks lebih kecil
+                color: Colors.black87, // Teks berwarna hitam
               ),
             ),
           ],

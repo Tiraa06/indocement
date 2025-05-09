@@ -431,7 +431,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ? FileImage(_selectedImage!) as ImageProvider
                       : (_photoUrl != null && _photoUrl!.isNotEmpty
                           ? NetworkImage(_photoUrl!)
-                          : const AssetImage('assets/images/picture.jpg')),
+                          : const AssetImage('assets/images/profile.png')),
                   backgroundColor: Colors.grey[200],
                   child: _selectedImage == null &&
                           (_photoUrl == null || _photoUrl!.isEmpty)
