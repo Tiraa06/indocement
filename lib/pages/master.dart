@@ -9,7 +9,7 @@ import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
 import 'package:indocement_apk/pages/inbox.dart'; // Import the functional InboxPage
-import 'package:indocement_apk/pages/layanan_menu.dart'; // Import LayananMenuPage
+// Import LayananMenuPage
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;

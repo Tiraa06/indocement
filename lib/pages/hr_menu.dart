@@ -19,7 +19,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
-  late String _dateTime;
 
   @override
   void initState() {
@@ -37,14 +36,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-
-    _updateTime();
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return false;
-      _updateTime();
-      return true;
-    });
   }
 
   @override
@@ -59,14 +50,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
     } else {
       _animationController.forward();
     }
-  }
-
-  void _updateTime() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 7));
-    setState(() {
-      _dateTime =
-          "${now.day}/${now.month}/${now.year} - ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')} WIB";
-    });
   }
 
   Future<void> _checkAccess(BuildContext context) async {
@@ -189,7 +172,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
               "HR Care",
               style: GoogleFonts.roboto(
                 fontWeight: FontWeight.bold,
-                fontSize: baseFontSize * 1.25, // ~20 on 500px screen
+                fontSize: baseFontSize * 1.25,
                 color: Colors.white,
               ),
             ),
@@ -224,9 +207,9 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: Image.asset(
-                          'assets/images/banner_hr.jpg',
+                          'assets/images/banner_hrmenu.png',
                           width: double.infinity,
-                          height: screenHeight * 0.2, // Responsive height
+                          height: 250,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -235,99 +218,60 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                       "Selamat datang di HR Care. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.roboto(
-                        fontSize: baseFontSize * 0.9, // ~16 on 500px screen
+                        fontSize: baseFontSize * 0.9,
                         fontWeight: FontWeight.w500,
                         color: Colors.black87,
                       ),
                     ),
                     SizedBox(height: paddingValue * 0.5),
                     Expanded(
-                      child: ListView(
-                        children: [
-                          Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                            child: ListTile(
-                              leading:
-                                  const Icon(Icons.message, color: Colors.blue),
-                              title: const Text(
-                                "Konsultasi Dengan HR",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios,
-                                  color: Colors.grey),
-                              onTap: () {
+                      child: GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: paddingValue,
+                          mainAxisSpacing: paddingValue,
+                          childAspectRatio: 1,
+                        ),
+                        padding: EdgeInsets.zero,
+                        itemCount: 2,
+                        itemBuilder: (context, index) {
+                          final items = [
+                            {
+                              'icon': Icons.message,
+                              'title': 'Konsultasi Dengan HR',
+                              'color': Colors.blue,
+                              'onTap': () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) => const ChatPage()),
                                 );
                               },
-                            ),
-                          ),
-                          SizedBox(height: paddingValue * 0.5),
-                          Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                            child: ListTile(
-                              leading:
-                                  const Icon(Icons.report, color: Colors.red),
-                              title: const Text(
-                                "Keluhan Karyawan",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios,
-                                  color: Colors.grey),
-                              onTap: () {
+                            },
+                            {
+                              'icon': Icons.report,
+                              'title': 'Keluhan Karyawan',
+                              'color': Colors.red,
+                              'onTap': () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) => const KeluhanPage()),
                                 );
                               },
-                            ),
-                          ),
-                          SizedBox(height: paddingValue * 0.5),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              vertical: paddingValue,
-                              horizontal: paddingValue * 0.8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5FB),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 8,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.access_time,
-                                    color: Color(0xFF1572E8), size: 32),
-                                SizedBox(width: paddingValue * 0.8),
-                                Expanded(
-                                  child: Text(
-                                    _dateTime,
-                                    style: GoogleFonts.roboto(
-                                      fontSize: baseFontSize *
-                                          1.0, // ~18 on 500px screen
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                            },
+                          ];
+                          final item = items[index];
+                          return _buildMenuItem(
+                            context,
+                            icon: item['icon'] as IconData,
+                            title: item['title'] as String,
+                            color: item['color'] as Color,
+                            onTap: item['onTap'] as VoidCallback,
+                          );
+                        },
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                       ),
                     ),
                   ],
@@ -541,26 +485,40 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 0,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                softWrap: true,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: color,
+                ),
+              ),
+            ],
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
-        onTap: onTap,
       ),
     );
   }

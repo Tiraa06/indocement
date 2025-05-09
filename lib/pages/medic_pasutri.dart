@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
-import 'package:http_parser/http_parser.dart';
-import 'package:media_store_plus/media_store_plus.dart'; // Ensure this import is present
+// Ensure this import is present
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MedicPasutriPage extends StatefulWidget {

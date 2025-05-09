@@ -506,9 +506,19 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                               ? null
                               : () => submitForm(buttonContext),
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1572E8),
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            backgroundColor: Colors.blue[700],
-                            textStyle: const TextStyle(fontSize: 16),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white, // Warna teks tetap putih
+                            ),
+                            foregroundColor: Colors.white, // Warna ikon default
                           ),
                         );
                       },

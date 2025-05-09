@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:indocement_apk/pages/bpjs_page.dart';
-import 'package:indocement_apk/pages/hr_menu.dart';
-import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/master.dart';
-import 'package:indocement_apk/pages/skkmedic_page.dart';
 import 'package:indocement_apk/pages/schedule_shift.dart';
 
 class LayananMenuPage extends StatefulWidget {

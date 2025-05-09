@@ -488,18 +488,21 @@ class _SkkFormPageState extends State<SkkFormPage> {
                           ),
                           itemBuilder: (context, index) {
                             final data = skkData[index];
-                            final keperluan = data['Keperluan']?.toString() ??
-                                'Tidak diketahui';
                             print(
-                                'Keperluan [$index]: $keperluan'); // Debugging
+                                'Keperluan [$index]: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}'); // Debugging
+                            print(
+                                'Status [$index]: ${data['Status']?.toString() ?? 'Tidak diketahui'}'); // Debugging
+                            print(
+                                'UrlSkk [$index]: ${data['UrlSkk']?.toString() ?? 'Tidak ada'}'); // Debugging
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
                                   child: Tooltip(
-                                    message: keperluan,
+                                    message: data['Keperluan']?.toString() ??
+                                        'Tidak diketahui',
                                     child: Text(
-                                      'Keperluan: $keperluan',
+                                      'Keperluan: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}',
                                       style: const TextStyle(fontSize: 14),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -517,7 +520,9 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                     textAlign: TextAlign.right,
                                   ),
                                 ),
-                                if (data['UrlSkk'] != null)
+                                if (data['Status']?.toLowerCase() ==
+                                        'diaprove' &&
+                                    data['UrlSkk'] != null)
                                   Padding(
                                     padding: const EdgeInsets.only(left: 8),
                                     child: IconButton(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/utils/whatsapp_helper.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
 
@@ -32,7 +31,7 @@ class BPJSKetenagakerjaanPage extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          Padding(
+          SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -41,22 +40,22 @@ class BPJSKetenagakerjaanPage extends StatelessWidget {
                 Container(
                   margin: const EdgeInsets.only(bottom: 16.0),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2), // Warna bayangan
-                        blurRadius: 8, // Radius blur bayangan
-                        offset: const Offset(0, 4), // Posisi bayangan
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
+                    borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
-                      'assets/images/banner_ketenaga.png', // Path ke gambar banner
-                      width: double.infinity, // Lebar penuh
-                      height: 250, // Tinggi banner diubah menjadi 250
-                      fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
+                      'assets/images/banner_ketenaga.png',
+                      width: double.infinity,
+                      height: 250,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
@@ -88,7 +87,7 @@ class BPJSKetenagakerjaanPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    color: Colors.white, // Latar belakang putih
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -101,7 +100,7 @@ class BPJSKetenagakerjaanPage extends StatelessWidget {
                   ),
                   child: const Text(
                     "Untuk pertanyaan terkait akses aplikasi JMO, saldo BPJS Ketenagakerjaan, atau kartu BPJS Ketenagakerjaan, silakan hubungi petugas HR yang menangani klaim BPJS Ketenagakerjaan.",
-                    textAlign: TextAlign.justify,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Roboto',
                       fontSize: 16,
