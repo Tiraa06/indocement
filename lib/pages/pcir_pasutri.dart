@@ -255,45 +255,36 @@ void _showUploadPrompt() {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.black, // Border warna hitam
-          width: 1, // Ketebalan border 1px
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  url.split('/').last,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
+      color: Colors.white, // Background card tetap putih
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    url.split('/').last,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -304,72 +295,64 @@ void _showUploadPrompt() {
   }) {
     return GestureDetector(
       onTap: () => pickImage(fieldName: fieldName),
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.black, // Border warna hitam
-            width: 1, // Ketebalan border 1px
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1572E8),
-                borderRadius: BorderRadius.circular(8),
-                image: selectedImages[fieldName] != null
-                    ? DecorationImage(
-                        image: FileImage(selectedImages[fieldName]!),
-                        fit: BoxFit.cover,
+        color: Colors.white, // Background card tetap putih
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1572E8),
+                  borderRadius: BorderRadius.circular(8),
+                  image: selectedImages[fieldName] != null
+                      ? DecorationImage(
+                          image: FileImage(selectedImages[fieldName]!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: selectedImages[fieldName] == null
+                    ? const Icon(
+                        Icons.upload_file,
+                        size: 30,
+                        color: Colors.white,
                       )
                     : null,
               ),
-              child: selectedImages[fieldName] == null
-                  ? const Icon(
-                      Icons.upload_file,
-                      size: 30,
-                      color: Colors.white,
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    selectedImages[fieldName] != null
-                        ? basename(selectedImages[fieldName]!.path) // Hanya nama file
-                        : 'Belum ada file yang dipilih',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
+                    const SizedBox(height: 8),
+                    Text(
+                      selectedImages[fieldName] != null
+                          ? basename(selectedImages[fieldName]!.path) // Hanya nama file
+                          : 'Belum ada file yang dipilih',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -390,6 +373,7 @@ void _showUploadPrompt() {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Data yang Telah Diunggah
                     const Text(
                       'Data yang Telah Diunggah',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -398,62 +382,59 @@ void _showUploadPrompt() {
                     _buildUploadedFileBox(urlKk, 'Kartu Keluarga'),
                     _buildUploadedFileBox(urlSuratNikah, 'Surat Nikah'),
                     const SizedBox(height: 24),
+
+                    // Perbarui Data
                     const Text(
                       'Perbarui Data',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
 
-                    // Form Upload (Tidak Diubah)
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
+                    // Form Upload
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.black, // Border warna hitam
-                          width: 1, // Ketebalan border 1px
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Upload Dokumen',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildBox(
-                            title: 'Upload Kartu Keluarga',
-                            fieldName: 'UrlKk',
-                          ),
-                          const SizedBox(height: 16),
-                          _buildBox(
-                            title: 'Upload Surat Nikah',
-                            fieldName: 'UrlSuratNikah',
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () async {
-                              await uploadDokumenPasutriGanda();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1572E8),
-                              minimumSize: const Size(double.infinity, 50),
+                      color: Colors.white, // Background card tetap putih
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Upload Dokumen',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
-                            child: const Text(
-                              'Perbarui Data',
-                              style: TextStyle(color: Colors.white),
+                            const SizedBox(height: 16),
+                            _buildBox(
+                              title: 'Upload Kartu Keluarga',
+                              fieldName: 'UrlKk',
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            _buildBox(
+                              title: 'Upload Surat Nikah',
+                              fieldName: 'UrlSuratNikah',
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await uploadDokumenPasutriGanda();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1572E8),
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Perbarui Data',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
