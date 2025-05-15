@@ -92,7 +92,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -125,7 +125,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           // Tambahkan URL dasar jika UrlFoto adalah path relatif
           if (employee['UrlFoto'] != null && employee['UrlFoto'].isNotEmpty) {
             if (employee['UrlFoto'].startsWith('/')) {
-              _photoUrl = 'http://213.35.123.110:5555${employee['UrlFoto']}';
+              _photoUrl = 'http://192.168.100.140:5555${employee['UrlFoto']}';
             } else {
               _photoUrl = employee['UrlFoto'];
             }
@@ -192,7 +192,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final response = await http
           .put(
-            Uri.parse('http://213.35.123.110:5555/api/User/$userId'),
+            Uri.parse('http://192.168.100.140:5555/api/User/$userId'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(updatedPayload),
           )
@@ -251,7 +251,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final request = http.MultipartRequest(
         'PUT',
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId/UrlFoto'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId/UrlFoto'),
       );
       request.files.add(await http.MultipartFile.fromPath(
         'File',
@@ -368,7 +368,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         decoration: InputDecoration(
           labelText: label,
           border: inputBorder,
-          labelStyle: GoogleFonts.roboto(fontSize: 16),
+          labelStyle: GoogleFonts.poppins(fontSize: 16),
         ),
       ),
     );
@@ -386,7 +386,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           children: [
             Text(
               title,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 color: const Color(0xFF1572E8),
@@ -405,7 +405,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profil Saya',
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
                 color: Colors.white)),
@@ -453,7 +453,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               child: Text(
                 'Edit Profile',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,
@@ -547,7 +547,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 child: Text(
                   'Simpan Perubahan',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                     color: Colors.white,

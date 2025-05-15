@@ -141,7 +141,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
             ),
             title: Text(
               "Layanan Karyawan",
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: baseFontSize * 1.25,
                 color: Colors.white,
@@ -187,7 +187,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
                   Text(
                     "Selamat datang di Layanan Karyawan. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.poppins(
                       fontSize: baseFontSize * 0.9,
                       fontWeight: FontWeight.w500,
                       color: Colors.black87,

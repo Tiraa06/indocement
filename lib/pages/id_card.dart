@@ -203,7 +203,7 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
 
     setState(() => isLoading = true);
 
-    var uri = Uri.parse('http://213.35.123.110:5555/api/IdCards/upload');
+    var uri = Uri.parse('http://192.168.100.140:5555/api/IdCards/upload');
     var request = http.MultipartRequest('POST', uri);
     request.headers['accept'] = 'text/plain';
 

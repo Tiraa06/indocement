@@ -72,7 +72,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
 
     final dio = Dio();
     final String fileUrl =
-        'http://213.35.123.110:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
+        'http://192.168.100.140:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
 
     try {
       // Minta izin penyimpanan

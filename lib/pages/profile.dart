@@ -65,7 +65,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -84,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
           // Tambahkan URL dasar jika UrlFoto adalah path relatif
           if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
             if (data['UrlFoto'].startsWith('/')) {
-              _urlFoto = 'http://213.35.123.110:5555${data['UrlFoto']}';
+              _urlFoto = 'http://192.168.100.140:5555${data['UrlFoto']}';
             } else {
               _urlFoto = data['UrlFoto'];
             }
@@ -162,7 +162,7 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         title: Text(
           "Profil Saya",
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             fontSize: 22,
             color: Colors.white,
@@ -184,7 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 16),
               Text(
                 _employeeName.isNotEmpty ? _employeeName : "Nama Tidak Tersedia",
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -193,7 +193,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 6),
               Text(
                 _jobTitle.isNotEmpty ? _jobTitle : "Departemen Tidak Tersedia",
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
@@ -201,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 4),
               Text(
                 _email.isNotEmpty ? _email : "Email Tidak Tersedia",
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
@@ -209,7 +209,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 4),
               Text(
                 _telepon.isNotEmpty ? _telepon : "Telepon Tidak Tersedia",
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),

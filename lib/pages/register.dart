@@ -51,7 +51,7 @@ class _RegisterState extends State<Register> {
       print('Sending payload: ${json.encode(userData)}');
       final response = await http.post(
         Uri.parse(
-            'http://213.35.123.110:5555/api/User/register'), // Perbaikan endpoint
+            'http://192.168.100.140:5555/api/User/register'), // Perbaikan endpoint
         body: json.encode(userData),
         headers: {'Content-Type': 'application/json'},
       );

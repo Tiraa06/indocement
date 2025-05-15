@@ -11,7 +11,7 @@ Future<void> uploadBpjsDocument({
   required String fieldName, // contoh: urlKk atau urlSuratNikah
   required File file,
 }) async {
-  final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload');
+  final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
 
   var request = http.MultipartRequest('POST', uri);
   request.fields['idEmployee'] = idEmployee.toString();
@@ -49,7 +49,7 @@ Future<void> uploadBpjsDocumentAsPdf({
     final pdfFile = await _convertImageToPdf(compressedFile);
 
     // 3. Kirim PDF ke API
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
     request.fields['idEmployee'] = idEmployee.toString();
     request.fields['anggotaBpjs'] = anggotaBpjs;
@@ -82,7 +82,7 @@ Future<void> uploadBpjsDocumentCompressed({
     final compressedImage = await _compressImage(file);
     final compressedFile = File(compressedImage.path);
 
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
     request.fields['idEmployee'] = idEmployee.toString();
     request.fields['anggotaBpjs'] = anggotaBpjs;
@@ -127,7 +127,7 @@ Future<void> uploadBpjsDocumentsCompressed({
       throw Exception("Jumlah Files dan FileTypes harus sama.");
     }
 
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
 
     // Tambahkan field ke request
@@ -173,7 +173,7 @@ Future<void> uploadBpjsDocuments({
   try {
     // Ambil data dari API untuk mendapatkan ID yang sesuai
     final response = await http.get(
-      Uri.parse('http://213.35.123.110:5555/api/Bpjs?idEmployee=$idEmployee'),
+      Uri.parse('http://192.168.100.140:5555/api/Bpjs?idEmployee=$idEmployee'),
     );
 
     if (response.statusCode == 200) {
@@ -197,7 +197,7 @@ Future<void> uploadBpjsDocuments({
       // Siapkan data untuk dikirim ke API
       var request = http.MultipartRequest(
         'PUT',
-        Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload/$matchingId'),
+        Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload/$matchingId'),
       );
 
       // Tambahkan dokumen ke request
@@ -243,7 +243,7 @@ Future<void> uploadBpjsDocumentsMultipart({
   File? urlSuratPotongGaji,
 }) async {
   try {
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
 
     // Tambahkan field ke request
@@ -295,7 +295,7 @@ Future<void> updateBpjsDocuments({
   String? urlSuratPotongGaji,
 }) async {
   try {
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/update');
+    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/update');
     final body = {
       "IdEmployee": idEmployee,
       "AnggotaBpjs": anggotaBpjs ?? "",

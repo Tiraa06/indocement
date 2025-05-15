@@ -223,7 +223,7 @@ class _MasterContentState extends State<MasterContent> {
       }
 
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -232,7 +232,7 @@ class _MasterContentState extends State<MasterContent> {
         setState(() {
           if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
             if (data['UrlFoto'].startsWith('/')) {
-              _urlFoto = 'http://213.35.123.110:5555${data['UrlFoto']}';
+              _urlFoto = 'http://192.168.100.140:5555${data['UrlFoto']}';
             } else {
               _urlFoto = data['UrlFoto'];
             }
@@ -259,7 +259,7 @@ class _MasterContentState extends State<MasterContent> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$employeeId'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -270,7 +270,7 @@ class _MasterContentState extends State<MasterContent> {
           _jobTitle = data['JobTitle'] ?? "Departemen Tidak Tersedia";
           _urlFoto = data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty
               ? (data['UrlFoto'].startsWith('/')
-                  ? 'http://213.35.123.110:5555${data['UrlFoto']}'
+                  ? 'http://192.168.100.140:5555${data['UrlFoto']}'
                   : data['UrlFoto'])
               : null;
           _email = data['Email'] ?? "Email Tidak Tersedia";

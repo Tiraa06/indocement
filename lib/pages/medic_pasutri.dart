@@ -16,7 +16,7 @@ class MedicPasutriPage extends StatefulWidget {
 
 class _MedicPasutriPageState extends State<MedicPasutriPage> {
   final String fileUrl =
-      'http://213.35.123.110:5555/templates/medical.pdf'; // URL file
+      'http://192.168.100.140:5555/templates/medical.pdf'; // URL file
   bool isLoadingDownload =
       false; // Untuk menampilkan indikator loading download
   bool isDownloaded = false; // Status apakah file sudah didownload
@@ -59,7 +59,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       );
 
       final url =
-          'http://213.35.123.110:5555/api/Medical/generate-medical-document/$idEmployee';
+          'http://192.168.100.140:5555/api/Medical/generate-medical-document/$idEmployee';
 
       final response = await dio.post(
         url,
@@ -151,7 +151,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       });
 
       final response = await dio.post(
-        'http://213.35.123.110:5555/api/Medical/upload',
+        'http://192.168.100.140:5555/api/Medical/upload',
         data: formData,
         options: Options(
           headers: {
@@ -201,7 +201,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     try {
       // Panggil API untuk mendapatkan idEmployee
       final response = await Dio().get(
-        'http://213.35.123.110:5555/api/Employee/get-id', // Ganti dengan endpoint API yang sesuai
+        'http://192.168.100.140:5555/api/Employee/get-id', // Ganti dengan endpoint API yang sesuai
       );
 
       print('Response data: ${response.data}');
@@ -237,7 +237,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     try {
       // Panggil API untuk mendapatkan data Medical
       final response = await Dio().get(
-        'http://213.35.123.110:5555/api/Medical',
+        'http://192.168.100.140:5555/api/Medical',
       );
 
       if (response.statusCode == 200) {

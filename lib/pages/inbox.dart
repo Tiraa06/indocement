@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -14,9 +13,11 @@ class InboxPage extends StatefulWidget {
 
 class _InboxPageState extends State<InboxPage> {
   List<Map<String, dynamic>> _complaints = [];
+  List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = true;
   int? _employeeId;
-  int _selectedTabIndex = 0; // 0 for Keluhan, 1 for future tabs
+  int _selectedTabIndex = 0; // 0 for Keluhan, 1 for Konsultasi
+  bool _hasUnreadNotifications = false;
 
   @override
   void initState() {
@@ -30,20 +31,25 @@ class _InboxPageState extends State<InboxPage> {
       _employeeId = prefs.getInt('idEmployee');
     });
     if (_employeeId != null) {
-      print('Loaded employeeId: $_employeeId');
       _fetchComplaints();
+      _loadLocalNotifications(); // Muat notifikasi lokal
     } else {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Employee ID not found. Please log in again.')),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Employee ID not found. Please log in again.')),
+        );
+      }
     }
   }
 
   Future<void> _fetchComplaints() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
@@ -51,46 +57,100 @@ class _InboxPageState extends State<InboxPage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://213.35.123.110:5555/api/keluhans?employeeId=$_employeeId'),
+            'http://192.168.100.140:5555/api/keluhans?employeeId=$_employeeId'),
       );
-
-      print('Fetch Complaints Status: ${response.statusCode}');
-      print('Fetch Complaints Body: ${response.body}');
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        print('Raw Complaints Data: $data');
-        setState(() {
-          _complaints = data.cast<Map<String, dynamic>>().where((complaint) {
-            final complaintEmployeeId = complaint['IdEmployee']?.toString();
-            final matches = complaintEmployeeId == _employeeId.toString();
-            print(
-                'Complaint Id: ${complaint['Id']}, EmployeeId: $complaintEmployeeId, Keluhan: ${complaint['Keluhan']}, Matches: $matches');
-            return matches;
-          }).toList();
-          _isLoading = false;
-        });
-        print('Filtered Complaints: $_complaints');
-        if (_complaints.isEmpty) {
-          print('No complaints found for employeeId: $_employeeId');
+        final data = jsonDecode(response.body);
+        print('Parsed Data: $data');
+
+        if (mounted) {
+          setState(() {
+            _complaints =
+                (data as List).cast<Map<String, dynamic>>().where((complaint) {
+              final matches =
+                  complaint['IdEmployee']?.toString() == _employeeId.toString();
+              print('Complaint: $complaint, Matches: $matches');
+              return matches;
+            }).toList();
+            _isLoading = false;
+          });
         }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text('Failed to load complaints: ${response.statusCode}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
+      }
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Failed to load complaints: ${response.statusCode}')),
+          SnackBar(content: Text('Error fetching complaints: $e')),
         );
       }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching complaints: $e')),
-      );
+    }
+  }
+
+  Future<void> _loadLocalNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    final roomId = prefs.getString('roomId');
+    if (roomId != null) {
+      final messagesJson = prefs.getString('messages_$roomId') ?? '[]';
+      final messages = jsonDecode(messagesJson) as List;
+      if (mounted) {
+        setState(() {
+          _notifications = (messages)
+              .cast<Map<String, dynamic>>()
+              .where((msg) =>
+                  msg['SenderId'] != _employeeId && msg['Status'] != 'Dibaca')
+              .map((msg) => {
+                    'id': msg['Id'],
+                    'message': msg['Message'],
+                    'senderId': msg['SenderId'],
+                    'createdAt': msg['CreatedAt'],
+                    'roomId': msg['roomId'],
+                    'isRead': msg['Status'] != 'Dibaca',
+                  })
+              .toList();
+          _hasUnreadNotifications = _notifications.isNotEmpty;
+        });
+      }
+    }
+  }
+
+  Future<void> _clearLocalNotification(String notificationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final roomId = prefs.getString('roomId');
+    if (roomId != null) {
+      final messagesJson = prefs.getString('messages_$roomId') ?? '[]';
+      final messages = jsonDecode(messagesJson) as List;
+      final updatedMessages = messages
+          .cast<Map<String, dynamic>>()
+          .map((msg) =>
+              msg['Id'] == notificationId ? {...msg, 'Status': 'Dibaca'} : msg)
+          .toList();
+      await prefs.setString('messages_$roomId', jsonEncode(updatedMessages));
+      if (mounted) {
+        setState(() {
+          _notifications.removeWhere((notif) => notif['id'] == notificationId);
+          _hasUnreadNotifications = _notifications.isNotEmpty;
+        });
+      }
     }
   }
 
@@ -104,13 +164,30 @@ class _InboxPageState extends State<InboxPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(
-          "Inbox",
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 22,
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            Text(
+              "Inbox",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 22,
+                color: Colors.white,
+              ),
+            ),
+            if (_hasUnreadNotifications)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Text(
+                  '!',
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+          ],
         ),
         backgroundColor: const Color(0xFF1E88E5),
         elevation: 0,
@@ -193,7 +270,7 @@ class _InboxPageState extends State<InboxPage> {
                           elevation: _selectedTabIndex == 1 ? 2 : 0,
                         ),
                         child: Text(
-                          'Lainnya',
+                          'Konsultasi',
                           style: GoogleFonts.poppins(
                             fontSize: fontSizeLabel * 0.9,
                             fontWeight: FontWeight.w500,
@@ -224,21 +301,26 @@ class _InboxPageState extends State<InboxPage> {
                               itemCount: _complaints.length,
                               itemBuilder: (context, index) {
                                 final complaint = _complaints[index];
-                                final tglKeluhan =
-                                    DateTime.parse(complaint['TglKeluhan'])
+                                final tglKeluhan = complaint['TglKeluhan'] !=
+                                        null
+                                    ? DateTime.parse(complaint['TglKeluhan'])
                                         .toLocal()
                                         .toString()
-                                        .split('.')[0];
+                                        .split('.')[0]
+                                    : 'Unknown Date';
 
                                 final keluhan =
                                     complaint['Keluhan']?.toString() ??
                                         complaint['Keluhan1']?.toString() ??
+                                        complaint['Message']?.toString() ??
+                                        complaint['Description']?.toString() ??
                                         'No message available';
 
                                 final urlFotoKeluhan =
-                                    complaint['UrlFotoKeluhan'];
+                                    complaint['UrlFotoKeluhan']?.toString() ??
+                                        complaint['PhotoUrl']?.toString();
 
-                                final baseUrl = 'http://213.35.123.110:5555';
+                                final baseUrl = 'http://192.168.100.140:5555';
                                 final imageUrl = urlFotoKeluhan != null &&
                                         urlFotoKeluhan.isNotEmpty
                                     ? (urlFotoKeluhan.startsWith('http')
@@ -290,7 +372,7 @@ class _InboxPageState extends State<InboxPage> {
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
-                                                "Status: ${complaint['Status']}",
+                                                "Status: ${complaint['Status'] ?? 'Unknown'}",
                                                 style: GoogleFonts.poppins(
                                                   fontSize: fontSizeLabel - 2,
                                                   color: Colors.green,
@@ -309,7 +391,7 @@ class _InboxPageState extends State<InboxPage> {
                                         ),
                                         isImage
                                             ? Image.network(
-                                                imageUrl!,
+                                                imageUrl,
                                                 width: imageSize,
                                                 height: imageSize,
                                                 fit: BoxFit.cover,
@@ -350,15 +432,64 @@ class _InboxPageState extends State<InboxPage> {
                                 );
                               },
                             )
-                      : Center(
-                          child: Text(
-                            "No other notifications available.",
-                            style: GoogleFonts.poppins(
-                              fontSize: fontSizeLabel,
-                              color: Colors.black87,
+                      : _notifications.isEmpty
+                          ? Center(
+                              child: Text(
+                                "No notifications available.",
+                                style: GoogleFonts.poppins(
+                                  fontSize: fontSizeLabel,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _notifications.length,
+                              itemBuilder: (context, index) {
+                                final notif = _notifications[index];
+                                final isRead = notif['isRead'] ?? true;
+                                return Card(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  color: !isRead ? Colors.red[50] : null,
+                                  child: ListTile(
+                                    leading: !isRead
+                                        ? const Icon(Icons.circle,
+                                            color: Colors.red, size: 12)
+                                        : null,
+                                    title: Text(
+                                      notif['message'] ?? 'New message',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: fontSizeLabel,
+                                        fontWeight: !isRead
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      notif['createdAt'] != null
+                                          ? DateTime.parse(notif['createdAt'])
+                                              .toLocal()
+                                              .toString()
+                                              .split('.')[0]
+                                          : 'Unknown time',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: fontSizeLabel - 2,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      _clearLocalNotification(notif['id']);
+                                      Navigator.pushNamed(context, '/chat');
+                                    },
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                        ),
             ),
           ],
         ),

@@ -18,22 +18,21 @@ class _KeluhanPageState extends State<KeluhanPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _sectionController = TextEditingController();
 
-  String? _department;
-  List<String> _departments = [];
-
+  String? _sectionName;
+  int? _idSection;
   final List<XFile> _selectedFiles = [];
 
   int _lines = 0;
   int _words = 0;
-
   int? _employeeId;
 
   @override
   void initState() {
     super.initState();
-    _loadProfileData();
-    _fetchDepartments();
+    _loadProfileData()
+        .then((_) => _fetchEmployeeData().then((_) => _fetchSectionName()));
     _messageController.addListener(_updateLinesAndWords);
   }
 
@@ -55,26 +54,102 @@ class _KeluhanPageState extends State<KeluhanPage> {
     });
   }
 
-  Future<void> _fetchDepartments() async {
-    try {
-      final response = await http
-          .get(Uri.parse('http://213.35.123.110:5555/api/departements'));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        setState(() {
-          _departments =
-              data.map((dept) => dept['NamaDepartement'] as String).toList();
-          _department = _departments.isNotEmpty ? _departments[0] : null;
-        });
-      } else {
+  Future<void> _fetchEmployeeData() async {
+    if (_employeeId == null) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load departments')),
+          const SnackBar(content: Text('Employee ID not found')),
         );
+        setState(() {
+          _sectionController.text = 'Unknown';
+          _sectionName = 'Unknown';
+        });
+      }
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$_employeeId'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _idSection = data['IdSection'] as int?;
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to load employee data')),
+          );
+          setState(() {
+            _sectionController.text = 'Unknown';
+            _sectionName = 'Unknown';
+          });
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching departments: $e')),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching employee data: $e')),
+        );
+        setState(() {
+          _sectionController.text = 'Unknown';
+          _sectionName = 'Unknown';
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchSectionName() async {
+    if (_idSection == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Section ID not found')),
+        );
+        setState(() {
+          _sectionController.text = 'Unknown';
+          _sectionName = 'Unknown';
+        });
+      }
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.100.140:5555/api/sections/$_idSection'),
       );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _sectionName = data['NamaSection'] as String? ?? 'Unknown';
+            _sectionController.text = _sectionName!;
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to load section name')),
+          );
+          setState(() {
+            _sectionController.text = 'Unknown';
+            _sectionName = 'Unknown';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching section name: $e')),
+        );
+        setState(() {
+          _sectionController.text = 'Unknown';
+          _sectionName = 'Unknown';
+        });
+      }
     }
   }
 
@@ -99,9 +174,11 @@ class _KeluhanPageState extends State<KeluhanPage> {
         final fileSize = await file.length();
         const maxSize = 10 * 1024 * 1024; // 10MB
         if (fileSize > maxSize) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File size exceeds 10MB limit')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('File size exceeds 10MB limit')),
+            );
+          }
           return;
         }
 
@@ -110,9 +187,11 @@ class _KeluhanPageState extends State<KeluhanPage> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking file: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking file: $e')),
+        );
+      }
     }
   }
 
@@ -129,9 +208,11 @@ class _KeluhanPageState extends State<KeluhanPage> {
         for (var file in files) {
           final fileSize = await file.length();
           if (fileSize > maxSize) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('File ${file.name} exceeds 10MB limit')),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('File ${file.name} exceeds 10MB limit')),
+              );
+            }
             return;
           }
         }
@@ -141,43 +222,55 @@ class _KeluhanPageState extends State<KeluhanPage> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding files: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding files: $e')),
+        );
+      }
     }
   }
 
   Future<void> _submitComplaint() async {
     if (_employeeId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Employee ID not found. Please log in again.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Employee ID not found. Please log in again.')),
+        );
+      }
       return;
     }
     if (_subjectController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subject is required')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Subject is required')),
+        );
+      }
       return;
     }
-    if (_department == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a department')),
-      );
+    if (_sectionName == null ||
+        _sectionName!.isEmpty ||
+        _sectionName == 'Unknown') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Section is required')),
+        );
+      }
       return;
     }
     if (_messageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message is required')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message is required')),
+        );
+      }
       return;
     }
 
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://213.35.123.110:5555/api/keluhans'),
+        Uri.parse('http://192.168.100.140:5555/api/keluhans'),
       );
 
       print('Submitting complaint with the following data:');
@@ -187,7 +280,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
           'TglKeluhan: ${DateTime.now().toUtc().add(const Duration(hours: 7)).toIso8601String()}');
       print('Status: Terkirim');
       print('Subject: ${_subjectController.text}');
-      print('Department: $_department');
+      print('Section: $_sectionName');
 
       request.fields['IdEmployee'] = _employeeId.toString();
       request.fields['Keluhan'] = _messageController.text;
@@ -205,7 +298,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
           .toIso8601String();
       request.fields['Status'] = 'Terkirim';
       request.fields['subject'] = _subjectController.text;
-      request.fields['NamaDepartement'] = _department!;
+      request.fields['NamaSection'] = _sectionName!;
 
       if (_selectedFiles.isNotEmpty) {
         final fileNames = _selectedFiles.map((file) => file.name).join(',');
@@ -229,22 +322,28 @@ class _KeluhanPageState extends State<KeluhanPage> {
       print('Response Body: ${responseBody.body}');
 
       if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Complaint submitted successfully')),
-        );
-        Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Complaint submitted successfully')),
+          );
+          Navigator.pop(context);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Failed to submit complaint: ${response.statusCode} - ${responseBody.body}'),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Failed to submit complaint: ${response.statusCode} - ${responseBody.body}'),
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error submitting complaint: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error submitting complaint: $e')),
+        );
+      }
     }
   }
 
@@ -253,6 +352,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
     _nameController.dispose();
     _emailController.dispose();
     _subjectController.dispose();
+    _sectionController.dispose();
     _messageController.removeListener(_updateLinesAndWords);
     _messageController.dispose();
     super.dispose();
@@ -416,10 +516,11 @@ class _KeluhanPageState extends State<KeluhanPage> {
                             ),
                           ),
                           SizedBox(height: paddingValue * 0.5),
-                          DropdownButtonFormField<String>(
-                            value: _department,
+                          TextField(
+                            controller: _sectionController,
+                            readOnly: true,
                             decoration: InputDecoration(
-                              labelText: 'Department',
+                              labelText: 'Section',
                               labelStyle: GoogleFonts.poppins(
                                 fontSize: baseFontSize * 0.9,
                                 color: Colors.grey[700],
@@ -436,34 +537,9 @@ class _KeluhanPageState extends State<KeluhanPage> {
                                     BorderSide(color: Colors.grey[300]!),
                               ),
                             ),
-                            items: _departments
-                                .map((dept) => DropdownMenuItem(
-                                      value: dept,
-                                      child: Text(
-                                        dept,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: baseFontSize * 0.8,
-                                          color: Colors.black87,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _department = value;
-                              });
-                            },
-                            hint: Text(
-                              _departments.isEmpty
-                                  ? 'Loading departments...'
-                                  : 'Select Department',
-                              style: GoogleFonts.poppins(
-                                fontSize: baseFontSize * 0.8,
-                                color: Colors.grey[600],
-                              ),
+                            style: GoogleFonts.poppins(
+                              fontSize: baseFontSize * 0.9,
                             ),
-                            isExpanded: true, // Prevents overflow in dropdown
                           ),
                           SizedBox(height: paddingValue * 0.5),
                           Text(

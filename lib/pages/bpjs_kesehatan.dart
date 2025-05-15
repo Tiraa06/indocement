@@ -357,7 +357,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
 
 Future<bool> checkBpjsData(int idEmployee) async {
   try {
-    final uri = Uri.parse('http://213.35.123.110:5555/api/Bpjs/$idEmployee');
+    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/$idEmployee');
     final response = await http.get(uri);
 
     if (response.statusCode == 200) {

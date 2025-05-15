@@ -24,7 +24,25 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           scaffoldBackgroundColor: Constants.scaffoldBackgroundColor,
           visualDensity: VisualDensity.adaptivePlatformDensity,
+          // Atur font Poppins untuk semua teks
           textTheme: GoogleFonts.poppinsTextTheme(),
+          // Pastikan TextField (input) menggunakan Poppins
+          inputDecorationTheme: InputDecorationTheme(
+            labelStyle: GoogleFonts.poppins(),
+            hintStyle: GoogleFonts.poppins(),
+            errorStyle: GoogleFonts.poppins(),
+          ),
+          // Pastikan tombol menggunakan Poppins
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              textStyle: GoogleFonts.poppins(),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              textStyle: GoogleFonts.poppins(),
+            ),
+          ),
         ),
         home: const SplashScreen(),
         onGenerateRoute: _onGenerateRoute,
@@ -61,7 +79,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late AnimationController _scaleController;
@@ -71,7 +90,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    // Fade Animation (0 to 1 opacity over 1 second)
     _fadeController = AnimationController(
       duration: const Duration(seconds: 1),
       vsync: this,
@@ -81,7 +99,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       curve: Curves.easeIn,
     );
 
-    // Scale Animation (1.0 to 1.2 scale over 0.5 seconds)
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -93,11 +110,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ),
     );
 
-    // Start the fade animation
     _fadeController.forward().then((_) {
-      // After fade completes, start the scale animation
       _scaleController.forward().then((_) {
-        // After scale completes, wait 1 second then navigate
         Future.delayed(const Duration(seconds: 1), () {
           _checkLoginStatus();
         });
@@ -134,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             scale: _scaleAnimation,
             child: Image.asset(
               'assets/images/logo_animasi.png',
-              width: 200.w, // Adjusted for ScreenUtil
+              width: 200.w,
               height: 200.h,
               fit: BoxFit.contain,
             ),

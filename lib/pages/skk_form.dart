@@ -21,7 +21,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
   final TextEditingController _keperluanController = TextEditingController();
   List<Map<String, dynamic>> skkData = [];
   bool isLoading = false;
-  final String baseUrl = 'http://213.35.123.110:5555';
+  final String baseUrl = 'http://192.168.100.140:5555';
   Timer? _refreshTimer;
 
   @override

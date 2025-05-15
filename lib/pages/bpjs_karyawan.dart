@@ -182,7 +182,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     try {
       // Ambil data dari API untuk mendapatkan ID yang sesuai
       final response = await Dio().get(
-        'http://213.35.123.110:5555/api/Bpjs',
+        'http://192.168.100.140:5555/api/Bpjs',
         queryParameters: {'idEmployee': idEmployee},
       );
 
@@ -215,7 +215,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
         // Kirim data ke API dengan endpoint dinamis
         final uploadResponse = await Dio().put(
-          'http://213.35.123.110:5555/api/Bpjs/upload/$matchingId',
+          'http://192.168.100.140:5555/api/Bpjs/upload/$matchingId',
           data: formData,
         );
 

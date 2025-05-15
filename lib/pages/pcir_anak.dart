@@ -43,7 +43,7 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
 
     try {
       final response = await Dio().get(
-        'http://213.35.123.110:5555/api/Bpjs',
+        'http://192.168.100.140:5555/api/Bpjs',
         queryParameters: {'idEmployee': idEmployee},
       );
 
@@ -89,7 +89,7 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
   Future<void> _createNewBpjsEntry() async {
     try {
       final response = await Dio().post(
-        'http://213.35.123.110:5555/api/Bpjs',
+        'http://192.168.100.140:5555/api/Bpjs',
         data: {
           'IdEmployee': idEmployee,
           'AnggotaBpjs': 'Anak',
@@ -192,7 +192,7 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
 
       // Kirim data ke API dengan metode PUT
       final uploadResponse = await Dio().put(
-        'http://213.35.123.110:5555/api/Bpjs/upload/$id',
+        'http://192.168.100.140:5555/api/Bpjs/upload/$id',
         data: formData,
         options: Options(
           headers: {

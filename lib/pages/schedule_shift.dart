@@ -90,7 +90,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       _userIdEmployee = idEmployee;
 
       final employeeResponse = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$idEmployee'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -109,7 +109,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       }
 
       final response = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -203,7 +203,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       final response = await http
           .post(
             Uri.parse(
-                'http://213.35.123.110:5555/api/TukarSchedule/generate-document'),
+                'http://192.168.100.140:5555/api/TukarSchedule/generate-document'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': '*/*',
@@ -308,7 +308,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
             ),
             title: Text(
               "Tukar Schedule Shift",
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: baseFontSize * 1.25,
                 color: Colors.white,
@@ -348,7 +348,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                           Text(
                             "Form untuk mengajukan tukar schedule shift. Pilih karyawan dari seksi yang sama (maksimal 2 pasangan).",
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.poppins(
                               fontSize: baseFontSize * 0.9,
                               fontWeight: FontWeight.w500,
                               color: Colors.black87,
@@ -374,7 +374,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                         children: [
                                           Text(
                                             "Pilih Karyawan (Maks. 2 Pasangan)",
-                                            style: GoogleFonts.roboto(
+                                            style: GoogleFonts.poppins(
                                               fontSize: baseFontSize * 0.9,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -471,7 +471,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                   children: [
                                                     Text(
                                                       'Pasangan ${index + 1}',
-                                                      style: GoogleFonts.roboto(
+                                                      style: GoogleFonts.poppins(
                                                         fontSize:
                                                             baseFontSize * 0.9,
                                                         fontWeight:
@@ -745,7 +745,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                           const SizedBox(height: 16),
                                           Text(
                                             "Tanggal Shift",
-                                            style: GoogleFonts.roboto(
+                                            style: GoogleFonts.poppins(
                                               fontSize: baseFontSize * 0.9,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -775,7 +775,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                           const SizedBox(height: 16),
                                           Text(
                                             "Keterangan",
-                                            style: GoogleFonts.roboto(
+                                            style: GoogleFonts.poppins(
                                               fontSize: baseFontSize * 0.9,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -827,7 +827,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                       color: Colors.white)
                                                   : Text(
                                                       'Kirim Pengajuan',
-                                                      style: GoogleFonts.roboto(
+                                                      style: GoogleFonts.poppins(
                                                         color: Colors.white,
                                                         fontWeight:
                                                             FontWeight.bold,

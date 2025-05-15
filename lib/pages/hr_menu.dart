@@ -62,7 +62,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
       }
 
       final employeeResponse = await http.get(
-        Uri.parse('http://213.35.123.110:5555/api/Employees/$idEmployee'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees/$idEmployee'),
       );
 
       if (employeeResponse.statusCode == 200) {
@@ -170,7 +170,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
             ),
             title: Text(
               "HR Care",
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: baseFontSize * 1.25,
                 color: Colors.white,
@@ -217,7 +217,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                     Text(
                       "Selamat datang di HR Care. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.poppins(
                         fontSize: baseFontSize * 0.9,
                         fontWeight: FontWeight.w500,
                         color: Colors.black87,

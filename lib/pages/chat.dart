@@ -36,7 +36,7 @@ class _ChatPageState extends State<ChatPage> {
     try {
       _hubConnection = HubConnectionBuilder()
           .withUrl(
-            'http://213.35.123.110:5555/chatHub',
+            'http://192.168.100.140:5555/chatHub',
             options: HttpConnectionOptions(),
           )
           .withAutomaticReconnect()
@@ -150,6 +150,19 @@ class _ChatPageState extends State<ChatPage> {
             !_messages.any((msg) => msg['Id'] == messageId)) {
           final createdAt = message['CreatedAt'] ?? message['createdAt'];
           final timestamp = _formatTimestamp(createdAt);
+          var sender = message['Sender'] ?? message['sender'] ?? {};
+          // Gunakan data dari opponent sebagai fallback jika Sender tidak lengkap
+          if (sender.isEmpty &&
+              opponent != null &&
+              message['SenderId'] == opponent!['Id']) {
+            sender = {
+              'Id': opponent!['Id'],
+              'EmployeeName': opponent!['Name'],
+              'Email': null,
+              'ProfilePhoto': opponent!['ProfilePhoto'],
+            };
+          }
+          print('Sender data in received message: $sender');
           setState(() {
             _messages.add({
               'Id': messageId,
@@ -162,7 +175,7 @@ class _ChatPageState extends State<ChatPage> {
               'FormattedTime': timestamp['time'],
               'FormattedDate': timestamp['date'],
               'Status': message['Status'] ?? message['status'] ?? 'Terkirim',
-              'Sender': message['Sender'] ?? message['sender'],
+              'Sender': sender,
               'roomId': message['roomId'] ?? message['RoomId'],
             });
           });
@@ -246,8 +259,8 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (roomId != null) {
-      await _loadLocalMessages();
       await _loadMessages();
+      await _loadLocalMessages();
       await _initializeSignalR();
     }
   }
@@ -255,7 +268,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<bool> _verifyRoomExists(String roomId, int idEmployee) async {
     try {
       final url = Uri.parse(
-          'http://213.35.123.110:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+          'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
       final response = await http.get(url);
 
       print(
@@ -302,11 +315,26 @@ class _ChatPageState extends State<ChatPage> {
           for (var msg in messages) {
             if (msg['Id'] != null && msg['CreatedAt'] != null) {
               final timestamp = _formatTimestamp(msg['CreatedAt']);
-              _messages.add({
+              var sender = msg['Sender'] ?? {};
+              // Gunakan data dari opponent sebagai fallback
+              if (sender.isEmpty &&
+                  opponent != null &&
+                  msg['SenderId'] == opponent!['Id']) {
+                sender = {
+                  'Id': opponent!['Id'],
+                  'EmployeeName': opponent!['Name'],
+                  'Email': null,
+                  'ProfilePhoto': opponent!['ProfilePhoto'],
+                };
+              }
+              final updatedMsg = {
                 ...msg,
                 'FormattedTime': msg['FormattedTime'] ?? timestamp['time'],
                 'FormattedDate': msg['FormattedDate'] ?? timestamp['date'],
-              });
+                'Sender': sender,
+              };
+              _messages.add(updatedMsg);
+              print('Loaded local message: $updatedMsg');
             } else {
               print('Skipping invalid local message: $msg');
             }
@@ -326,6 +354,17 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final validMessages = _messages
           .where((msg) => msg['Id'] != null && msg['CreatedAt'] != null)
+          .map((msg) => {
+                'Id': msg['Id'],
+                'Message': msg['Message'],
+                'SenderId': msg['SenderId'],
+                'CreatedAt': msg['CreatedAt'],
+                'FormattedTime': msg['FormattedTime'],
+                'FormattedDate': msg['FormattedDate'],
+                'Status': msg['Status'],
+                'Sender': msg['Sender'] ?? {},
+                'roomId': msg['roomId'],
+              })
           .toList();
       final messagesJson = jsonEncode(validMessages);
       await prefs.setString('messages_$roomId', messagesJson);
@@ -339,7 +378,7 @@ class _ChatPageState extends State<ChatPage> {
       int idEmployee) async {
     try {
       final url = Uri.parse(
-          'http://213.35.123.110:5555/api/Konsultasis/employee/$idEmployee');
+          'http://192.168.100.140:5555/api/Konsultasis/employee/$idEmployee');
       final response = await http.get(url);
 
       print('Response from GET /api/Konsultasis/employee/$idEmployee: '
@@ -369,7 +408,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _createKonsultasi(int idEmployee) async {
     final prefs = await SharedPreferences.getInstance();
     final url = Uri.parse(
-        'http://213.35.123.110:5555/api/Konsultasis/create-consultation');
+        'http://192.168.100.140:5555/api/Konsultasis/create-consultation');
     try {
       final response = await http.post(
         url,
@@ -427,7 +466,7 @@ class _ChatPageState extends State<ChatPage> {
 
     try {
       final url = Uri.parse(
-          'http://213.35.123.110:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+          'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
       final response = await http.get(url);
 
       print('Response from GET /api/ChatMessages/room/$roomId: '
@@ -437,33 +476,33 @@ class _ChatPageState extends State<ChatPage> {
         final data = jsonDecode(response.body);
         setState(() {
           final newMessages = (data['Messages'] ?? []) as List<dynamic>;
+          _messages.clear();
           for (var msg in newMessages) {
             final messageId = msg['Id'];
             print(
-                'Processing message ID: $messageId, CreatedAt: ${msg['CreatedAt']}');
+                'Processing message ID: $messageId, Sender: ${msg['Sender']}, CreatedAt: ${msg['CreatedAt']}');
             if (msg['CreatedAt'] == null) {
               print('Warning: Message ID $messageId has null CreatedAt');
             }
-            final existingMsgIndex =
-                _messages.indexWhere((m) => m['Id'] == messageId);
             final timestamp = _formatTimestamp(msg['CreatedAt']);
-            if (existingMsgIndex == -1) {
-              _messages.add({
-                ...msg,
-                'FormattedTime': timestamp['time'],
-                'FormattedDate': timestamp['date'],
-              });
-            } else {
-              final existingMsg = _messages[existingMsgIndex];
-              _messages[existingMsgIndex] = {
-                ...msg,
-                'CreatedAt': existingMsg['CreatedAt'] ?? msg['CreatedAt'],
-                'FormattedTime':
-                    existingMsg['FormattedTime'] ?? timestamp['time'],
-                'FormattedDate':
-                    existingMsg['FormattedDate'] ?? timestamp['date'],
+            var sender = msg['Sender'] ?? {};
+            // Gunakan data dari opponent sebagai fallback
+            if (sender.isEmpty &&
+                opponent != null &&
+                msg['SenderId'] == opponent!['Id']) {
+              sender = {
+                'Id': opponent!['Id'],
+                'EmployeeName': opponent!['Name'],
+                'Email': null,
+                'ProfilePhoto': opponent!['ProfilePhoto'],
               };
             }
+            _messages.add({
+              ...msg,
+              'FormattedTime': timestamp['time'],
+              'FormattedDate': timestamp['date'],
+              'Sender': sender,
+            });
           }
           opponent = data['Opponent'];
         });
@@ -497,6 +536,30 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
 
+    // Buat pesan sementara untuk ditampilkan sebelum respons server
+    final timestamp = _formatTimestamp(DateTime.now().toString());
+    final tempMessage = {
+      'Id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      'Message': messageText,
+      'SenderId': idEmployee,
+      'CreatedAt': DateTime.now().toString(),
+      'FormattedTime': timestamp['time'],
+      'FormattedDate': timestamp['date'],
+      'Status': 'Terkirim',
+      'Sender': {
+        'Id': idEmployee,
+        'EmployeeName': 'You', // Nama sementara untuk pengguna sendiri
+        'Email': null,
+        'ProfilePhoto': null,
+      },
+      'roomId': roomId,
+    };
+
+    setState(() {
+      _messages.add(tempMessage);
+    });
+    _scrollToBottom();
+
     try {
       await _hubConnection?.invoke('SendMessage', args: [
         {
@@ -507,10 +570,11 @@ class _ChatPageState extends State<ChatPage> {
       ]);
       print('Message sent via SignalR: $messageText');
       _messageController.clear();
+      await _loadMessages(); // Muat ulang pesan dari server
     } catch (e) {
       print('Error sending message via SignalR: $e');
-      final url =
-          Uri.parse('http://213.35.123.110:5555/api/ChatMessages/send-message');
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/ChatMessages/send-message');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -543,7 +607,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _updateMessageStatus(int messageId, String status) async {
     try {
       final url = Uri.parse(
-          'http://213.35.123.110:5555/api/ChatMessages/update-status/$messageId');
+          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
       final response = await http.put(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -741,16 +805,20 @@ class _ChatPageState extends State<ChatPage> {
                   if (msg == null) return const SizedBox();
                   final isMe = msg['SenderId'] == idEmployee;
                   final message = msg['Message'] ?? '[Pesan kosong]';
-                  final sender = msg['Sender'];
-                  final senderName = sender?['EmployeeName'] ?? '';
+                  final sender = msg['Sender'] ?? {};
+                  // Gunakan opponent sebagai fallback untuk nama pengirim
+                  final senderName = sender['EmployeeName']?.toString() ??
+                      (opponent != null && msg['SenderId'] == opponent!['Id']
+                          ? opponent!['Name']?.toString() ?? 'Unknown'
+                          : 'Unknown');
+                  print(
+                      'Message $index: Sender = $sender, SenderName = $senderName, CreatedAt = ${msg['CreatedAt']}');
+
                   final formattedTime = msg['FormattedTime'] ??
                       _formatTimestamp(msg['CreatedAt'])['time'];
                   final formattedDate = msg['FormattedDate'] ??
                       _formatTimestamp(msg['CreatedAt'])['date'];
                   final status = msg['Status'] ?? 'Terkirim';
-
-                  print(
-                      'Message $index: createdAt = ${msg['CreatedAt']}, formatted time = $formattedTime, formatted date = $formattedDate');
 
                   return Padding(
                     padding:
