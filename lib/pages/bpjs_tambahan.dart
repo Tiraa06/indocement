@@ -113,7 +113,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         _showPopup(
           context: this.context,
           title: 'Download Gagal',
-          message: 'Data keluarga anda belum ditambahkan.',
+          message: 'Data belum diinput PIC.',
         );
         return;
       }

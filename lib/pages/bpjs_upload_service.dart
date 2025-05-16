@@ -1,9 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
+
+int? _lastKnownId; // Simpan ID terakhir yang sudah dikirim notif
 
 Future<void> uploadBpjsDocument({
   required int idEmployee,
@@ -100,6 +103,26 @@ Future<void> uploadBpjsDocumentCompressed({
     final responseBody = await response.stream.bytesToString();
     if (response.statusCode == 200) {
       print("✅ Upload berhasil!");
+
+      // Ambil ID BPJS terbaru untuk idSource
+      final bpjsResp = await http.get(
+        Uri.parse('http://192.168.100.140:5555/api/Bpjs?idEmployee=$idEmployee'),
+      );
+      if (bpjsResp.statusCode == 200) {
+        final List<dynamic> bpjsData = jsonDecode(bpjsResp.body);
+        // Cari entry terbaru berdasarkan anggotaBpjs dan fieldName (jika perlu)
+        final matchingEntry = bpjsData.lastWhere(
+          (item) => item['IdEmployee'] == idEmployee && item['AnggotaBpjs'] == anggotaBpjs,
+          orElse: () => null,
+        );
+        if (matchingEntry != null) {
+          final matchingId = matchingEntry['Id'];
+          await sendBpjsNotification(
+            idEmployee: idEmployee,
+            idSource: matchingId,
+          );
+        }
+      }
     } else {
       print("❌ Gagal upload: ${response.statusCode}");
       print("Respons: $responseBody");
@@ -220,6 +243,11 @@ Future<void> uploadBpjsDocuments({
 
       if (uploadResponse.statusCode == 200) {
         print("✅ Dokumen berhasil diunggah ke ID $matchingId");
+        // Kirim notifikasi setelah upload berhasil
+        await sendBpjsNotification(
+          idEmployee: idEmployee,
+          idSource: matchingId,
+        );
       } else {
         final responseBody = await uploadResponse.stream.bytesToString();
         throw Exception("Gagal upload: ${uploadResponse.statusCode}, Respons: $responseBody");
@@ -365,4 +393,122 @@ Future<File> _convertImageToPdf(File imageFile) async {
 
   await pdfFile.writeAsBytes(await pdf.save());
   return pdfFile;
+}
+
+Future<void> sendBpjsNotification({
+  required int idEmployee,
+  required int idSource,
+}) async {
+  // Ambil IdSection dari Employees
+  final empResponse = await http.get(
+    Uri.parse('http://192.168.100.140:5555/api/Employees?id=$idEmployee'),
+  );
+  if (empResponse.statusCode == 200) {
+    final List<dynamic> empData = jsonDecode(empResponse.body);
+    if (empData.isNotEmpty) {
+      final idSection = empData[0]['IdSection'];
+      final notifBody = jsonEncode({
+        "IdSection": idSection,
+        "IdSource": idSource,
+        "Status": "Diajukan",
+        "Source": "Bpjs"
+      });
+      print("🔔 Mengirim notifikasi BPJS: $notifBody");
+      final notifResp = await http.post(
+        Uri.parse('http://192.168.100.140:5555/api/Notifications'),
+        headers: {
+          'accept': 'text/plain',
+          'Content-Type': 'application/json',
+        },
+        body: notifBody,
+      );
+      print("🔔 Response notifikasi: ${notifResp.statusCode} - ${notifResp.body}");
+      if (notifResp.statusCode == 200 || notifResp.statusCode == 201) {
+        print("✅ Notifikasi BPJS terkirim!");
+      } else {
+        print("❌ Gagal kirim notifikasi: ${notifResp.statusCode}");
+      }
+    }
+  }
+}
+
+Future<void> startBpjsWatcher() async {
+  print("⏳ BPJS Watcher dimulai...");
+  Timer.periodic(const Duration(seconds: 10), (timer) async {
+    try {
+      print("🔎 Mengecek data BPJS terbaru di /api/Bpjs/29 ...");
+      final resp = await http.get(Uri.parse('http://192.168.100.140:5555/api/Bpjs/29'));
+      print("📥 Response watcher: ${resp.statusCode} - ${resp.body}");
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        if (data is Map && data['Id'] != null) {
+          final int currentId = data['Id'];
+          print("🆔 Ditemukan Id BPJS: $currentId (lastKnown: $_lastKnownId)");
+          // Filter: hanya untuk pasangan atau anak ke
+          final anggotaBpjs = data['AnggotaBpjs']?.toString().toLowerCase();
+          final anakKe = data['AnakKe'];
+          final isPasangan = anggotaBpjs == 'pasangan';
+          final isAnak = anggotaBpjs == 'anak' && anakKe != null && anakKe.toString().isNotEmpty && anakKe.toString() != '0';
+
+          if ((isPasangan || isAnak) && (_lastKnownId == null || currentId != _lastKnownId)) {
+            _lastKnownId = currentId;
+            print("🔔 Ada data BPJS baru untuk pasangan/anak dengan Id: $currentId, mengirim notifikasi...");
+            await sendBpjsNotificationWatcher(data);
+          } else {
+            print("ℹ️ Data BPJS bukan pasangan/anak atau belum ada data baru, tidak mengirim notifikasi.");
+          }
+        } else {
+          print("⚠️ Data BPJS tidak valid atau tidak ada Id.");
+        }
+      } else {
+        print("❌ Gagal mendapatkan data BPJS: ${resp.statusCode}");
+      }
+    } catch (e) {
+      print("❌ Error watcher BPJS: $e");
+    }
+  });
+}
+
+Future<void> sendBpjsNotificationWatcher(Map data) async {
+  final idEmployee = data['IdEmployee'];
+  if (idEmployee == null) {
+    print("❌ [Watcher] Tidak ada IdEmployee pada data BPJS, notifikasi dibatalkan.");
+    return;
+  }
+
+  // Ambil IdSection dari Employees sesuai idEmployee pada data BPJS
+  final empResponse = await http.get(
+    Uri.parse('http://192.168.100.140:5555/api/Employees?id=$idEmployee'),
+  );
+  if (empResponse.statusCode == 200) {
+    final List<dynamic> empData = jsonDecode(empResponse.body);
+    if (empData.isNotEmpty) {
+      final idSection = empData[0]['IdSection'];
+      final notifBody = jsonEncode({
+        "IdSection": idSection,
+        "IdSource": data['Id'],
+        "Status": "Diajukan",
+        "Source": "Bpjs"
+      });
+      print("🔔 [Watcher] Mengirim notifikasi BPJS: $notifBody");
+      final notifResp = await http.post(
+        Uri.parse('http://192.168.100.140:5555/api/Notifications'),
+        headers: {
+          'accept': 'text/plain',
+          'Content-Type': 'application/json',
+        },
+        body: notifBody,
+      );
+      print("🔔 [Watcher] Response notifikasi: ${notifResp.statusCode} - ${notifResp.body}");
+      if (notifResp.statusCode == 200 || notifResp.statusCode == 201) {
+        print("✅ [Watcher] Notifikasi BPJS terkirim!");
+      } else {
+        print("❌ [Watcher] Gagal kirim notifikasi: ${notifResp.statusCode}");
+      }
+    } else {
+      print("❌ [Watcher] Data Employees tidak ditemukan untuk idEmployee: $idEmployee");
+    }
+  } else {
+    print("❌ [Watcher] Gagal mengambil data Employees: ${empResponse.statusCode}");
+  }
 }

@@ -775,7 +775,7 @@ class _ChatPageState extends State<ChatPage> {
           setState(() {
             _messages.clear();
             _messages.addAll(messages.whereType<Map>().map((msg) {
-              final msgMap = Map<String, dynamic>.from(msg as Map);
+              final msgMap = Map<String, dynamic>.from(msg);
               final timestamp = _formatTimestamp(msgMap['CreatedAt']);
               var sender = msgMap['Sender'] is Map
                   ? Map<String, dynamic>.from(msgMap['Sender'] as Map)

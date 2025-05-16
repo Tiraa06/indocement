@@ -142,6 +142,46 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         title: 'Berhasil',
         message: 'Dokumen BPJS ${anggotaBpjs == "Pasangan" ? "Istri" : "Anak"} berhasil diunggah.',
       );
+
+      // Jeda 2 detik sebelum cek BPJS terbaru
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Ambil data employee dari API
+      final empResponse = await Dio().get(
+        'http://192.168.100.140:5555/api/Employees',
+        queryParameters: {'id': idEmployee},
+      );
+      int? idSection;
+      if (empResponse.statusCode == 200 && empResponse.data is List && empResponse.data.isNotEmpty) {
+        final employee = empResponse.data.firstWhere(
+          (e) => e['Id'] == idEmployee,
+          orElse: () => null,
+        );
+        if (employee != null) {
+          idSection = employee['IdSection'];
+        }
+      }
+
+      // Ambil BPJS terbaru sesuai IdSection
+      int? latestBpjsId;
+      if (idSection != null) {
+        final bpjsResponse = await Dio().get(
+          'http://192.168.100.140:5555/api/Bpjs',
+          queryParameters: {'idSection': idSection},
+        );
+        if (bpjsResponse.statusCode == 200 && bpjsResponse.data is List && bpjsResponse.data.isNotEmpty) {
+          final latestEntry = bpjsResponse.data.last;
+          latestBpjsId = latestEntry['Id'];
+        }
+      }
+
+      // Kirim notifikasi jika dapat Id BPJS terbaru
+      if (idSection != null && latestBpjsId != null) {
+        await sendBpjsNotification(
+          idEmployee: idEmployee!,
+          idSource: latestBpjsId,
+        );
+      }
     } catch (e) {
       Navigator.of(context).pop();
       print("❌ Error saat mengunggah dokumen: $e");
@@ -220,12 +260,52 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         );
 
         if (uploadResponse.statusCode == 200) {
-          Navigator.of(context).pop(); // Tutup loading dialog
+          Navigator.of(context).pop();
           _showPopup(
             context: context,
             title: 'Berhasil',
             message: 'Dokumen BPJS berhasil diunggah.',
           );
+
+          // Jeda 2 detik sebelum cek BPJS terbaru
+          await Future.delayed(const Duration(seconds: 2));
+
+          // Ambil data employee dari API
+          final empResponse = await Dio().get(
+            'http://192.168.100.140:5555/api/Employees',
+            queryParameters: {'id': idEmployee},
+          );
+          int? idSection;
+          if (empResponse.statusCode == 200 && empResponse.data is List && empResponse.data.isNotEmpty) {
+            final employee = empResponse.data.firstWhere(
+              (e) => e['Id'] == idEmployee,
+              orElse: () => null,
+            );
+            if (employee != null) {
+              idSection = employee['IdSection'];
+            }
+          }
+
+          // Ambil BPJS terbaru sesuai IdSection
+          int? latestBpjsId;
+          if (idSection != null) {
+            final bpjsResponse = await Dio().get(
+              'http://192.168.100.140:5555/api/Bpjs',
+              queryParameters: {'idSection': idSection},
+            );
+            if (bpjsResponse.statusCode == 200 && bpjsResponse.data is List && bpjsResponse.data.isNotEmpty) {
+              final latestEntry = bpjsResponse.data.last;
+              latestBpjsId = latestEntry['Id'];
+            }
+          }
+
+          // Kirim notifikasi jika dapat Id BPJS terbaru
+          if (idSection != null && latestBpjsId != null) {
+            await sendBpjsNotification(
+              idEmployee: idEmployee!,
+              idSource: latestBpjsId,
+            );
+          }
         } else {
           throw Exception('Gagal memperbarui data: ${uploadResponse.statusCode}');
         }
