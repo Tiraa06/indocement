@@ -31,6 +31,7 @@ class _ChatPageState extends State<ChatPage> {
   Timer? _saveMessagesTimer;
   Timer? _reconnectTimer;
   bool _isDisposed = false;
+  bool _showConnectedMessage = false;
 
   @override
   void initState() {
@@ -42,17 +43,15 @@ class _ChatPageState extends State<ChatPage> {
     }).catchError((e) {
       print('Error initializing locale: $e');
       if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal menginisialisasi format tanggal: $e');
+        setState(
+            () => _errorMessage = 'Gagal menginisialisasi format tanggal: $e');
       }
     });
   }
 
- Future<void> _initializeSignalR() async {
+  Future<void> _initializeSignalR() async {
     if (roomId == null || _isDisposed) {
       print('Cannot initialize SignalR: roomId is null or page is disposed');
-      if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Room ID tidak tersedia untuk SignalR.');
-      }
       return;
     }
 
@@ -148,19 +147,19 @@ class _ChatPageState extends State<ChatPage> {
         );
         print('SignalR connection started. State: ${_hubConnection!.state}');
 
-        // Menentukan roomName dan status sebelum join room
-        final roomName = opponent != null
-            ? opponent!['Name']?.toString() ?? 'HR Chat'
-            : 'HR Chat';
-        const status = 'Dibaca'; // Status awal saat join room
-
-        print(
-            'Joining room: $roomId with idEmployee: $idEmployee, roomName: $roomName, status: $status');
-        await _hubConnection!
-            .invoke('JoinRoom', args: [roomId!, 'a', 'a']);
+        print('Joining room: $roomId with idEmployee: $idEmployee');
+        await _hubConnection!.invoke('JoinRoom', args: [roomId!, "a", "a"]);
         print('Successfully joined room: $roomId');
         if (mounted && !_isDisposed) {
-          setState(() => _errorMessage = null);
+          setState(() {
+            _errorMessage = null;
+            _showConnectedMessage = true;
+          });
+          Timer(const Duration(seconds: 3), () {
+            if (mounted && !_isDisposed) {
+              setState(() => _showConnectedMessage = false);
+            }
+          });
         }
         _reconnectAttempts = 0;
       } else {
@@ -189,15 +188,14 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _joinRoomViaHttp() async {
     if (roomId == null || idEmployee == null || _isDisposed) {
-      print('Cannot join room via HTTP: roomId or idEmployee is null or page is disposed');
-      if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Room ID atau ID karyawan tidak tersedia untuk join room.');
-      }
+      print(
+          'Cannot join room via HTTP: roomId or idEmployee is null or page is disposed');
       return;
     }
 
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatMessages/join-room');
+      final url =
+          Uri.parse('http://192.168.100.140:5555/api/ChatMessages/join-room');
       final response = await retry(
         () => http.post(
           url,
@@ -207,11 +205,21 @@ class _ChatPageState extends State<ChatPage> {
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Joining room via HTTP: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Joining room via HTTP: Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200 && mounted && !_isDisposed) {
-        setState(() => _errorMessage = null);
+        setState(() {
+          _errorMessage = null;
+          _showConnectedMessage = true;
+        });
+        Timer(const Duration(seconds: 3), () {
+          if (mounted && !_isDisposed) {
+            setState(() => _showConnectedMessage = false);
+          }
+        });
       } else if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal bergabung ke room via HTTP: ${response.body}');
+        setState(() => _errorMessage =
+            'Gagal bergabung ke room via HTTP: ${response.body}');
         _scheduleReconnect();
       }
     } catch (e) {
@@ -225,23 +233,30 @@ class _ChatPageState extends State<ChatPage> {
 
   void _scheduleReconnect() {
     if (_reconnectAttempts >= _maxReconnectAttempts || _isDisposed) {
-      print('Max reconnect attempts reached or page is disposed. Stopping reconnection.');
+      print(
+          'Max reconnect attempts reached or page is disposed. Stopping reconnection.');
       if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal menghubungkan setelah beberapa percobaan. Silakan coba lagi nanti.');
+        setState(() => _errorMessage =
+            'Gagal menghubungkan setelah beberapa percobaan. Silakan coba lagi nanti.');
       }
       return;
     }
 
     final delay = Duration(seconds: _reconnectAttempts + 1);
     _reconnectAttempts++;
-    print('Scheduling reconnect attempt $_reconnectAttempts in ${delay.inSeconds} seconds...');
+    print(
+        'Scheduling reconnect attempt $_reconnectAttempts in ${delay.inSeconds} seconds...');
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () async {
-      if (mounted && !_isDisposed && _hubConnection?.state != HubConnectionState.Connected) {
+      if (mounted &&
+          !_isDisposed &&
+          _hubConnection?.state != HubConnectionState.Connected) {
         print('Attempting to reconnect to SignalR...');
         try {
           await _initializeSignalR();
-          if (_hubConnection?.state == HubConnectionState.Connected && mounted && !_isDisposed) {
+          if (_hubConnection?.state == HubConnectionState.Connected &&
+              mounted &&
+              !_isDisposed) {
             print('Reconnection successful.');
             setState(() => _errorMessage = null);
           } else {
@@ -252,7 +267,9 @@ class _ChatPageState extends State<ChatPage> {
           print('Reconnection error: $e');
           _scheduleReconnect();
         }
-      } else if (_hubConnection?.state == HubConnectionState.Connected && mounted && !_isDisposed) {
+      } else if (_hubConnection?.state == HubConnectionState.Connected &&
+          mounted &&
+          !_isDisposed) {
         print('Connection already established, skipping reconnect.');
         _reconnectAttempts = 0;
         setState(() => _errorMessage = null);
@@ -277,14 +294,20 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
 
-    if (message['roomId']?.toString() == roomId || message['RoomId']?.toString() == roomId) {
+    if (message['roomId']?.toString() == roomId ||
+        message['RoomId']?.toString() == roomId) {
       final messageId = message['Id'] ?? message['id'];
-      if (messageId != null && !_messages.any((msg) => msg['Id'] == messageId)) {
+      if (messageId != null &&
+          !_messages.any((msg) => msg['Id'] == messageId)) {
         final createdAt = message['CreatedAt'] ?? message['createdAt'];
         final timestamp = _formatTimestamp(createdAt);
-        var sender = message['Sender'] is Map ? Map<String, dynamic>.from(message['Sender'] as Map) : {};
+        var sender = message['Sender'] is Map
+            ? Map<String, dynamic>.from(message['Sender'] as Map)
+            : {};
         print('Sender data: $sender');
-        if (sender.isEmpty && opponent != null && message['SenderId'] == opponent!['Id']) {
+        if (sender.isEmpty &&
+            opponent != null &&
+            message['SenderId'] == opponent!['Id']) {
           sender = {
             'Id': opponent!['Id'],
             'EmployeeName': opponent!['Name'],
@@ -293,14 +316,19 @@ class _ChatPageState extends State<ChatPage> {
           };
         }
 
-        final messageStatus = message['Status'] ?? message['status'] ?? 'Terkirim';
-        print('Adding message with messageId: $messageId, SenderId: ${message['SenderId']}, Status: $messageStatus');
+        final messageStatus =
+            message['Status'] ?? message['status'] ?? 'Terkirim';
+        print(
+            'Adding message with messageId: $messageId, SenderId: ${message['SenderId']}, Status: $messageStatus');
 
         if (mounted && !_isDisposed) {
           setState(() {
             _messages.add({
               'Id': messageId,
-              'Message': message['Message'] ?? message['message'] ?? message['Content'] ?? '',
+              'Message': message['Message'] ??
+                  message['message'] ??
+                  message['Content'] ??
+                  '',
               'SenderId': message['SenderId'] ?? message['senderId'],
               'CreatedAt': createdAt,
               'FormattedTime': timestamp['time'],
@@ -312,10 +340,6 @@ class _ChatPageState extends State<ChatPage> {
           });
           _triggerSaveMessages();
           _scrollToBottom();
-          if (message['SenderId'] != idEmployee && messageStatus != 'Dibaca') {
-            print('Marking HR message $messageId as Dibaca');
-            _updateMessageStatus(messageId, 'Dibaca');
-          }
         }
       }
     }
@@ -327,7 +351,8 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
       final response = await retry(
         () => http.put(
           url,
@@ -337,11 +362,13 @@ class _ChatPageState extends State<ChatPage> {
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Fixing server status for messageId $messageId to $correctStatus: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Fixing server status for messageId $messageId to $correctStatus: Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200 && mounted && !_isDisposed) {
         print('Successfully fixed server status for messageId $messageId');
       } else if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal memperbaiki status pesan di server: ${response.body}');
+        setState(() => _errorMessage =
+            'Gagal memperbaiki status pesan di server: ${response.body}');
       }
     } catch (e) {
       print('Error fixing server status for messageId $messageId: $e');
@@ -410,7 +437,8 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (roomId == null || konsultasiId == null) {
-      final existingConsultation = await _checkExistingConsultation(idEmployee!);
+      final existingConsultation =
+          await _checkExistingConsultation(idEmployee!);
       if (existingConsultation != null && mounted && !_isDisposed) {
         setState(() {
           konsultasiId = existingConsultation['KonsultasiId']?.toString() ??
@@ -432,7 +460,9 @@ class _ChatPageState extends State<ChatPage> {
       await _loadLocalMessages();
       print('Initializing SignalR...');
       await _initializeSignalR();
-      if (mounted && !_isDisposed && _hubConnection?.state == HubConnectionState.Connected) {
+      if (mounted &&
+          !_isDisposed &&
+          _hubConnection?.state == HubConnectionState.Connected) {
         setState(() => _errorMessage = null);
       }
     } else {
@@ -458,12 +488,14 @@ class _ChatPageState extends State<ChatPage> {
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Verifying room $roomId: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Verifying room $roomId: Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200) {
         return true;
       } else {
         if (mounted && !_isDisposed) {
-          setState(() => _errorMessage = 'Gagal memverifikasi room: Status ${response.statusCode}, ${response.body}');
+          setState(() => _errorMessage =
+              'Gagal memverifikasi room: Status ${response.statusCode}, ${response.body}');
         }
         return false;
       }
@@ -507,11 +539,17 @@ class _ChatPageState extends State<ChatPage> {
         if (mounted && !_isDisposed) {
           setState(() {
             _messages.clear();
-            _messages.addAll(messages.where((msg) => msg['Id'] != null && msg['CreatedAt'] != null).map((msg) {
+            _messages.addAll(messages
+                .where((msg) => msg['Id'] != null && msg['CreatedAt'] != null)
+                .map((msg) {
               final timestamp = _formatTimestamp(msg['CreatedAt']);
-              var sender = msg['Sender'] is Map ? Map<String, dynamic>.from(msg['Sender'] as Map) : {};
+              var sender = msg['Sender'] is Map
+                  ? Map<String, dynamic>.from(msg['Sender'] as Map)
+                  : {};
               print('Local sender data: $sender');
-              if (sender.isEmpty && opponent != null && msg['SenderId'] == opponent!['Id']) {
+              if (sender.isEmpty &&
+                  opponent != null &&
+                  msg['SenderId'] == opponent!['Id']) {
                 sender = {
                   'Id': opponent!['Id'],
                   'EmployeeName': opponent!['Name'],
@@ -520,7 +558,8 @@ class _ChatPageState extends State<ChatPage> {
                 };
               }
               final status = msg['Status']?.toString() ?? 'Terkirim';
-              print('Loading local message Id: ${msg['Id']}, SenderId: ${msg['SenderId']}, Status: $status');
+              print(
+                  'Loading local message Id: ${msg['Id']}, SenderId: ${msg['SenderId']}, Status: $status');
               return {
                 ...msg as Map<String, dynamic>,
                 'FormattedTime': timestamp['time'],
@@ -531,7 +570,7 @@ class _ChatPageState extends State<ChatPage> {
           });
           print('Loaded ${_messages.length} messages from local storage');
           _scrollToBottom();
-          _loadMessages(); // Sinkronisasi dengan server
+          _loadMessages();
         }
       } catch (e) {
         print('Error loading local messages: $e');
@@ -558,7 +597,7 @@ class _ChatPageState extends State<ChatPage> {
                   'Id': msg['Id'],
                   'Message': msg['Message'],
                   'SenderId': msg['SenderId'],
-                  'CreatedAt': msg['CreatedAt'],
+                  'CreatedAt': msg['CreatedAt'], // Pastikan format ISO 8601
                   'FormattedTime': msg['FormattedTime'],
                   'FormattedDate': msg['FormattedDate'],
                   'Status': msg['Status'],
@@ -583,19 +622,22 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<Map<String, dynamic>?> _checkExistingConsultation(int idEmployee) async {
+  Future<Map<String, dynamic>?> _checkExistingConsultation(
+      int idEmployee) async {
     if (_isDisposed) {
       print('Skipping checkExistingConsultation: Page is disposed');
       return null;
     }
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/Konsultasis/employee/$idEmployee');
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/Konsultasis/employee/$idEmployee');
       final response = await retry(
         () => http.get(url, headers: {'Content-Type': 'application/json'}),
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Checking consultation for idEmployee $idEmployee: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Checking consultation for idEmployee $idEmployee: Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return (data is List && data.isNotEmpty)
@@ -603,7 +645,8 @@ class _ChatPageState extends State<ChatPage> {
             : (data is Map ? Map<String, dynamic>.from(data) : null);
       } else {
         if (mounted && !_isDisposed) {
-          setState(() => _errorMessage = 'Gagal memeriksa konsultasi: ${response.body}');
+          setState(() =>
+              _errorMessage = 'Gagal memeriksa konsultasi: ${response.body}');
         }
         return null;
       }
@@ -622,7 +665,8 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     final prefs = await SharedPreferences.getInstance();
-    final url = Uri.parse('http://192.168.100.140:5555/api/Konsultasis/create-consultation');
+    final url = Uri.parse(
+        'http://192.168.100.140:5555/api/Konsultasis/create-consultation');
     try {
       final response = await retry(
         () => http.post(
@@ -633,14 +677,17 @@ class _ChatPageState extends State<ChatPage> {
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Creating consultation for idEmployee $idEmployee: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Creating consultation for idEmployee $idEmployee: Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (mounted && !_isDisposed) {
           setState(() {
-            konsultasiId = data['KonsultasiId']?.toString() ?? data['Id']?.toString();
-            roomId = data['ChatRoomId']?.toString() ?? data['ChatRoom']?['Id']?.toString();
-            _errorMessage = null; // Reset error message on success
+            konsultasiId =
+                data['KonsultasiId']?.toString() ?? data['Id']?.toString();
+            roomId = data['ChatRoomId']?.toString() ??
+                data['ChatRoom']?['Id']?.toString();
+            _errorMessage = null;
           });
         }
         await prefs.setString('konsultasiId', konsultasiId!);
@@ -651,11 +698,12 @@ class _ChatPageState extends State<ChatPage> {
           if (mounted && !_isDisposed) {
             setState(() {
               roomId = error['ChatRoomId']?.toString();
-              _errorMessage = null; // Reset error message since consultation already exists
+              _errorMessage = null;
             });
           }
           if (roomId != null) await prefs.setString('roomId', roomId!);
-          final existingConsultation = await _checkExistingConsultation(idEmployee);
+          final existingConsultation =
+              await _checkExistingConsultation(idEmployee);
           if (existingConsultation != null && mounted && !_isDisposed) {
             setState(() {
               konsultasiId = existingConsultation['KonsultasiId']?.toString() ??
@@ -665,56 +713,62 @@ class _ChatPageState extends State<ChatPage> {
               await prefs.setString('konsultasiId', konsultasiId!);
             }
           }
-        } else {
-          if (mounted && !_isDisposed) {
-            setState(() => _errorMessage = 'Gagal membuat konsultasi: ${response.body}');
-          }
         }
-      } else if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal membuat konsultasi: Status ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
       print('Error creating consultation: $e');
-      if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal membuat konsultasi: $e');
-      }
     }
   }
 
   Future<void> _loadMessages() async {
     if (roomId == null || idEmployee == null || _isDisposed) {
       print('Error: roomId or idEmployee is null or page is disposed');
-      if (mounted && !_isDisposed) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Room ID atau ID karyawan tidak tersedia untuk memuat pesan.';
-        });
-      }
       return;
     }
 
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
       final response = await retry(
         () => http.get(url, headers: {'Content-Type': 'application/json'}),
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Loading messages for room $roomId: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Loading messages for room $roomId: Status: ${response.statusCode}, Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final messages = data['Messages'] as List<dynamic>? ?? [];
         print('Raw messages from server: $messages');
+
+        // Update status pesan dari opponent menjadi "Dibaca" saat halaman chat dimuat
+        final messagesToUpdate = messages
+            .whereType<Map>()
+            .where((msg) =>
+                msg['SenderId'] != idEmployee && msg['Status'] != 'Dibaca')
+            .toList();
+
+        for (var msg in messagesToUpdate) {
+          final messageId = msg['Id'];
+          if (messageId != null) {
+            await _updateMessageStatus(messageId, 'Dibaca');
+          }
+        }
+
         if (mounted && !_isDisposed) {
           setState(() {
             _messages.clear();
             _messages.addAll(messages.whereType<Map>().map((msg) {
               final msgMap = Map<String, dynamic>.from(msg as Map);
               final timestamp = _formatTimestamp(msgMap['CreatedAt']);
-              var sender = msgMap['Sender'] is Map ? Map<String, dynamic>.from(msgMap['Sender'] as Map) : {};
+              var sender = msgMap['Sender'] is Map
+                  ? Map<String, dynamic>.from(msgMap['Sender'] as Map)
+                  : {};
               print('Server sender data: $sender');
-              if (sender.isEmpty && opponent != null && msgMap['SenderId'] == opponent!['Id']) {
+              if (sender.isEmpty &&
+                  opponent != null &&
+                  msgMap['SenderId'] == opponent!['Id']) {
                 sender = {
                   'Id': opponent!['Id'],
                   'EmployeeName': opponent!['Name'],
@@ -723,7 +777,8 @@ class _ChatPageState extends State<ChatPage> {
                 };
               }
               final status = msgMap['Status']?.toString() ?? 'Terkirim';
-              print('Loading server message Id: ${msgMap['Id']}, SenderId: ${msgMap['SenderId']}, Status: $status');
+              print(
+                  'Loading server message Id: ${msgMap['Id']}, SenderId: ${msgMap['SenderId']}, Status: $status');
               return {
                 ...msgMap,
                 'FormattedTime': timestamp['time'],
@@ -732,23 +787,20 @@ class _ChatPageState extends State<ChatPage> {
                 'Status': status,
               };
             }));
-            opponent = data['Opponent'] is Map ? Map<String, dynamic>.from(data['Opponent'] as Map) : null;
+            opponent = data['Opponent'] is Map
+                ? Map<String, dynamic>.from(data['Opponent'] as Map)
+                : null;
           });
           print('Loaded ${_messages.length} messages');
           _triggerSaveMessages();
           _scrollToBottom();
-          for (var msg in _messages) {
-            if (msg['SenderId'] != idEmployee && msg['Status'] != 'Dibaca') {
-              print('Marking HR message ${msg['Id']} as Dibaca');
-              _updateMessageStatus(msg['Id'], 'Dibaca');
-            }
-          }
           if (mounted && !_isDisposed) {
             setState(() => _errorMessage = null);
           }
         }
       } else if (response.statusCode == 404) {
-        print('Room not found, clearing local data and creating new consultation');
+        print(
+            'Room not found, clearing local data and creating new consultation');
         final prefs = await SharedPreferences.getInstance();
         await _clearLocalChatData(prefs);
         await _createKonsultasi(idEmployee!);
@@ -756,7 +808,8 @@ class _ChatPageState extends State<ChatPage> {
       } else if (mounted && !_isDisposed) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Gagal memuat pesan: Status ${response.statusCode}, ${response.body}';
+          _errorMessage =
+              'Gagal memuat pesan: Status ${response.statusCode}, ${response.body}';
         });
       }
     } catch (e) {
@@ -789,7 +842,7 @@ class _ChatPageState extends State<ChatPage> {
       'Id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
       'Message': messageText,
       'SenderId': idEmployee,
-      'CreatedAt': DateTime.now().toIso8601String(),
+      'CreatedAt': DateTime.now().toIso8601String(), // Gunakan ISO 8601
       'FormattedTime': timestamp['time'],
       'FormattedDate': timestamp['date'],
       'Status': 'Mengirim',
@@ -825,7 +878,8 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e, stackTrace) {
       print('Error sending message via SignalR: $e\nStack trace: $stackTrace');
       try {
-        final url = Uri.parse('http://192.168.100.140:5555/api/ChatMessages/send-message');
+        final url = Uri.parse(
+            'http://192.168.100.140:5555/api/ChatMessages/send-message');
         final response = await retry(
           () => http.post(
             url,
@@ -839,20 +893,23 @@ class _ChatPageState extends State<ChatPage> {
           maxAttempts: 3,
           delayFactor: const Duration(seconds: 1),
         );
-        print('Sending message via HTTP: Status: ${response.statusCode}, Body: ${response.body}');
+        print(
+            'Sending message via HTTP: Status: ${response.statusCode}, Body: ${response.body}');
         if (response.statusCode >= 200 && response.statusCode < 300) {
           if (mounted && !_isDisposed) {
             _messageController.clear();
             await _loadMessages();
           }
-        } else if (jsonDecode(response.body)['Message'] == 'Chat room tidak ditemukan.') {
+        } else if (jsonDecode(response.body)['Message'] ==
+            'Chat room tidak ditemukan.') {
           final prefs = await SharedPreferences.getInstance();
           await _clearLocalChatData(prefs);
           await _createKonsultasi(idEmployee!);
           await _loadChatRoom();
           await _sendMessage();
         } else if (mounted && !_isDisposed) {
-          setState(() => _errorMessage = 'Gagal mengirim pesan: ${response.body}');
+          setState(
+              () => _errorMessage = 'Gagal mengirim pesan: ${response.body}');
         }
       } catch (e) {
         print('Error sending message via HTTP: $e');
@@ -869,7 +926,8 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
       final response = await retry(
         () => http.put(
           url,
@@ -879,15 +937,18 @@ class _ChatPageState extends State<ChatPage> {
         maxAttempts: 3,
         delayFactor: const Duration(seconds: 1),
       );
-      print('Updating message status for messageId $messageId to $status: Status: ${response.statusCode}, Body: ${response.body}');
+      print(
+          'Updating message status for messageId $messageId to $status: Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200 && mounted && !_isDisposed) {
         setState(() {
           final index = _messages.indexWhere((msg) => msg['Id'] == messageId);
           if (index != -1) {
             _messages[index]['Status'] = status;
-            print('Updated status in _messages at index $index: ${_messages[index]}');
+            print(
+                'Updated status in _messages at index $index: ${_messages[index]}');
           } else {
-            print('MessageId $messageId not found in _messages, reloading messages...');
+            print(
+                'MessageId $messageId not found in _messages, reloading messages...');
             _loadMessages();
           }
         });
@@ -896,7 +957,8 @@ class _ChatPageState extends State<ChatPage> {
           setState(() => _errorMessage = null);
         }
       } else if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal memperbarui status pesan: ${response.body}');
+        setState(() =>
+            _errorMessage = 'Gagal memperbarui status pesan: ${response.body}');
       }
     } catch (e) {
       print('Error updating message status for messageId $messageId: $e');
@@ -916,20 +978,29 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final dateTime = DateTime.parse(timeString).toLocal();
       final now = DateTime.now();
-      final isToday = dateTime.year == now.year && dateTime.month == now.month && dateTime.day == now.day;
+      final isToday = dateTime.year == now.year &&
+          dateTime.month == now.month &&
+          dateTime.day == now.day;
       return {
-        'time': "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}",
-        'date': isToday ? '' : DateFormat('dd MMM yyyy', 'id_ID').format(dateTime),
+        'time':
+            "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}",
+        'date':
+            isToday ? '' : DateFormat('dd MMM yyyy', 'id_ID').format(dateTime),
       };
     } catch (e) {
       try {
         final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
         final dateTime = formatter.parseLoose(timeString).toLocal();
         final now = DateTime.now();
-        final isToday = dateTime.year == now.year && dateTime.month == now.month && dateTime.day == now.day;
+        final isToday = dateTime.year == now.year &&
+            dateTime.month == now.month &&
+            dateTime.day == now.day;
         return {
-          'time': "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}",
-          'date': isToday ? '' : DateFormat('dd MMM yyyy', 'id_ID').format(dateTime),
+          'time':
+              "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}",
+          'date': isToday
+              ? ''
+              : DateFormat('dd MMM yyyy', 'id_ID').format(dateTime),
         };
       } catch (e) {
         print('Error parsing timestamp: $timeString, Error: $e');
@@ -950,7 +1021,8 @@ class _ChatPageState extends State<ChatPage> {
               child: opponent != null && opponent!['ProfilePhoto'] != null
                   ? Image.network(
                       opponent!['ProfilePhoto'].toString(),
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.grey),
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.person, color: Colors.grey),
                     )
                   : const Icon(Icons.person, color: Colors.grey),
             ),
@@ -959,11 +1031,15 @@ class _ChatPageState extends State<ChatPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  opponent != null ? opponent!['Name']?.toString() ?? 'N/A' : 'Chat',
+                  opponent != null
+                      ? opponent!['Name']?.toString() ?? 'N/A'
+                      : 'Chat',
                   style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
                 Text(
-                  opponent != null ? opponent!['Department']?.toString() ?? '' : '',
+                  opponent != null
+                      ? opponent!['Department']?.toString() ?? ''
+                      : '',
                   style: const TextStyle(fontSize: 12, color: Colors.white70),
                 ),
               ],
@@ -987,19 +1063,20 @@ class _ChatPageState extends State<ChatPage> {
             ),
             child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  color: Colors.grey[200],
-                  child: Center(
-                    child: Text(
-                      _hubConnection?.state == HubConnectionState.Connected ? 'Terhubung' : 'Menyambungkan...',
-                      style: TextStyle(
-                        color: _hubConnection?.state == HubConnectionState.Connected ? Colors.green : Colors.red,
-                        fontSize: 12,
+                if (_showConnectedMessage)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Text(
+                        'Terhubung',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
@@ -1008,40 +1085,58 @@ class _ChatPageState extends State<ChatPage> {
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
                       final isMe = msg['SenderId'] == idEmployee;
-                      final message = msg['Message']?.toString() ?? '[Pesan kosong]';
-                      final sender = msg['Sender'] is Map ? Map<String, dynamic>.from(msg['Sender'] as Map) : {};
+                      final message =
+                          msg['Message']?.toString() ?? '[Pesan kosong]';
+                      final sender = msg['Sender'] is Map
+                          ? Map<String, dynamic>.from(msg['Sender'] as Map)
+                          : {};
                       print('Rendering sender data for msg $index: $sender');
                       final senderName = sender['EmployeeName']?.toString() ??
-                          (opponent != null && msg['SenderId'] == opponent!['Id']
+                          (opponent != null &&
+                                  msg['SenderId'] == opponent!['Id']
                               ? opponent!['Name']?.toString() ?? 'Unknown'
                               : 'Unknown');
-                      final formattedTime = msg['FormattedTime']?.toString() ?? '--:--';
-                      final formattedDate = msg['FormattedDate']?.toString() ?? '';
+                      final formattedTime =
+                          msg['FormattedTime']?.toString() ?? '--:--';
+                      final formattedDate =
+                          msg['FormattedDate']?.toString() ?? '';
                       final status = msg['Status']?.toString() ?? 'Mengirim';
-                      print('Rendering message $index: isMe=$isMe, messageId=${msg['Id']}, status=$status');
+                      print(
+                          'Rendering message $index: isMe=$isMe, messageId=${msg['Id']}, status=$status');
 
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         child: Row(
-                          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          mainAxisAlignment: isMe
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
                           children: [
                             Flexible(
                               child: Container(
                                 constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.7,
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 margin: EdgeInsets.only(
                                   left: isMe ? 50 : 8,
                                   right: isMe ? 8 : 50,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isMe ? const Color(0xFFE1FFC7) : Colors.white,
+                                  color: isMe
+                                      ? const Color(0xFFE1FFC7)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.only(
                                     topLeft: const Radius.circular(12),
                                     topRight: const Radius.circular(12),
-                                    bottomLeft: isMe ? const Radius.circular(12) : Radius.zero,
-                                    bottomRight: isMe ? Radius.zero : const Radius.circular(12),
+                                    bottomLeft: isMe
+                                        ? const Radius.circular(12)
+                                        : Radius.zero,
+                                    bottomRight: isMe
+                                        ? Radius.zero
+                                        : const Radius.circular(12),
                                   ),
                                   boxShadow: const [
                                     BoxShadow(
@@ -1074,7 +1169,9 @@ class _ChatPageState extends State<ChatPage> {
                                       spacing: 4,
                                       children: [
                                         Text(
-                                          formattedDate.isNotEmpty ? '$formattedDate $formattedTime' : formattedTime,
+                                          formattedDate.isNotEmpty
+                                              ? '$formattedDate $formattedTime'
+                                              : formattedTime,
                                           style: TextStyle(
                                             fontSize: 11,
                                             color: Colors.grey[600],
@@ -1088,7 +1185,9 @@ class _ChatPageState extends State<ChatPage> {
                                                     ? Icons.done
                                                     : Icons.access_time,
                                             size: 14,
-                                            color: status == 'Dibaca' ? Colors.blue : Colors.grey,
+                                            color: status == 'Dibaca'
+                                                ? Colors.blue
+                                                : Colors.grey,
                                           ),
                                       ],
                                     ),
@@ -1103,7 +1202,8 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   color: Colors.grey[100],
                   child: Row(
                     children: [
@@ -1181,3 +1281,4 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 }
+  

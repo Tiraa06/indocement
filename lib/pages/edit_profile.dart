@@ -47,8 +47,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _genderController = TextEditingController();
   final TextEditingController _educationController = TextEditingController();
   final TextEditingController _workLocationController = TextEditingController();
-  final TextEditingController _idSectionController = TextEditingController();
-  final TextEditingController _idEslController = TextEditingController();
+  final TextEditingController _sectionController = TextEditingController();
 
   Map<String, dynamic> fullData = {};
   int? _userId;
@@ -58,6 +57,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     print('EditProfilePage initState called');
     _fetchInitialData();
+  }
+
+  Future<String> _fetchSectionName(int? idSection) async {
+    if (idSection == null || idSection <= 0) {
+      print('Invalid or missing IdSection: $idSection');
+      return 'Tidak Tersedia';
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.100.140:5555/api/Sections/$idSection'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      print('Fetch Section Status: ${response.statusCode}');
+      print('Fetch Section Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final sectionData = jsonDecode(response.body);
+        return sectionData['NamaSection']?.toString() ?? 'Tidak Tersedia';
+      } else {
+        print('Failed to fetch section data: ${response.statusCode}');
+        return 'Tidak Tersedia';
+      }
+    } catch (e) {
+      print('Error fetching section data: $e');
+      return 'Tidak Tersedia';
+    }
   }
 
   Future<void> _fetchInitialData() async {
@@ -102,6 +129,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (response.statusCode == 200) {
         final employee = jsonDecode(response.body);
         print('Employee Data Keys: ${employee.keys}');
+
+        // Ambil IdSection dan kemudian cari SectionName
+        final idSection = employee['IdSection'] != null
+            ? int.tryParse(employee['IdSection'].toString())
+            : null;
+        final sectionName = await _fetchSectionName(idSection);
+
         setState(() {
           fullData = employee;
           _employeeNameController.text =
@@ -119,8 +153,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _genderController.text = employee['Gender'] ?? '';
           _educationController.text = employee['Education'] ?? '';
           _workLocationController.text = employee['WorkLocation'] ?? '';
-          _idSectionController.text = employee['IdSection']?.toString() ?? '';
-          _idEslController.text = employee['IdEsl']?.toString() ?? '';
+          _sectionController.text = sectionName;
 
           // Tambahkan URL dasar jika UrlFoto adalah path relatif
           if (employee['UrlFoto'] != null && employee['UrlFoto'].isNotEmpty) {
@@ -251,7 +284,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final request = http.MultipartRequest(
         'PUT',
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId/UrlFoto'),
+        Uri.parse(
+            'http://192.168.100.140:5555/api/Employees/$employeeId/UrlFoto'),
       );
       request.files.add(await http.MultipartFile.fromPath(
         'File',
@@ -278,7 +312,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       } else {
         print('Failed to upload image: ${response.statusCode}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengunggah gambar: ${response.statusCode}')),
+          SnackBar(
+              content: Text('Gagal mengunggah gambar: ${response.statusCode}')),
         );
       }
     } catch (e) {
@@ -327,14 +362,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                      icon: const Icon(Icons.check_circle,
+                          color: Colors.green, size: 32),
                       onPressed: () {
                         Navigator.of(context).pop(); // Tutup popup
                         _uploadImage(image); // Unggah gambar ke API
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.cancel, color: Colors.red, size: 32),
+                      icon:
+                          const Icon(Icons.cancel, color: Colors.red, size: 32),
                       onPressed: () {
                         Navigator.of(context).pop(); // Tutup popup
                         setState(() {
@@ -443,13 +480,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: isEditing ? _pickImage : null, // Pilih gambar jika sedang mengedit
+              onPressed: isEditing
+                  ? _pickImage
+                  : null, // Pilih gambar jika sedang mengedit
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1572E8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
               ),
               child: Text(
                 'Edit Profile',
@@ -510,14 +550,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   keyboardType: TextInputType.text,
                   readOnly: true),
               _buildTextField(
-                  label: 'ID Section',
-                  controller: _idSectionController,
-                  keyboardType: TextInputType.number,
-                  readOnly: true),
-              _buildTextField(
-                  label: 'ID ESL',
-                  controller: _idEslController,
-                  keyboardType: TextInputType.number,
+                  label: 'Section',
+                  controller: _sectionController,
+                  keyboardType: TextInputType.text,
                   readOnly: true),
             ]),
             _buildSectionCard('Kontak', [
@@ -543,7 +578,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                 ),
                 child: Text(
                   'Simpan Perubahan',
@@ -574,8 +610,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _genderController.dispose();
     _educationController.dispose();
     _workLocationController.dispose();
-    _idSectionController.dispose();
-    _idEslController.dispose();
+    _sectionController.dispose();
     super.dispose();
   }
 }

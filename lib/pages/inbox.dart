@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart'; // Tambahkan import ini
 
 class InboxPage extends StatefulWidget {
   const InboxPage({super.key});
@@ -151,6 +152,23 @@ class _InboxPageState extends State<InboxPage> {
           _hasUnreadNotifications = _notifications.isNotEmpty;
         });
       }
+    }
+  }
+
+  // Fungsi untuk memformat tanggal sesuai format lokal
+  String _formatTimestamp(String? timeString) {
+    if (timeString == null || timeString.isEmpty) {
+      return 'Unknown Date';
+    }
+    try {
+      // Coba parse format lokal "dd MMMM yyyy HH.mm"
+      final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
+      final dateTime = formatter.parseLoose(timeString);
+      return DateFormat('dd MMMM yyyy HH.mm', 'id_ID').format(dateTime);
+    } catch (e) {
+      print('Error parsing timestamp: $timeString, Error: $e');
+      // Jika parsing gagal, kembalikan string asli atau default
+      return timeString; // Kembalikan format asli jika valid, misalnya "16 Mei 2025 07.56"
     }
   }
 
@@ -355,7 +373,7 @@ class _InboxPageState extends State<InboxPage> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                "Nomor Tiket: ${complaint['Id']}",
+                                                "Nomor Keluhan: ${complaint['Id']}",
                                                 style: GoogleFonts.poppins(
                                                   fontSize: fontSizeLabel,
                                                   fontWeight: FontWeight.bold,
@@ -447,6 +465,8 @@ class _InboxPageState extends State<InboxPage> {
                               itemBuilder: (context, index) {
                                 final notif = _notifications[index];
                                 final isRead = notif['isRead'] ?? true;
+                                final timestamp =
+                                    _formatTimestamp(notif['createdAt']);
                                 return Card(
                                   margin:
                                       const EdgeInsets.symmetric(vertical: 8),
@@ -471,12 +491,7 @@ class _InboxPageState extends State<InboxPage> {
                                       ),
                                     ),
                                     subtitle: Text(
-                                      notif['createdAt'] != null
-                                          ? DateTime.parse(notif['createdAt'])
-                                              .toLocal()
-                                              .toString()
-                                              .split('.')[0]
-                                          : 'Unknown time',
+                                      timestamp,
                                       style: GoogleFonts.poppins(
                                         fontSize: fontSizeLabel - 2,
                                         color: Colors.grey,
