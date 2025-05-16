@@ -439,6 +439,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                color: Colors.white, // Background card tetap putih
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -497,6 +498,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                color: Colors.white, // Background card tetap putih
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: DropdownButton<String>(
@@ -613,6 +615,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                color: Colors.white, // Background card tetap putih
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: DropdownButton<String>(

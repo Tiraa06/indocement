@@ -353,6 +353,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
+      color: Colors.white, // Background card tetap putih
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -368,6 +369,45 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
             ),
             const SizedBox(height: 16),
             ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadedFileBox(String? url, String label) {
+    if (url == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: Colors.white, // Background card tetap putih
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    url.split('/').last,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
