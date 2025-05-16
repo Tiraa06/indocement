@@ -1,0 +1,2 @@
+C:/Users/sijas/Documents/indocement project/indocement_apk/android/app/.cxx/RelWithDebInfo/l5v2b4ty/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/sijas/Documents/indocement project/indocement_apk/android/app/.cxx/RelWithDebInfo/l5v2b4ty/armeabi-v7a/CMakeFiles/rebuild_cache.dir
