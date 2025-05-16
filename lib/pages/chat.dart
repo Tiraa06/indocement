@@ -593,20 +593,30 @@ class _ChatPageState extends State<ChatPage> {
       try {
         final validMessages = _messages
             .where((msg) => msg['Id'] != null && msg['CreatedAt'] != null)
-            .map((msg) => {
-                  'Id': msg['Id'],
-                  'Message': msg['Message'],
-                  'SenderId': msg['SenderId'],
-                  'CreatedAt': msg['CreatedAt'], // Pastikan format ISO 8601
-                  'FormattedTime': msg['FormattedTime'],
-                  'FormattedDate': msg['FormattedDate'],
-                  'Status': msg['Status'],
-                  'Sender': msg['Sender'],
-                  'roomId': msg['roomId'],
-                })
-            .toList();
+            .map((msg) {
+          String formattedCreatedAt;
+          try {
+            final dateTime = DateTime.parse(msg['CreatedAt']).toLocal();
+            formattedCreatedAt =
+                DateFormat('dd MMMM yyyy HH.mm', 'id_ID').format(dateTime);
+          } catch (e) {
+            formattedCreatedAt = msg['CreatedAt'];
+          }
+          return {
+            'Id': msg['Id'],
+            'Message': msg['Message'],
+            'SenderId': msg['SenderId'],
+            'CreatedAt': formattedCreatedAt,
+            'FormattedTime': msg['FormattedTime'],
+            'FormattedDate': msg['FormattedDate'],
+            'Status': msg['Status'],
+            'Sender': msg['Sender'],
+            'roomId': msg['roomId'],
+          };
+        }).toList();
         await prefs.setString('messages_$roomId', jsonEncode(validMessages));
-        print('Saved ${validMessages.length} messages to local storage');
+        print(
+            'Saved ${validMessages.length} messages to local storage: $validMessages');
       } catch (e) {
         print('Error saving messages: $e');
         if (mounted && !_isDisposed) {
@@ -752,7 +762,12 @@ class _ChatPageState extends State<ChatPage> {
         for (var msg in messagesToUpdate) {
           final messageId = msg['Id'];
           if (messageId != null) {
-            await _updateMessageStatus(messageId, 'Dibaca');
+            final response = await _updateMessageStatus(messageId, 'Dibaca');
+            if (response != 200) {
+              print(
+                  'Failed to update status for message $messageId, retrying...');
+              await _fixServerStatus(messageId, 'Dibaca');
+            }
           }
         }
 
@@ -837,12 +852,15 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
 
-    final timestamp = _formatTimestamp(DateTime.now().toIso8601String());
+    final now = DateTime.now();
+    final formattedCreatedAt =
+        DateFormat('dd MMMM yyyy HH.mm', 'id_ID').format(now);
+    final timestamp = _formatTimestamp(formattedCreatedAt);
     final tempMessage = {
       'Id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
       'Message': messageText,
       'SenderId': idEmployee,
-      'CreatedAt': DateTime.now().toIso8601String(), // Gunakan ISO 8601
+      'CreatedAt': formattedCreatedAt,
       'FormattedTime': timestamp['time'],
       'FormattedDate': timestamp['date'],
       'Status': 'Mengirim',
@@ -920,10 +938,10 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _updateMessageStatus(int messageId, String status) async {
+  Future<int> _updateMessageStatus(int messageId, String status) async {
     if (_isDisposed) {
       print('Skipping updateMessageStatus: Page is disposed');
-      return;
+      return 500;
     }
     try {
       final url = Uri.parse(
@@ -956,15 +974,20 @@ class _ChatPageState extends State<ChatPage> {
         if (mounted && !_isDisposed) {
           setState(() => _errorMessage = null);
         }
-      } else if (mounted && !_isDisposed) {
-        setState(() =>
-            _errorMessage = 'Gagal memperbarui status pesan: ${response.body}');
+        return response.statusCode;
+      } else {
+        if (mounted && !_isDisposed) {
+          setState(() => _errorMessage =
+              'Gagal memperbarui status pesan: ${response.body}');
+        }
+        return response.statusCode;
       }
     } catch (e) {
       print('Error updating message status for messageId $messageId: $e');
       if (mounted && !_isDisposed) {
         setState(() => _errorMessage = 'Gagal memperbarui status pesan: $e');
       }
+      return 500;
     }
   }
 
@@ -976,7 +999,8 @@ class _ChatPageState extends State<ChatPage> {
 
     print('Parsing timestamp: $timeString');
     try {
-      final dateTime = DateTime.parse(timeString).toLocal();
+      final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
+      final dateTime = formatter.parseLoose(timeString).toLocal();
       final now = DateTime.now();
       final isToday = dateTime.year == now.year &&
           dateTime.month == now.month &&
@@ -988,24 +1012,8 @@ class _ChatPageState extends State<ChatPage> {
             isToday ? '' : DateFormat('dd MMM yyyy', 'id_ID').format(dateTime),
       };
     } catch (e) {
-      try {
-        final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
-        final dateTime = formatter.parseLoose(timeString).toLocal();
-        final now = DateTime.now();
-        final isToday = dateTime.year == now.year &&
-            dateTime.month == now.month &&
-            dateTime.day == now.day;
-        return {
-          'time':
-              "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}",
-          'date': isToday
-              ? ''
-              : DateFormat('dd MMM yyyy', 'id_ID').format(dateTime),
-        };
-      } catch (e) {
-        print('Error parsing timestamp: $timeString, Error: $e');
-        return {'time': '--:--', 'date': 'Unknown Date'};
-      }
+      print('Error parsing timestamp: $timeString, Error: $e');
+      return {'time': '--:--', 'date': 'Unknown Date'};
     }
   }
 
@@ -1281,4 +1289,3 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 }
-  

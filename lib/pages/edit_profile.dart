@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:intl/intl.dart'; // Tambahkan untuk format tanggal
 
 class EditProfilePage extends StatefulWidget {
   final String employeeName;
@@ -208,9 +209,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
 
+    // Validasi format tanggal (opsional, tergantung format yang diharapkan API)
+    if (_birthDateController.text.isNotEmpty) {
+      try {
+        DateFormat('yyyy-MM-dd').parse(_birthDateController.text);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Format tanggal lahir tidak valid (gunakan yyyy-MM-dd)')),
+        );
+        return;
+      }
+    }
+
     await prefs.setString('telepon', _phoneController.text);
     await prefs.setString('email', _emailController.text);
     await prefs.setString('livingArea', _livingAreaController.text);
+    await prefs.setString(
+        'birthDate', _birthDateController.text); // Simpan ke SharedPreferences
 
     final updatedPayload = {
       'Id': userId,
@@ -220,6 +237,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'EmployeeName': _employeeNameController.text,
       'JobTitle': _jobTitleController.text,
       'LivingArea': _livingAreaController.text,
+      'BirthDate': _birthDateController.text, // Tambahkan BirthDate ke payload
     };
 
     try {
@@ -389,23 +407,60 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // Tambahkan method untuk DatePicker
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime? initialDate;
+    try {
+      initialDate = _birthDateController.text.isNotEmpty
+          ? DateFormat('yyyy-MM-dd').parse(_birthDateController.text)
+          : DateTime.now();
+    } catch (e) {
+      initialDate = DateTime.now();
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _birthDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     required TextInputType keyboardType,
     bool readOnly = false,
   }) {
-    final editableFields = ['Nomor Telepon', 'Email', 'Living Area'];
+    final editableFields = [
+      'Nomor Telepon',
+      'Email',
+      'Living Area',
+      'Tanggal Lahir'
+    ]; // Tambahkan Tanggal Lahir
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
         readOnly: readOnly || !(isEditing && editableFields.contains(label)),
         keyboardType: keyboardType,
+        onTap: label == 'Tanggal Lahir' && isEditing
+            ? () =>
+                _selectDate(context) // Tambahkan DatePicker untuk Tanggal Lahir
+            : null,
         decoration: InputDecoration(
           labelText: label,
           border: inputBorder,
           labelStyle: GoogleFonts.poppins(fontSize: 16),
+          suffixIcon: label == 'Tanggal Lahir' && isEditing
+              ? const Icon(Icons.calendar_today)
+              : null,
         ),
       ),
     );
@@ -510,8 +565,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _buildTextField(
                   label: 'Tanggal Lahir',
                   controller: _birthDateController,
-                  keyboardType: TextInputType.datetime,
-                  readOnly: true),
+                  keyboardType: TextInputType.datetime),
               _buildTextField(
                   label: 'Jenis Kelamin',
                   controller: _genderController,

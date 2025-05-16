@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart'; // Tambahkan import ini
+import 'package:intl/intl.dart';
 
 class InboxPage extends StatefulWidget {
   const InboxPage({super.key});
@@ -15,15 +16,30 @@ class InboxPage extends StatefulWidget {
 class _InboxPageState extends State<InboxPage> {
   List<Map<String, dynamic>> _complaints = [];
   List<Map<String, dynamic>> _notifications = [];
+  List<Map<String, dynamic>> _bpjsData = []; // Tambah list untuk data BPJS
   bool _isLoading = true;
   int? _employeeId;
-  int _selectedTabIndex = 0; // 0 for Keluhan, 1 for Konsultasi
+  int _selectedTabIndex = 0; // 0 for Keluhan, 1 for Konsultasi, 2 for BPJS
   bool _hasUnreadNotifications = false;
+  Timer? _pollingTimer;
+  List<String> _roomIds = [];
+  Map<String, Map<String, dynamic>> _roomOpponentCache = {};
 
   @override
   void initState() {
     super.initState();
+    _clearLocalData();
     _loadEmployeeId();
+    _startPolling();
+  }
+
+  Future<void> _clearLocalData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final roomId = prefs.getString('roomId');
+    if (roomId != null) {
+      await prefs.remove('messages_$roomId');
+      print('Cleared local messages for roomId: $roomId');
+    }
   }
 
   Future<void> _loadEmployeeId() async {
@@ -31,9 +47,12 @@ class _InboxPageState extends State<InboxPage> {
     setState(() {
       _employeeId = prefs.getInt('idEmployee');
     });
+    print('Employee ID loaded: $_employeeId');
     if (_employeeId != null) {
-      _fetchComplaints();
-      _loadLocalNotifications(); // Muat notifikasi lokal
+      await _fetchRooms();
+      await _fetchComplaints();
+      await _fetchBpjsData(); // Ambil data BPJS saat inisialisasi
+      await _fetchMessages();
     } else {
       if (mounted) {
         setState(() {
@@ -49,6 +68,161 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (_employeeId != null && _roomIds.isNotEmpty && mounted) {
+        print('Polling for messages...');
+        await _fetchMessages();
+      } else {
+        print('Skipping poll: employeeId=$_employeeId, roomIds=$_roomIds');
+      }
+    });
+  }
+
+  Future<void> _fetchRooms() async {
+    if (_employeeId == null || !mounted) return;
+    try {
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/ChatRooms/karyawan/$_employeeId');
+      final response = await http.get(url);
+      print(
+          'Fetch rooms - Status: ${response.statusCode}, Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        List<Map<String, dynamic>> rooms = [];
+        if (data is List) {
+          rooms = data.cast<Map<String, dynamic>>();
+        } else if (data is Map<String, dynamic>) {
+          rooms = [data];
+        }
+        setState(() {
+          _roomIds = rooms
+              .map((room) {
+                final roomId = room['Id']?.toString();
+                print('Processing room: $room, extracted Id: $roomId');
+                return roomId ?? '';
+              })
+              .where((id) => id.isNotEmpty)
+              .toList();
+          print('Fetched roomIds: $_roomIds');
+          if (_roomIds.isEmpty) {
+            print('No rooms found, checking manually for room 61');
+            _checkRoomManually();
+          }
+        });
+      } else {
+        print('Failed to fetch rooms: ${response.statusCode} ${response.body}');
+        _checkRoomManually();
+      }
+    } catch (e) {
+      print('Error fetching rooms: $e');
+      _checkRoomManually();
+    }
+  }
+
+  Future<void> _checkRoomManually() async {
+    try {
+      final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms/61');
+      final response = await http.get(url);
+      print(
+          'Manual room check - Status: ${response.statusCode}, Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          setState(() {
+            _roomIds = ['61'];
+            print('Manually added roomId: 61');
+          });
+          await _fetchMessages();
+        }
+      }
+    } catch (e) {
+      print('Error checking room manually: $e');
+    }
+  }
+
+  Future<void> _fetchMessages() async {
+    if (_employeeId == null || _roomIds.isEmpty || !mounted) {
+      print(
+          'Cannot fetch messages: employeeId=$_employeeId, roomIds=$_roomIds');
+      return;
+    }
+    const maxRetries = 3;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        List<Map<String, dynamic>> allMessages = [];
+        for (String roomId in _roomIds) {
+          final url = Uri.parse(
+              'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
+          final response = await http.get(url);
+          print(
+              'Fetch messages for room $roomId - Status: ${response.statusCode}, Body: ${response.body}');
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (data is Map<String, dynamic> && data['Messages'] is List) {
+              allMessages.addAll(data['Messages'].cast<Map<String, dynamic>>());
+              if (data['Opponent'] != null) {
+                _roomOpponentCache[roomId] =
+                    data['Opponent'] as Map<String, dynamic>;
+              }
+            } else {
+              print(
+                  'Unexpected messages response format for room $roomId: $data');
+            }
+          } else {
+            print(
+                'Failed to fetch messages for room $roomId: ${response.statusCode} ${response.body}');
+            if (attempt == maxRetries) {
+              print(
+                  'Max retries reached for fetching messages for room $roomId');
+              return;
+            }
+            continue;
+          }
+        }
+        print('All messages from server: $allMessages');
+        if (mounted) {
+          setState(() {
+            _notifications = allMessages.where((msg) {
+              final status = msg['Status']?.toString() ?? 'Unknown';
+              final senderId = msg['SenderId']?.toString();
+              final isFromHR =
+                  senderId != null && senderId != _employeeId.toString();
+              final isUnread = status == 'Terkirim';
+              print(
+                  'Filtering message ID: ${msg['Id']}, Status: $status, SenderId: $senderId, IsFromHR: $isFromHR, IsUnread: $isUnread');
+              return isFromHR && isUnread;
+            }).map((msg) {
+              final roomId = msg['RoomId']?.toString() ?? '';
+              final senderName =
+                  _roomOpponentCache[roomId]?['Name'] ?? 'Unknown PIC';
+              return {
+                'id': msg['Id']?.toString() ?? '',
+                'message': msg['Message']?.toString() ?? 'No message',
+                'senderName': senderName,
+                'senderId': msg['SenderId']?.toString() ?? '',
+                'createdAt': msg['CreatedAt']?.toString() ?? '',
+                'roomId': roomId,
+                'isRead': false,
+              };
+            }).toList();
+            _hasUnreadNotifications = _notifications.isNotEmpty;
+            print('Filtered notifications (HR, Unread): $_notifications');
+          });
+        }
+        break;
+      } catch (e) {
+        print('Error fetching messages (attempt $attempt/$maxRetries): $e');
+        if (attempt == maxRetries) {
+          print('Max retries reached for fetching messages');
+          return;
+        }
+        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+  }
+
   Future<void> _fetchComplaints() async {
     if (!mounted) return;
     setState(() {
@@ -60,20 +234,17 @@ class _InboxPageState extends State<InboxPage> {
         Uri.parse(
             'http://192.168.100.140:5555/api/keluhans?employeeId=$_employeeId'),
       );
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      print(
+          'Fetch complaints - Status: ${response.statusCode}, Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('Parsed Data: $data');
-
         if (mounted) {
           setState(() {
             _complaints =
                 (data as List).cast<Map<String, dynamic>>().where((complaint) {
               final matches =
                   complaint['IdEmployee']?.toString() == _employeeId.toString();
-              print('Complaint: $complaint, Matches: $matches');
               return matches;
             }).toList();
             _isLoading = false;
@@ -107,29 +278,58 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
-  Future<void> _loadLocalNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
-    final roomId = prefs.getString('roomId');
-    if (roomId != null) {
-      final messagesJson = prefs.getString('messages_$roomId') ?? '[]';
-      final messages = jsonDecode(messagesJson) as List;
+  // Method baru untuk mengambil data BPJS
+  Future<void> _fetchBpjsData() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://192.168.100.140:5555/api/bpjs?employeeId=$_employeeId'),
+      );
+      print(
+          'Fetch BPJS - Status: ${response.statusCode}, Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _bpjsData =
+                (data as List).cast<Map<String, dynamic>>().where((bpjs) {
+              final matches =
+                  bpjs['IdEmployee']?.toString() == _employeeId.toString();
+              return matches;
+            }).toList();
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text('Failed to load BPJS data: ${response.statusCode}')),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _notifications = (messages)
-              .cast<Map<String, dynamic>>()
-              .where((msg) =>
-                  msg['SenderId'] != _employeeId && msg['Status'] != 'Dibaca')
-              .map((msg) => {
-                    'id': msg['Id'],
-                    'message': msg['Message'],
-                    'senderId': msg['SenderId'],
-                    'createdAt': msg['CreatedAt'],
-                    'roomId': msg['roomId'],
-                    'isRead': msg['Status'] != 'Dibaca',
-                  })
-              .toList();
-          _hasUnreadNotifications = _notifications.isNotEmpty;
+          _isLoading = false;
         });
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching BPJS data: $e')),
+        );
       }
     }
   }
@@ -152,24 +352,47 @@ class _InboxPageState extends State<InboxPage> {
           _hasUnreadNotifications = _notifications.isNotEmpty;
         });
       }
+      await _updateServerStatus(notificationId, 'Dibaca');
     }
   }
 
-  // Fungsi untuk memformat tanggal sesuai format lokal
+  Future<void> _updateServerStatus(String messageId, String status) async {
+    try {
+      final url = Uri.parse(
+          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'status': status}),
+      );
+      print(
+          'Update server status - Status: ${response.statusCode}, Body: ${response.body}');
+      if (response.statusCode != 200) {
+        print('Failed to update server status: ${response.body}');
+      }
+    } catch (e) {
+      print('Error updating server status: $e');
+    }
+  }
+
   String _formatTimestamp(String? timeString) {
     if (timeString == null || timeString.isEmpty) {
       return 'Unknown Date';
     }
     try {
-      // Coba parse format lokal "dd MMMM yyyy HH.mm"
       final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
       final dateTime = formatter.parseLoose(timeString);
       return DateFormat('dd MMMM yyyy HH.mm', 'id_ID').format(dateTime);
     } catch (e) {
       print('Error parsing timestamp: $timeString, Error: $e');
-      // Jika parsing gagal, kembalikan string asli atau default
-      return timeString; // Kembalikan format asli jika valid, misalnya "16 Mei 2025 07.56"
+      return timeString;
     }
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -200,9 +423,9 @@ class _InboxPageState extends State<InboxPage> {
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                child: const Text(
-                  '!',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+                child: Text(
+                  _notifications.length.toString(),
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
           ],
@@ -270,6 +493,10 @@ class _InboxPageState extends State<InboxPage> {
                         onPressed: () {
                           setState(() {
                             _selectedTabIndex = 1;
+                            _notifications = _notifications.map((notif) {
+                              return {...notif, 'isRead': true};
+                            }).toList();
+                            _hasUnreadNotifications = false;
                           });
                         },
                         style: ElevatedButton.styleFrom(
@@ -287,8 +514,59 @@ class _InboxPageState extends State<InboxPage> {
                           ),
                           elevation: _selectedTabIndex == 1 ? 2 : 0,
                         ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Konsultasi',
+                              style: GoogleFonts.poppins(
+                                fontSize: fontSizeLabel * 0.9,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (_hasUnreadNotifications)
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  _notifications.length.toString(),
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: paddingValue * 0.5),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedTabIndex = 2;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _selectedTabIndex == 2
+                              ? const Color(0xFF1E88E5)
+                              : Colors.grey[200],
+                          foregroundColor: _selectedTabIndex == 2
+                              ? Colors.white
+                              : Colors.black87,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            vertical: paddingValue * 0.6,
+                          ),
+                          elevation: _selectedTabIndex == 2 ? 2 : 0,
+                        ),
                         child: Text(
-                          'Konsultasi',
+                          'BPJS',
                           style: GoogleFonts.poppins(
                             fontSize: fontSizeLabel * 0.9,
                             fontWeight: FontWeight.w500,
@@ -373,7 +651,7 @@ class _InboxPageState extends State<InboxPage> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                "Nomor Keluhan: ${complaint['Id']}",
+                                                "Nomor Tiket: ${complaint['Id']}",
                                                 style: GoogleFonts.poppins(
                                                   fontSize: fontSizeLabel,
                                                   fontWeight: FontWeight.bold,
@@ -450,61 +728,164 @@ class _InboxPageState extends State<InboxPage> {
                                 );
                               },
                             )
-                      : _notifications.isEmpty
-                          ? Center(
-                              child: Text(
-                                "No notifications available.",
-                                style: GoogleFonts.poppins(
-                                  fontSize: fontSizeLabel,
-                                  color: Colors.black87,
+                      : _selectedTabIndex == 1
+                          ? _notifications.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    "No unread consultations from HR.",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: fontSizeLabel,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  itemCount: _notifications.length,
+                                  itemBuilder: (context, index) {
+                                    final notif = _notifications[index];
+                                    final isRead = notif['isRead'] ?? true;
+                                    final timestamp =
+                                        _formatTimestamp(notif['createdAt']);
+                                    return Card(
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      elevation: 3,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      color: !isRead ? Colors.red[50] : null,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "Pesan dari ${notif['senderName']}",
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: fontSizeLabel,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    "Message: ${notif['message']}",
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    "Status: Belum Dibaca",
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    "Date: $timestamp",
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                          : _bpjsData.isEmpty // Tab BPJS
+                              ? Center(
+                                  child: Text(
+                                    "No BPJS data found.",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: fontSizeLabel,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  itemCount: _bpjsData.length,
+                                  itemBuilder: (context, index) {
+                                    final bpjs = _bpjsData[index];
+                                    final timestamp = bpjs['CreatedAt'] != null
+                                        ? _formatTimestamp(bpjs['CreatedAt'])
+                                        : 'Unknown Date';
+                                    final description =
+                                        bpjs['Description']?.toString() ??
+                                            'No description';
+                                    final status =
+                                        bpjs['Status']?.toString() ?? 'Unknown';
+
+                                    return Card(
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      elevation: 3,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Nomor BPJS: ${bpjs['NoBpjs'] ?? 'N/A'}",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: fontSizeLabel,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              "Description: $description",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: fontSizeLabel - 2,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              "Status: $status",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: fontSizeLabel - 2,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              "Date: $timestamp",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: fontSizeLabel - 2,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: _notifications.length,
-                              itemBuilder: (context, index) {
-                                final notif = _notifications[index];
-                                final isRead = notif['isRead'] ?? true;
-                                final timestamp =
-                                    _formatTimestamp(notif['createdAt']);
-                                return Card(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 8),
-                                  elevation: 3,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  color: !isRead ? Colors.red[50] : null,
-                                  child: ListTile(
-                                    leading: !isRead
-                                        ? const Icon(Icons.circle,
-                                            color: Colors.red, size: 12)
-                                        : null,
-                                    title: Text(
-                                      notif['message'] ?? 'New message',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: fontSizeLabel,
-                                        fontWeight: !isRead
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      timestamp,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: fontSizeLabel - 2,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      _clearLocalNotification(notif['id']);
-                                      Navigator.pushNamed(context, '/chat');
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
             ),
           ],
         ),
