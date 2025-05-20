@@ -101,6 +101,15 @@ class _LoginState extends State<Login> {
         print('Parsed User: $user');
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
+          // Check if the user's role is "Karyawan"
+          final String role = user['Role'] ?? '';
+          if (role.toLowerCase() != 'karyawan') {
+            _showMessage(
+                'Akses ditolak. Hanya pengguna dengan role Karyawan yang dapat login.');
+            setState(() => _isLoading = false);
+            return;
+          }
+
           final employeeData = await _fetchIdEmployee(email) ?? {};
 
           if (employeeData.isEmpty && user['IdEmployee'] == null) {
@@ -132,14 +141,16 @@ class _LoginState extends State<Login> {
 
           await prefs.setInt('id', user['Id'] as int);
           await prefs.setInt('idEmployee', idEmployee);
-          await prefs.setString('email', user['email'] ?? email);
+          await prefs.setString('email', user['Email'] ?? email);
           await prefs.setString('employeeName',
               user['employeeName'] ?? employeeData['employeeName'] ?? '');
           await prefs.setString(
-              'jobTitle', user['role'] ?? employeeData['jobTitle'] ?? '');
+              'jobTitle', user['Role'] ?? employeeData['jobTitle'] ?? '');
           await prefs.setString(
               'telepon', user['telepon'] ?? employeeData['telepon'] ?? '');
           await prefs.setString('livingArea', employeeData['livingArea'] ?? '');
+          await prefs.setString('employeeNo',
+              user['employeeNo'] ?? employeeData['employeeNo'] ?? '');
 
           if (employeeData['urlFoto'] != null) {
             await prefs.setString('urlFoto', employeeData['urlFoto']);

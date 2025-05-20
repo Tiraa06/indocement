@@ -164,10 +164,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _photoUrl = employee['UrlFoto'];
             }
           } else {
-            _photoUrl = null; // Gunakan ikon profil jika URL tidak valid
+            _photoUrl = null;
           }
         });
 
+        // Save employeeNo to SharedPreferences immediately
+        await prefs.setString('employeeNo', _employeeNoController.text);
         await prefs.setString('employeeName', _employeeNameController.text);
         await prefs.setString('jobTitle', _jobTitleController.text);
         await prefs.setString('livingArea', _livingAreaController.text);
@@ -175,7 +177,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
           await prefs.setString('urlFoto', _photoUrl!);
         }
 
-        print('Updated employeeName: ${_employeeNameController.text}');
+        print(
+            'Updated SharedPreferences: employeeNo=${_employeeNoController.text}, employeeName=${_employeeNameController.text}');
       } else {
         print('Failed to fetch employee data: ${response.statusCode}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -228,6 +231,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     await prefs.setString('livingArea', _livingAreaController.text);
     await prefs.setString(
         'birthDate', _birthDateController.text); // Simpan ke SharedPreferences
+    await prefs.setString('employeeNo', _employeeNoController.text);
 
     final updatedPayload = {
       'Id': userId,

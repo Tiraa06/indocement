@@ -18,9 +18,11 @@ class SkkFormPage extends StatefulWidget {
 class _SkkFormPageState extends State<SkkFormPage> {
   int? idEmployee;
   String? employeeName;
+  String? employeeNo;
   final TextEditingController _keperluanController = TextEditingController();
   List<Map<String, dynamic>> skkData = [];
   bool isLoading = false;
+  bool isEmployeeDataLoading = true;
   final String baseUrl = 'http://192.168.100.140:5555';
   Timer? _refreshTimer;
 
@@ -48,12 +50,82 @@ class _SkkFormPageState extends State<SkkFormPage> {
     });
   }
 
-  void _loadEmployeeData() async {
+  Future<void> _loadEmployeeData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       idEmployee = prefs.getInt('idEmployee');
       employeeName = prefs.getString('employeeName') ?? 'Nama Tidak Diketahui';
+      employeeNo = prefs.getString('employeeNo') ?? 'NIK Tidak Diketahui';
+      isEmployeeDataLoading = false;
+      print(
+          'DEBUG: SharedPreferences - idEmployee=$idEmployee, employeeName=$employeeName, employeeNo=$employeeNo');
     });
+
+    // If employeeNo is missing or invalid, fetch from API
+    if (employeeNo == null || employeeNo == 'NIK Tidak Diketahui') {
+      await _fetchEmployeeData();
+    }
+  }
+
+  Future<void> _fetchEmployeeData() async {
+    if (idEmployee == null) {
+      print('DEBUG: Cannot fetch employee data, idEmployee is null');
+      return;
+    }
+
+    setState(() {
+      isEmployeeDataLoading = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/Employees/$idEmployee'),
+        headers: {'Accept': 'application/json'},
+      );
+
+      print('DEBUG: Fetch Employee Status: ${response.statusCode}');
+      print('DEBUG: Fetch Employee Body: ${response.body}');
+
+      if (response.statusCode == 200 && mounted) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          // Try both 'EmployeeNo' and 'employeeNo' to handle API inconsistencies
+          employeeNo = data['EmployeeNo']?.toString() ??
+              data['employeeNo']?.toString() ??
+              'NIK Tidak Diketahui';
+          employeeName = data['EmployeeName']?.toString() ??
+              data['name']?.toString() ??
+              'Nama Tidak Diketahui';
+          isEmployeeDataLoading = false;
+        });
+
+        // Save to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('employeeNo', employeeNo!);
+        await prefs.setString('employeeName', employeeName!);
+        print(
+            'DEBUG: Fetched from API - employeeNo=$employeeNo, employeeName=$employeeName');
+      } else {
+        print(
+            'DEBUG: Failed to fetch employee data: ${response.statusCode} - ${response.body}');
+        if (mounted) {
+          _showPopup(context, 'Gagal',
+              'Gagal mengambil data karyawan: ${response.statusCode}');
+          setState(() {
+            isEmployeeDataLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('DEBUG: Error fetching employee data: $e');
+      if (mounted) {
+        _showPopup(
+            context, 'Gagal', 'Terjadi kesalahan saat mengambil data: $e');
+        setState(() {
+          isEmployeeDataLoading = false;
+        });
+      }
+    }
   }
 
   void _loadSkkData() async {
@@ -101,7 +173,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
         headers: {'Accept': 'application/json'},
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
         if (data is List) {
           setState(() {
@@ -113,11 +185,15 @@ class _SkkFormPageState extends State<SkkFormPage> {
         }
       }
     } catch (e) {
-      _showPopup(context, 'Error', 'Gagal mengambil data SKK: $e');
+      if (mounted) {
+        _showPopup(context, 'Error', 'Gagal mengambil data SKK: $e');
+      }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -157,19 +233,27 @@ class _SkkFormPageState extends State<SkkFormPage> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _showPopup(context, 'Berhasil', 'Pengajuan SKK berhasil dikirim.');
-        _keperluanController.clear();
-        await _fetchSkkData();
+        if (mounted) {
+          _showPopup(context, 'Berhasil', 'Pengajuan SKK berhasil dikirim.');
+          _keperluanController.clear();
+          await _fetchSkkData();
+        }
       } else {
-        _showPopup(context, 'Gagal',
-            'Gagal mengirim pengajuan: ${response.statusCode} - ${response.body}');
+        if (mounted) {
+          _showPopup(context, 'Gagal',
+              'Gagal mengirim pengajuan: ${response.statusCode} - ${response.body}');
+        }
       }
     } catch (e) {
-      _showPopup(context, 'Gagal', 'Terjadi kesalahan: $e');
+      if (mounted) {
+        _showPopup(context, 'Gagal', 'Terjadi kesalahan: $e');
+      }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -265,24 +349,32 @@ class _SkkFormPageState extends State<SkkFormPage> {
         final httpResponse = await http.get(Uri.parse(url));
         if (httpResponse.statusCode == 200) {
           await file.writeAsBytes(httpResponse.bodyBytes);
-          _showPopup(context, 'Berhasil',
-              'File telah diunduh ke: $filePath${isExternal ? ' (akses di folder Downloads)' : ' (di dalam aplikasi, gunakan file manager untuk melihat)'}');
+          if (mounted) {
+            _showPopup(context, 'Berhasil',
+                'File telah diunduh ke: $filePath${isExternal ? ' (akses di folder Downloads)' : ' (di dalam aplikasi, gunakan file manager untuk melihat)'}');
 
-          final result = await OpenFile.open(filePath);
-          if (result.type != ResultType.done) {
-            _showPopup(context, 'Gagal',
-                'Tidak dapat membuka file: ${result.message}');
+            final result = await OpenFile.open(filePath);
+            if (result.type != ResultType.done) {
+              _showPopup(context, 'Gagal',
+                  'Tidak dapat membuka file: ${result.message}');
+            }
           }
         } else {
-          _showPopup(context, 'Gagal',
-              'Gagal mengunduh file: ${httpResponse.statusCode} - ${httpResponse.reasonPhrase}');
+          if (mounted) {
+            _showPopup(context, 'Gagal',
+                'Gagal mengunduh file: ${httpResponse.statusCode} - ${httpResponse.reasonPhrase}');
+          }
         }
       } else {
-        _showPopup(context, 'Gagal',
-            'Gagal mengakses file: ${response.statusCode} - ${response.reasonPhrase}');
+        if (mounted) {
+          _showPopup(context, 'Gagal',
+              'Gagal mengakses file: ${response.statusCode} - ${response.reasonPhrase}');
+        }
       }
     } catch (e) {
-      _showPopup(context, 'Gagal', 'Terjadi kesalahan saat mengunduh: $e');
+      if (mounted) {
+        _showPopup(context, 'Gagal', 'Terjadi kesalahan saat mengunduh: $e');
+      }
     }
   }
 
@@ -405,10 +497,35 @@ class _SkkFormPageState extends State<SkkFormPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      employeeName ?? 'Memuat...',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    isEmployeeDataLoading
+                        ? const Text(
+                            'Memuat...',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          )
+                        : Text(
+                            employeeName ?? 'Nama Tidak Diketahui',
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.grey),
+                          ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'NIK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                    const SizedBox(height: 8),
+                    isEmployeeDataLoading
+                        ? const Text(
+                            'Memuat...',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          )
+                        : Text(
+                            employeeNo ?? 'NIK Tidak Diketahui',
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.grey),
+                          ),
                     const SizedBox(height: 16),
                     const Text(
                       'Keperluan',
@@ -427,19 +544,23 @@ class _SkkFormPageState extends State<SkkFormPage> {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: _submitSkk,
+                      onPressed: isEmployeeDataLoading ? null : _submitSkk,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1572E8),
                         minimumSize: const Size(double.infinity, 50),
                       ),
-                      child: const Text(
-                        'Ajukan SKK',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: isEmployeeDataLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text(
+                              'Ajukan SKK',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -489,11 +610,11 @@ class _SkkFormPageState extends State<SkkFormPage> {
                           itemBuilder: (context, index) {
                             final data = skkData[index];
                             print(
-                                'Keperluan [$index]: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}'); // Debugging
+                                'Keperluan [$index]: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}');
                             print(
-                                'Status [$index]: ${data['Status']?.toString() ?? 'Tidak diketahui'}'); // Debugging
+                                'Status [$index]: ${data['Status']?.toString() ?? 'Tidak diketahui'}');
                             print(
-                                'UrlSkk [$index]: ${data['UrlSkk']?.toString() ?? 'Tidak ada'}'); // Debugging
+                                'UrlSkk [$index]: ${data['UrlSkk']?.toString() ?? 'Tidak ada'}');
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -521,7 +642,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                   ),
                                 ),
                                 if (data['Status']?.toLowerCase() ==
-                                        'diaprove' &&
+                                        'diapprove' &&
                                     data['UrlSkk'] != null)
                                   Padding(
                                     padding: const EdgeInsets.only(left: 8),

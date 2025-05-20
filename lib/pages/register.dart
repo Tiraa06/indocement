@@ -50,8 +50,7 @@ class _RegisterState extends State<Register> {
     try {
       print('Sending payload: ${json.encode(userData)}');
       final response = await http.post(
-        Uri.parse(
-            'http://192.168.100.140:5555/api/User/register'), // Perbaikan endpoint
+        Uri.parse('http://192.168.100.140:5555/api/User/register'),
         body: json.encode(userData),
         headers: {'Content-Type': 'application/json'},
       );
@@ -66,9 +65,15 @@ class _RegisterState extends State<Register> {
               responseBody.containsKey('id')) {
             _user = User.fromJson(responseBody);
           }
-          _showSuccessModal();
+          // Periksa apakah widget masih mounted sebelum menampilkan modal
+          if (mounted) {
+            _showSuccessModal();
+          }
         } catch (e) {
-          _showSuccessModal();
+          // Periksa apakah widget masih mounted sebelum menampilkan modal
+          if (mounted) {
+            _showSuccessModal();
+          }
         }
       } else {
         String errorMessage = 'Gagal membuat akun';
@@ -140,10 +145,16 @@ class _RegisterState extends State<Register> {
 
       await registerUser(userData);
     } catch (e) {
-      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      // Periksa apakah widget masih mounted sebelum menampilkan pesan
+      if (mounted) {
+        _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      }
     }
 
-    setState(() => _isLoading = false);
+    // Periksa apakah widget masih mounted sebelum mengubah state
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _showSuccessModal() {
@@ -157,10 +168,13 @@ class _RegisterState extends State<Register> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const Login()),
-              );
+              // Periksa apakah widget masih mounted sebelum navigasi
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const Login()),
+                );
+              }
             },
             child: const Text('OK'),
           ),
