@@ -3,6 +3,7 @@ import 'package:indocement_apk/pages/pcir_anak.dart';
 import 'package:indocement_apk/pages/pcir_pasutri.dart';
 import 'package:indocement_apk/pages/pcir_pendidikan.dart';
 import 'package:indocement_apk/pages/family_data_page.dart';
+import 'package:indocement_apk/pages/family_data_page.dart';
 
 class PCIRPage extends StatefulWidget {
   const PCIRPage({super.key});
@@ -26,6 +27,8 @@ class _PCIRPageState extends State<PCIRPage>
     );
 
     _slideAnimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
       begin: const Offset(1.0, 0.0),
       end: Offset.zero,
     ).animate(CurvedAnimation(
@@ -57,19 +60,24 @@ class _PCIRPageState extends State<PCIRPage>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
+            Navigator.pop(context);
             Navigator.pop(context);
           },
         ),
+        backgroundColor: const Color(0xFF1572E8),
         backgroundColor: const Color(0xFF1572E8),
         title: const Text(
           "PCIR",
           style: TextStyle(
             color: Colors.white,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         iconTheme: const IconThemeData(
+          color: Colors.white,
           color: Colors.white,
         ),
       ),
@@ -82,10 +90,15 @@ class _PCIRPageState extends State<PCIRPage>
               children: [
                 Container(
                   margin: const EdgeInsets.only(bottom: 16.0),
+                  margin: const EdgeInsets.only(bottom: 16.0),
                   decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                         color: Colors.black.withOpacity(0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
@@ -94,7 +107,12 @@ class _PCIRPageState extends State<PCIRPage>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
+                      'assets/images/banner_pcir.png',
+                      width: double.infinity,
+                      height: 250,
+                      fit: BoxFit.cover,
                       'assets/images/banner_pcir.png',
                       width: double.infinity,
                       height: 250,
@@ -105,12 +123,16 @@ class _PCIRPageState extends State<PCIRPage>
                 const Text(
                   "Selamat datang di halaman PCIR. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
                   textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
                 ),
+                const SizedBox(height: 16),
                 const SizedBox(height: 16),
                 Expanded(
                   child: GridView.builder(
@@ -120,7 +142,14 @@ class _PCIRPageState extends State<PCIRPage>
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                       childAspectRatio: 1,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1,
                     ),
+                    itemCount: 4, // Increased to include Family Data
                     itemCount: 3, // Changed to 3
                     itemBuilder: (context, index) {
                       if (index == 0) {
@@ -131,6 +160,9 @@ class _PCIRPageState extends State<PCIRPage>
                           onTap: () {
                             Navigator.push(
                               context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TambahDataPasutriPage()),
                               MaterialPageRoute(
                                   builder: (context) =>
                                       const TambahDataPasutriPage()),
@@ -147,6 +179,9 @@ class _PCIRPageState extends State<PCIRPage>
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
+                                      const TambahDataAnakPage()),
+                              MaterialPageRoute(
+                                  builder: (context) =>
                                       const TambahDataPendidikanPage()),
                             );
                           },
@@ -159,6 +194,22 @@ class _PCIRPageState extends State<PCIRPage>
                           onTap: () {
                             Navigator.push(
                               context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TambahDataPendidikanPage()),
+                            );
+                          },
+                        );
+                      } else if (index == 3) {
+                        return _buildMenuBox(
+                          icon: Icons.family_restroom,
+                          title: 'Data Keluarga',
+                          color: Colors.purple,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const FamilyDataPage()),
                               MaterialPageRoute(
                                   builder: (context) => const FamilyDataPage()),
                             );
@@ -183,6 +234,7 @@ class _PCIRPageState extends State<PCIRPage>
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       contentPadding: const EdgeInsets.all(16.0),
                       content: SizedBox(
@@ -205,9 +257,13 @@ class _PCIRPageState extends State<PCIRPage>
                                 question: 'Apa itu PCIR?',
                                 answer:
                                     'PCIR adalah sistem untuk mengelola data keluarga karyawan.',
+                                answer:
+                                    'PCIR adalah sistem untuk mengelola data keluarga karyawan.',
                               ),
                               _buildFAQItem(
                                 question: 'Bagaimana cara menambah data?',
+                                answer:
+                                    'Anda dapat menambah data melalui tombol tambah di halaman ini.',
                                 answer:
                                     'Anda dapat menambah data melalui tombol tambah di halaman ini.',
                               ),
@@ -215,9 +271,13 @@ class _PCIRPageState extends State<PCIRPage>
                                 question: 'Apa saja dokumen yang diperlukan?',
                                 answer:
                                     'Dokumen yang diperlukan meliputi KK, Surat Nikah, dan dokumen pendukung lainnya.',
+                                answer:
+                                    'Dokumen yang diperlukan meliputi KK, Surat Nikah, dan dokumen pendukung lainnya.',
                               ),
                               _buildFAQItem(
                                 question: 'Bagaimana cara mengedit data?',
+                                answer:
+                                    'Anda dapat mengedit data dengan memilih data yang ingin diubah.',
                                 answer:
                                     'Anda dapat mengedit data dengan memilih data yang ingin diubah.',
                               ),
@@ -254,6 +314,7 @@ class _PCIRPageState extends State<PCIRPage>
         ],
       ),
     );
+  }
   }
 
   Widget _buildFAQItem({
@@ -309,7 +370,99 @@ class _PCIRPageState extends State<PCIRPage>
       ),
     );
   }
+  Widget _buildFAQItem({
+    required String question,
+    required String answer,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.question_answer,
+                color: Color(0xFF1572E8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  question,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.arrow_right,
+                color: Colors.grey,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  answer,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildMenuBox({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: color),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   Widget _buildMenuBox({
     required IconData icon,
     required String title,

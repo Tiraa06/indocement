@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'chat.dart'; // Import ChatPage
 
 class InboxPage extends StatefulWidget {
   const InboxPage({super.key});
@@ -16,10 +17,10 @@ class InboxPage extends StatefulWidget {
 class _InboxPageState extends State<InboxPage> {
   List<Map<String, dynamic>> _complaints = [];
   List<Map<String, dynamic>> _notifications = [];
-  List<Map<String, dynamic>> _bpjsData = []; // Tambah list untuk data BPJS
+  List<Map<String, dynamic>> _bpjsData = [];
   bool _isLoading = true;
   int? _employeeId;
-  int _selectedTabIndex = 0; // 0 for Keluhan, 1 for Konsultasi, 2 for BPJS
+  int _selectedTabIndex = 0;
   bool _hasUnreadNotifications = false;
   Timer? _pollingTimer;
   List<String> _roomIds = [];
@@ -46,20 +47,19 @@ class _InboxPageState extends State<InboxPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _employeeId = prefs.getInt('idEmployee');
+      _isLoading = true;
     });
     print('Employee ID loaded: $_employeeId');
     if (_employeeId != null) {
       await _fetchRooms();
       await _fetchComplaints();
-      await _fetchBpjsData(); // Ambil data BPJS saat inisialisasi
+      await _fetchBpjsData();
       await _fetchMessages();
     } else {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-      }
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Employee ID not found. Please log in again.')),
@@ -71,11 +71,11 @@ class _InboxPageState extends State<InboxPage> {
   void _startPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (_employeeId != null && _roomIds.isNotEmpty && mounted) {
-        print('Polling for messages...');
+      if (_employeeId != null && mounted) {
+        print('Polling for messages... Room IDs: $_roomIds');
         await _fetchMessages();
       } else {
-        print('Skipping poll: employeeId=$_employeeId, roomIds=$_roomIds');
+        print('Skipping poll: employeeId=$_employeeId, mounted=$mounted');
       }
     });
   }
@@ -83,62 +83,56 @@ class _InboxPageState extends State<InboxPage> {
   Future<void> _fetchRooms() async {
     if (_employeeId == null || !mounted) return;
     try {
-      final url = Uri.parse(
-          'http://192.168.100.140:5555/api/ChatRooms/karyawan/$_employeeId');
+      final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms');
       final response = await http.get(url);
-      print(
-          'Fetch rooms - Status: ${response.statusCode}, Body: ${response.body}');
+      print('Fetch all rooms - Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         List<Map<String, dynamic>> rooms = [];
         if (data is List) {
           rooms = data.cast<Map<String, dynamic>>();
-        } else if (data is Map<String, dynamic>) {
-          rooms = [data];
         }
+        final myEmployeeId = _employeeId.toString();
+        final myRooms = rooms.where((room) {
+          final konsultasi = room['Konsultasi'];
+          return konsultasi != null &&
+            (konsultasi['IdEmployee']?.toString() == myEmployeeId ||
+             konsultasi['IdKaryawan']?.toString() == myEmployeeId);
+        }).toList();
         setState(() {
-          _roomIds = rooms
-              .map((room) {
-                final roomId = room['Id']?.toString();
-                print('Processing room: $room, extracted Id: $roomId');
-                return roomId ?? '';
-              })
+          _roomIds = myRooms
+              .map((room) => room['Id']?.toString() ?? '')
               .where((id) => id.isNotEmpty)
               .toList();
-          print('Fetched roomIds: $_roomIds');
-          if (_roomIds.isEmpty) {
-            print('No rooms found, checking manually for room 61');
-            _checkRoomManually();
-          }
+          print('Filtered roomIds for employeeId $_employeeId: $_roomIds');
         });
-      } else {
-        print('Failed to fetch rooms: ${response.statusCode} ${response.body}');
-        _checkRoomManually();
       }
     } catch (e) {
-      print('Error fetching rooms: $e');
-      _checkRoomManually();
+      print('Error fetching all rooms: $e');
     }
   }
 
-  Future<void> _checkRoomManually() async {
+  Future<void> _fetchRoomFallback() async {
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms/61');
+      final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms/62');
       final response = await http.get(url);
       print(
-          'Manual room check - Status: ${response.statusCode}, Body: ${response.body}');
+          'Fetch room fallback (roomId: 62) - Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic>) {
+        if (data is Map<String, dynamic> && data['Id'] != null) {
           setState(() {
-            _roomIds = ['61'];
-            print('Manually added roomId: 61');
+            _roomIds = [data['Id'].toString()];
+            print('Fallback successful, roomIds: $_roomIds');
           });
-          await _fetchMessages();
+        } else {
+          print('Fallback failed: Invalid response format for roomId 62');
         }
+      } else {
+        print('Fallback failed: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      print('Error checking room manually: $e');
+      print('Error in fetchRoomFallback: $e');
     }
   }
 
@@ -148,77 +142,69 @@ class _InboxPageState extends State<InboxPage> {
           'Cannot fetch messages: employeeId=$_employeeId, roomIds=$_roomIds');
       return;
     }
-    const maxRetries = 3;
-    for (int attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        List<Map<String, dynamic>> allMessages = [];
-        for (String roomId in _roomIds) {
-          final url = Uri.parse(
-              'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
-          final response = await http.get(url);
-          print(
-              'Fetch messages for room $roomId - Status: ${response.statusCode}, Body: ${response.body}');
-          if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
-            if (data is Map<String, dynamic> && data['Messages'] is List) {
-              allMessages.addAll(data['Messages'].cast<Map<String, dynamic>>());
-              if (data['Opponent'] != null) {
-                _roomOpponentCache[roomId] =
-                    data['Opponent'] as Map<String, dynamic>;
-              }
+    try {
+      List<Map<String, dynamic>> allMessages = [];
+      for (String roomId in _roomIds) {
+        final url = Uri.parse(
+            'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
+        final response = await http.get(url);
+        print(
+            'Fetch messages for room $roomId - Status: ${response.statusCode}, Body: ${response.body}');
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data is Map<String, dynamic> && data['Messages'] is List) {
+            allMessages.addAll(data['Messages'].cast<Map<String, dynamic>>());
+            if (data['Opponent'] != null) {
+              _roomOpponentCache[roomId] =
+                  data['Opponent'] as Map<String, dynamic>;
+              print('Opponent cached for room $roomId: ${data['Opponent']}');
             } else {
-              print(
-                  'Unexpected messages response format for room $roomId: $data');
+              print('No Opponent data for room $roomId');
             }
           } else {
             print(
-                'Failed to fetch messages for room $roomId: ${response.statusCode} ${response.body}');
-            if (attempt == maxRetries) {
-              print(
-                  'Max retries reached for fetching messages for room $roomId');
-              return;
-            }
-            continue;
+                'Unexpected messages response format for room $roomId: $data');
           }
+        } else {
+          print(
+              'Failed to fetch messages for room $roomId: ${response.statusCode} ${response.body}');
         }
-        print('All messages from server: $allMessages');
-        if (mounted) {
-          setState(() {
-            _notifications = allMessages.where((msg) {
-              final status = msg['Status']?.toString() ?? 'Unknown';
-              final senderId = msg['SenderId']?.toString();
-              final isFromHR =
-                  senderId != null && senderId != _employeeId.toString();
-              final isUnread = status == 'Terkirim';
-              print(
-                  'Filtering message ID: ${msg['Id']}, Status: $status, SenderId: $senderId, IsFromHR: $isFromHR, IsUnread: $isUnread');
-              return isFromHR && isUnread;
-            }).map((msg) {
-              final roomId = msg['RoomId']?.toString() ?? '';
-              final senderName =
-                  _roomOpponentCache[roomId]?['Name'] ?? 'Unknown PIC';
-              return {
-                'id': msg['Id']?.toString() ?? '',
-                'message': msg['Message']?.toString() ?? 'No message',
-                'senderName': senderName,
-                'senderId': msg['SenderId']?.toString() ?? '',
-                'createdAt': msg['CreatedAt']?.toString() ?? '',
-                'roomId': roomId,
-                'isRead': false,
-              };
-            }).toList();
-            _hasUnreadNotifications = _notifications.isNotEmpty;
-            print('Filtered notifications (HR, Unread): $_notifications');
-          });
-        }
-        break;
-      } catch (e) {
-        print('Error fetching messages (attempt $attempt/$maxRetries): $e');
-        if (attempt == maxRetries) {
-          print('Max retries reached for fetching messages');
-          return;
-        }
-        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+
+      print('All messages from server: $allMessages');
+      if (mounted) {
+        setState(() {
+          _notifications = allMessages.where((msg) {
+            final status = msg['Status']?.toString() ?? '';
+            final senderId = msg['SenderId']?.toString() ?? '';
+            final roomId = msg['RoomId']?.toString() ?? '';
+            final isFromHR = senderId != _employeeId.toString();
+            final isUnread = status == 'Terkirim';
+            final isMyRoom = _roomIds.contains(roomId);
+            return isFromHR && isUnread && isMyRoom;
+          }).map((msg) {
+            final roomId = msg['RoomId']?.toString() ?? '';
+            final senderName = msg['Sender']?['EmployeeName']?.toString() ?? 'HR Tidak Diketahui';
+            return {
+              'id': msg['Id']?.toString() ?? '',
+              'message': msg['Message']?.toString() ?? 'No message',
+              'senderName': senderName,
+              'senderId': msg['SenderId']?.toString() ?? '',
+              'createdAt': msg['CreatedAt']?.toString() ?? '',
+              'roomId': roomId,
+              'isRead': false,
+            };
+          }).toList();
+          _hasUnreadNotifications = _notifications.isNotEmpty;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching messages: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -278,7 +264,6 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
-  // Method baru untuk mengambil data BPJS
   Future<void> _fetchBpjsData() async {
     if (!mounted) return;
     setState(() {
@@ -334,28 +319,6 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
-  Future<void> _clearLocalNotification(String notificationId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final roomId = prefs.getString('roomId');
-    if (roomId != null) {
-      final messagesJson = prefs.getString('messages_$roomId') ?? '[]';
-      final messages = jsonDecode(messagesJson) as List;
-      final updatedMessages = messages
-          .cast<Map<String, dynamic>>()
-          .map((msg) =>
-              msg['Id'] == notificationId ? {...msg, 'Status': 'Dibaca'} : msg)
-          .toList();
-      await prefs.setString('messages_$roomId', jsonEncode(updatedMessages));
-      if (mounted) {
-        setState(() {
-          _notifications.removeWhere((notif) => notif['id'] == notificationId);
-          _hasUnreadNotifications = _notifications.isNotEmpty;
-        });
-      }
-      await _updateServerStatus(notificationId, 'Dibaca');
-    }
-  }
-
   Future<void> _updateServerStatus(String messageId, String status) async {
     try {
       final url = Uri.parse(
@@ -372,6 +335,27 @@ class _InboxPageState extends State<InboxPage> {
       }
     } catch (e) {
       print('Error updating server status: $e');
+    }
+  }
+
+  Future<void> _navigateToChat(String roomId, String notificationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('roomId', roomId);
+    // Update status to "Dibaca" before navigating, to align with chat.dart behavior
+    await _updateServerStatus(notificationId, 'Dibaca');
+    if (mounted) {
+      setState(() {
+        _notifications.removeWhere((notif) => notif['id'] == notificationId);
+        _hasUnreadNotifications = _notifications.isNotEmpty;
+      });
+      // Navigate to ChatPage
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChatPage()),
+      ).then((_) async {
+        // Refresh notifications after returning from ChatPage
+        await _fetchMessages();
+      });
     }
   }
 
@@ -746,73 +730,84 @@ class _InboxPageState extends State<InboxPage> {
                                     final isRead = notif['isRead'] ?? true;
                                     final timestamp =
                                         _formatTimestamp(notif['createdAt']);
-                                    return Card(
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      elevation: 3,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      color: !isRead ? Colors.red[50] : null,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    "Pesan dari ${notif['senderName']}",
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: fontSizeLabel,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.black87,
+                                    return GestureDetector(
+                                      onTap: () {
+                                        _navigateToChat(
+                                            notif['roomId'], notif['id']);
+                                      },
+                                      child: Card(
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        elevation: 3,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        color: !isRead ? Colors.red[50] : null,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "Pesan dari ${notif['senderName']}",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize: fontSizeLabel,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.black87,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    "Message: ${notif['message']}",
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
-                                                      color: Colors.black87,
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      "Message: ${notif['message']}",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize:
+                                                            fontSizeLabel - 2,
+                                                        color: Colors.black87,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    "Status: Belum Dibaca",
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
-                                                      color: Colors.red,
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      "Status: Belum Dibaca",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize:
+                                                            fontSizeLabel - 2,
+                                                        color: Colors.red,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    "Date: $timestamp",
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
-                                                      color: Colors.grey,
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      "Date: $timestamp",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize:
+                                                            fontSizeLabel - 2,
+                                                        color: Colors.grey,
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     );
                                   },
                                 )
-                          : _bpjsData.isEmpty // Tab BPJS
+                          : _bpjsData.isEmpty
                               ? Center(
                                   child: Text(
                                     "No BPJS data found.",
