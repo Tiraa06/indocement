@@ -362,8 +362,15 @@ void _showUploadPrompt() {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Update Data BPJS'),
+        title: const Text(
+          'Update Data BPJS',
+          style: TextStyle(
+            color: Colors.white, // Pastikan warna teks putih
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: const Color(0xFF1572E8),
+        iconTheme: const IconThemeData(color: Colors.white), // Icon back juga putih
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

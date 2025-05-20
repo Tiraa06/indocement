@@ -521,7 +521,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                   ),
                                 ),
                                 if (data['Status']?.toLowerCase() ==
-                                        'diaprove' &&
+                                        'diapprove' &&
                                     data['UrlSkk'] != null)
                                   Padding(
                                     padding: const EdgeInsets.only(left: 8),

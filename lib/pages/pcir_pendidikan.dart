@@ -159,6 +159,18 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
           },
         ),
         elevation: 0,
+        title: const Padding(
+          padding: EdgeInsets.only(left: 4), // Tambahkan padding kiri agar tidak menempel
+          child: Text(
+            'Halaman Upload Ijazah',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        centerTitle: false, // Pastikan judul rata kiri
       ),
       body: SingleChildScrollView(
         child: Padding(

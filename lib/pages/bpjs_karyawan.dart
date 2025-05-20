@@ -499,14 +499,22 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF1572E8),
-        title: const Text('BPJS Karyawan'),
+        title: const Text(
+          'BPJS Karyawan',
+          style: TextStyle(
+            color: Colors.white, // Judul header warna putih
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white, // Tombol back warna putih
+          ),
           onPressed: () {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => const MenuPage(), // Ganti dengan halaman BPJS Kesehatan
+                builder: (context) => const MenuPage(),
               ),
             );
           },
@@ -556,7 +564,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Halaman ini digunakan untuk mengunggah dokumen yang diperlukan untuk pengelolaan BPJS Karyawan.',
+                              'Halaman ini digunakan untuk mengunggah dokumen yang diperlukan untuk pengelolaan BPJS Pasangan dan BPJS Anak.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.black54,
@@ -634,7 +642,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
               // BPJS Anak Section
               _buildSection(
-                title: 'BPJS Anak',
+                title: 'BPJS Anak', // Ganti judul section di sini
                 children: [
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 16),
@@ -650,7 +658,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                           child: Text('Pilih Anak Ke-'),
                         ),
                         isExpanded: true,
-                        items: List.generate(5, (index) => (index + 1).toString())
+                        // Hanya anak ke 1-3
+                        items: List.generate(3, (index) => (index + 1).toString())
                             .map((e) => DropdownMenuItem(
                                   value: e,
                                   child: Padding(
@@ -666,6 +675,23 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                         },
                       ),
                     ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          'Note: "Untuk anak ke 4 sampai seterusnya di halaman BPJS Tambahan"',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.redAccent,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   _buildBox(
                     title: 'Upload KK',

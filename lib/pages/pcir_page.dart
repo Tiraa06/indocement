@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/pcir_anak.dart';
 import 'package:indocement_apk/pages/pcir_pasutri.dart';
 import 'package:indocement_apk/pages/pcir_pendidikan.dart';
+import 'package:indocement_apk/pages/family_data_page.dart';
 
 class PCIRPage extends StatefulWidget {
   const PCIRPage({super.key});
@@ -25,8 +26,8 @@ class _PCIRPageState extends State<PCIRPage>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0), // Start off-screen to the right
-      end: Offset.zero, // End at the original position
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOutCubic,
@@ -55,21 +56,21 @@ class _PCIRPageState extends State<PCIRPage>
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back), // Ikon back
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Kembali ke halaman sebelumnya
+            Navigator.pop(context);
           },
         ),
-        backgroundColor: const Color(0xFF1572E8), // Warna latar belakang header
+        backgroundColor: const Color(0xFF1572E8),
         title: const Text(
           "PCIR",
           style: TextStyle(
-            color: Colors.white, // Warna putih untuk judul
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         iconTheme: const IconThemeData(
-          color: Colors.white, // Warna putih untuk ikon back
+          color: Colors.white,
         ),
       ),
       body: Stack(
@@ -79,54 +80,48 @@ class _PCIRPageState extends State<PCIRPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Banner
                 Container(
-                  margin:
-                      const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
+                  margin: const EdgeInsets.only(bottom: 16.0),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2), // Warna bayangan
-                        blurRadius: 8, // Radius blur bayangan
-                        offset: const Offset(0, 4), // Posisi bayangan
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                        16), // Sudut melengkung untuk gambar
+                    borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
-                      'assets/images/banner_pcir.png', // Path ke gambar banner
-                      width: double.infinity, // Lebar penuh
-                      height: 250, // Tinggi banner
-                      fit: BoxFit.cover, // Gambar menyesuaikan ukuran container
+                      'assets/images/banner_pcir.png',
+                      width: double.infinity,
+                      height: 250,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
-
-                // Deskripsi
                 const Text(
                   "Selamat datang di halaman PCIR. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
-                  textAlign: TextAlign.center, // Rata tengah
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16, // Perbesar ukuran teks
-                    fontWeight: FontWeight.w500, // Tambahkan ketebalan teks
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 16), // Jarak antara deskripsi dan menu
-
-                // Menu
+                const SizedBox(height: 16),
                 Expanded(
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // Dua kolom
-                      crossAxisSpacing: 16, // Jarak horizontal antar kotak
-                      mainAxisSpacing: 16, // Jarak vertikal antar kotak
-                      childAspectRatio: 1, // Rasio aspek kotak (lebar = tinggi)
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1,
                     ),
-                    itemCount: 3, // Jumlah menu
+                    itemCount: 3, // Changed to 3
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return _buildMenuBox(
@@ -136,23 +131,13 @@ class _PCIRPageState extends State<PCIRPage>
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const TambahDataPasutriPage()),
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TambahDataPasutriPage()),
                             );
                           },
                         );
                       } else if (index == 1) {
-                        return _buildMenuBox(
-                          icon: Icons.child_care,
-                          title: 'Daftar Anak',
-                          color: Colors.green,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const TambahDataAnakPage()),
-                            );
-                          },
-                        );
-                      } else if (index == 2) {
                         return _buildMenuBox(
                           icon: Icons.school,
                           title: 'Update Pendidikan',
@@ -160,7 +145,22 @@ class _PCIRPageState extends State<PCIRPage>
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const TambahDataPendidikanPage()),
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TambahDataPendidikanPage()),
+                            );
+                          },
+                        );
+                      } else if (index == 2) {
+                        return _buildMenuBox(
+                          icon: Icons.family_restroom,
+                          title: 'Data Keluarga',
+                          color: Colors.purple,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const FamilyDataPage()),
                             );
                           },
                         );
@@ -172,8 +172,6 @@ class _PCIRPageState extends State<PCIRPage>
               ],
             ),
           ),
-
-          // Floating FAQ button
           Positioned(
             bottom: 20,
             right: 20,
@@ -184,7 +182,7 @@ class _PCIRPageState extends State<PCIRPage>
                   builder: (BuildContext context) {
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       contentPadding: const EdgeInsets.all(16.0),
                       content: SizedBox(
@@ -205,19 +203,23 @@ class _PCIRPageState extends State<PCIRPage>
                               const SizedBox(height: 16),
                               _buildFAQItem(
                                 question: 'Apa itu PCIR?',
-                                answer: 'PCIR adalah sistem untuk mengelola data keluarga karyawan.',
+                                answer:
+                                    'PCIR adalah sistem untuk mengelola data keluarga karyawan.',
                               ),
                               _buildFAQItem(
                                 question: 'Bagaimana cara menambah data?',
-                                answer: 'Anda dapat menambah data melalui tombol tambah di halaman ini.',
+                                answer:
+                                    'Anda dapat menambah data melalui tombol tambah di halaman ini.',
                               ),
                               _buildFAQItem(
                                 question: 'Apa saja dokumen yang diperlukan?',
-                                answer: 'Dokumen yang diperlukan meliputi KK, Surat Nikah, dan dokumen pendukung lainnya.',
+                                answer:
+                                    'Dokumen yang diperlukan meliputi KK, Surat Nikah, dan dokumen pendukung lainnya.',
                               ),
                               _buildFAQItem(
                                 question: 'Bagaimana cara mengedit data?',
-                                answer: 'Anda dapat mengedit data dengan memilih data yang ingin diubah.',
+                                answer:
+                                    'Anda dapat mengedit data dengan memilih data yang ingin diubah.',
                               ),
                             ],
                           ),
@@ -253,98 +255,98 @@ class _PCIRPageState extends State<PCIRPage>
       ),
     );
   }
-}
 
-Widget _buildFAQItem({
-  required String question,
-  required String answer,
-}) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.question_answer,
-              color: Color(0xFF1572E8),
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                question,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Icon(
-              Icons.arrow_right,
-              color: Colors.grey,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                answer,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildMenuBox({
-  required IconData icon,
-  required String title,
-  required Color color,
-  required VoidCallback onTap,
-}) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white, // Background putih
-        borderRadius: BorderRadius.circular(12), // Sudut melengkung
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1), // Bayangan lembut
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+  Widget _buildFAQItem({
+    required String question,
+    required String answer,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 40, color: color), // Ikon di tengah
+          Row(
+            children: [
+              const Icon(
+                Icons.question_answer,
+                color: Color(0xFF1572E8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  question,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87, // Teks berwarna hitam
-            ),
+          Row(
+            children: [
+              const Icon(
+                Icons.arrow_right,
+                color: Colors.grey,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  answer,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _buildMenuBox({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: color),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

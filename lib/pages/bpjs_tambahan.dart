@@ -25,6 +25,10 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   bool isFormVisible = false; // Status untuk menampilkan form upload
   File? uploadedFile; // File yang diunggah
 
+  // Tambahkan variabel di state:
+  int? selectedAnakKe;
+  Map<String, File?> selectedImagesAnakKe = {};
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +51,18 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
     if (pickedFile != null) {
       setState(() {
         selectedImages[fieldName] = File(pickedFile.path);
+      });
+    }
+  }
+
+  // Tambahkan fungsi pickImageAnakKe:
+  Future<void> pickImageAnakKe({required String fieldName}) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        selectedImagesAnakKe[fieldName] = File(pickedFile.path);
       });
     }
   }
@@ -150,7 +166,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       _showPopup(
         context: this.context,
         title: 'Download Gagal',
-        message: 'Terjadi kesalahan saat mendownload file. Silakan coba lagi.',
+        message: 'Terjadi kesalahan saat mendownload file: $e',
       );
     }
   }
@@ -276,7 +292,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   Future<void> uploadBpjsWithArray({
     required BuildContext context,
     required String anggotaBpjs,
-    required List<Map<String, dynamic>> documents,
+    required List<Map<String, dynamic>> documents, required String anakKe,
   }) async {
     if (idEmployee == null) {
       _showPopup(
@@ -396,12 +412,13 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     selectedImages[fieldName] != null
-                        ? basename(selectedImages[fieldName]!.path) // Hanya nama file
+                        ? basename(selectedImages[fieldName]!.path)
                         : 'Belum ada file yang dipilih',
                     style: const TextStyle(
                       fontSize: 14,
@@ -424,7 +441,19 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         backgroundColor: const Color(0xFF1572E8),
         title: const Text(
           'BPJS Tambahan',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white, // Judul header warna putih
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white, // Tombol back warna putih
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -472,7 +501,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Halaman ini digunakan untuk mengunggah dokumen tambahan untuk pengelolaan BPJS.',
+                              'Halaman ini digunakan untuk mengunggah dokumen tambahan untuk pengelolaan data BPJS Tambahan.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.black54,
@@ -487,257 +516,569 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
               ),
               const SizedBox(height: 24),
 
-              // Dropdown untuk memilih anggota BPJS
-              const Text(
-                'Pilih Anggota BPJS',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
+              // Section Pilih Anggota BPJS, Upload KK, Upload Surat Regis, dan Tombol Kirim Regis
               Card(
-                elevation: 2,
+                elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                color: Colors.white, // Background card tetap putih
+                color: Colors.white,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: DropdownButton<String>(
-                    value: selectedAnggotaBpjs,
-                    hint: const Text('Pilih Anggota BPJS'),
-                    isExpanded: true,
-                    underline: const SizedBox(),
-                    items: ['Ayah', 'Ibu', 'Ayah Mertua', 'Ibu Mertua']
-                        .map((e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(e),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedAnggotaBpjs = value;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Kotak Upload Dokumen
-              _buildBox(
-                title: 'Upload KK',
-                fieldName: 'UrlKkTambahan',
-                anggotaBpjs: 'Tambahan',
-              ),
-              const SizedBox(height: 24),
-
-              // Tombol Kirim Dokumen BPJS Tambahan
-              ElevatedButton.icon(
-                onPressed: () async {
-                  if (selectedAnggotaBpjs == null) {
-                    _showPopup(
-                      context: context,
-                      title: 'Gagal',
-                      message: 'Pilih anggota BPJS terlebih dahulu.',
-                    );
-                    return;
-                  }
-
-                  if (selectedImages['UrlKkTambahan'] == null) {
-                    _showPopup(
-                      context: context,
-                      title: 'Gagal',
-                      message: 'Anda harus mengunggah KK.',
-                    );
-                    return;
-                  }
-
-                  final List<Map<String, dynamic>> documents = [
-                    {
-                      'fieldName': 'UrlKk',
-                      'file': selectedImages['UrlKkTambahan'],
-                    },
-                  ];
-
-                  try {
-                    await uploadBpjsWithArray(
-                      context: context,
-                      anggotaBpjs: selectedAnggotaBpjs!,
-                      documents: documents,
-                    );
-                    _showPopup(
-                      context: context,
-                      title: 'Berhasil',
-                      message: 'Dokumen BPJS berhasil diunggah.',
-                    );
-                  } catch (e) {
-                    print("❌ Error saat mengunggah dokumen: $e");
-                    _showPopup(
-                      context: context,
-                      title: 'Gagal',
-                      message: 'Terjadi kesalahan saat mengunggah dokumen.',
-                    );
-                  }
-                },
-                icon: const Icon(Icons.upload_file, color: Colors.white),
-                label: const Text(
-                  'Kirim Dokumen BPJS Tambahan',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1572E8),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Gaji Section
-              const Text(
-                'Surat Pemotongan Gaji',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-
-              // Dropdown untuk memilih hubungan keluarga
-              const Text(
-                'Pilih Hubungan Keluarga',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                color: Colors.white, // Background card tetap putih
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: DropdownButton<String>(
-                    value: selectedRelationship,
-                    hint: const Text('Pilih Hubungan Keluarga'),
-                    isExpanded: true,
-                    underline: const SizedBox(),
-                    items: ['Ayah', 'Ibu', 'Ayah Mertua', 'Ibu Mertua']
-                        .map((e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(e),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedRelationship = value;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Tombol Download Surat Pemotongan Gaji
-              ElevatedButton.icon(
-                onPressed: downloadFile,
-                icon: const Icon(Icons.download, color: Colors.white),
-                label: const Text(
-                  'Download Surat Pemotongan Gaji',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1572E8),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Form Upload Surat Pemotongan Gaji
-              if (isFormVisible)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Upload Surat Pemotongan Gaji',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header dengan icon dan judul
+                      Row(
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1572E8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.group,
+                              size: 28,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Text(
+                              'Pilih Anggota BPJS',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: pickFile,
-                      child: Container(
-                        padding: const EdgeInsets.all(16.0),
+                      const SizedBox(height: 16),
+                      // Dropdown anggota BPJS
+                      Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF1572E8),
+                            width: 1.5,
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1572E8),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.upload_file,
-                                size: 30,
-                                color: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedAnggotaBpjs,
+                            hint: const Text(
+                              'Pilih Anggota BPJS',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1572E8),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                uploadedFile != null
-                                    ? basename(uploadedFile!.path)
-                                    : 'Belum ada file yang dipilih',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
+                            isExpanded: true,
+                            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF1572E8), size: 32),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                              fontSize: 16,
+                            ),
+                            items: [
+                              'Ayah',
+                              'Ibu',
+                              'Ayah Mertua',
+                              'Ibu Mertua',
+                              'Anak ke-4',
+                              'Anak ke-5',
+                              'Anak ke-6',
+                              'Anak ke-7',
+                            ].map((e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.person, color: Colors.blue[400]),
+                                      const SizedBox(width: 8),
+                                      Text(e),
+                                    ],
+                                  ),
+                                ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedAnggotaBpjs = value;
+                                uploadedFile = null;
+                                isFormVisible = false;
+                                selectedRelationship = value;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      // Tombol download jika sudah pilih anggota BPJS
+                      if (selectedAnggotaBpjs != null) ...[
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: downloadFile,
+                          icon: const Icon(Icons.download, color: Colors.white),
+                          label: const Text(
+                            'Download Surat Registrasi BPJS Tambahan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1572E8),
+                            minimumSize: const Size(double.infinity, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (selectedAnggotaBpjs!.startsWith('Anak ke-')) ...[
+                          // Hanya tampil jika pilih Anak ke-4 dst
+                          GestureDetector(
+                            onTap: () => pickImage(fieldName: 'UrlAkteLahirTambahan'),
+                            child: Container(
+                              padding: const EdgeInsets.all(16.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1572E8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: selectedImages['UrlAkteLahirTambahan'] != null
+                                          ? DecorationImage(
+                                              image: FileImage(selectedImages['UrlAkteLahirTambahan']!),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : null,
+                                    ),
+                                    child: selectedImages['UrlAkteLahirTambahan'] == null
+                                        ? const Icon(
+                                            Icons.upload_file,
+                                            size: 30,
+                                            color: Colors.white,
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Upload Akte Kelahiran',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          selectedImages['UrlAkteLahirTambahan'] != null
+                                              ? basename(selectedImages['UrlAkteLahirTambahan']!.path)
+                                              : 'Belum ada file yang dipilih',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: pickFile,
+                            child: Container(
+                              padding: const EdgeInsets.all(16.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1572E8),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: uploadedFile != null
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.file(
+                                              uploadedFile!,
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.upload_file,
+                                            size: 30,
+                                            color: Colors.white,
+                                          ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Upload Surat Registrasi BPJS Tambahan',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          uploadedFile != null
+                                              ? basename(uploadedFile!.path)
+                                              : 'Belum ada file yang dipilih',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // Tombol kirim untuk anak ke-4 dst
+                          Align(
+                            alignment: Alignment.center,
+                            child: ElevatedButton.icon(
+                              // ...tombol kirim anak ke-4 dst...
+                              onPressed: () async {
+                                if (selectedImages['UrlAkteLahirTambahan'] == null) {
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Anda harus mengunggah Akte Kelahiran terlebih dahulu.',
+                                  );
+                                  return;
+                                }
+                                if (uploadedFile == null) {
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
+                                  );
+                                  return;
+                                }
+                                if (idEmployee == null) {
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'ID karyawan belum tersedia.',
+                                  );
+                                  return;
+                                }
+                                showLoadingDialog(context);
+                                try {
+                                  final dio = Dio();
+                                  final formData = FormData();
+
+                                  // Tambahkan file ke array Files & FileTypes
+                                  formData.files.addAll([
+                                    MapEntry(
+                                      "Files",
+                                      await MultipartFile.fromFile(
+                                        selectedImages['UrlAkteLahirTambahan']!.path,
+                                        filename: basename(selectedImages['UrlAkteLahirTambahan']!.path),
+                                      ),
+                                    ),
+                                    MapEntry(
+                                      "Files",
+                                      await MultipartFile.fromFile(
+                                        uploadedFile!.path,
+                                        filename: basename(uploadedFile!.path),
+                                      ),
+                                    ),
+                                  ]);
+                                  formData.fields.addAll([
+                                    MapEntry("IdEmployee", idEmployee.toString()),
+                                    MapEntry("FileTypes", "UrlAkteLahir"),
+                                    MapEntry("FileTypes", "UrlSuratPotongGaji"),
+                                    MapEntry("AnggotaBpjs", selectedAnggotaBpjs!),
+                                  ]);
+
+                                  final response = await dio.post(
+                                    'http://192.168.100.140:5555/api/Bpjs/upload',
+                                    data: formData,
+                                    options: Options(
+                                      headers: {
+                                        'accept': 'application/json',
+                                        'Content-Type': 'multipart/form-data',
+                                      },
+                                    ),
+                                  );
+                                  Navigator.of(context).pop();
+                                  if (response.statusCode == 200) {
+                                    _showPopup(
+                                      context: context,
+                                      title: 'Berhasil',
+                                      message: 'Data anak berhasil dikirim.',
+                                    );
+                                  } else {
+                                    _showPopup(
+                                      context: context,
+                                      title: 'Gagal',
+                                      message: 'Gagal mengirim data anak. (${response.statusCode})\n${response.data}',
+                                    );
+                                  }
+                                } catch (e) {
+                                  Navigator.of(context).pop();
+                                  print('❌ Error kirim data anak: $e');
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Terjadi kesalahan saat mengirim data anak.\n$e',
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.send_rounded, color: Colors.white),
+                              label: const Text(
+                                'Kirim Data Anak',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
                                 ),
                               ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1572E8),
+                                minimumSize: const Size(double.infinity, 48),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        ] else ...[
+                          // Hanya tampil jika pilih Ayah/Ibu/Mertua
+                          _buildBox(
+                            title: 'Upload KK',
+                            fieldName: 'UrlKkTambahan',
+                            anggotaBpjs: 'Tambahan',
+                          ),
+                          const SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: pickFile,
+                            child: Container(
+                              padding: const EdgeInsets.all(16.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1572E8),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: uploadedFile != null
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.file(
+                                              uploadedFile!,
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.upload_file,
+                                            size: 30,
+                                            color: Colors.white,
+                                          ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Upload Surat Registrasi BPJS Tambahan',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          uploadedFile != null
+                                              ? basename(uploadedFile!.path)
+                                              : 'Belum ada file yang dipilih',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Align(
+                            alignment: Alignment.center,
+                            child: ElevatedButton.icon(
+                              // ...tombol kirim untuk Ayah/Ibu/Mertua...
+                              onPressed: () async {
+                                if (uploadedFile == null) {
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
+                                  );
+                                  return;
+                                }
+                                if (idEmployee == null) {
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'ID karyawan belum tersedia.',
+                                  );
+                                  return;
+                                }
+                                showLoadingDialog(context);
+                                try {
+                                  final dio = Dio();
+                                  final formData = FormData();
+
+                                  formData.files.addAll([
+                                    MapEntry(
+                                      "Files",
+                                      await MultipartFile.fromFile(
+                                        uploadedFile!.path,
+                                        filename: basename(uploadedFile!.path),
+                                      ),
+                                    ),
+                                  ]);
+                                  formData.fields.addAll([
+                                    MapEntry("IdEmployee", idEmployee.toString()),
+                                    MapEntry("FileTypes", "UrlSuratPotongGaji"),
+                                    MapEntry("AnggotaBpjs", selectedAnggotaBpjs!),
+                                  ]);
+
+                                  final response = await dio.post(
+                                    'http://192.168.100.140:5555/api/Bpjs/upload',
+                                    data: formData,
+                                    options: Options(
+                                      headers: {
+                                        'accept': 'application/json',
+                                        'Content-Type': 'multipart/form-data',
+                                      },
+                                    ),
+                                  );
+                                  Navigator.of(context).pop();
+                                  if (response.statusCode == 200) {
+                                    _showPopup(
+                                      context: context,
+                                      title: 'Berhasil',
+                                      message: 'Surat Registrasi BPJS Tambahan berhasil dikirim.',
+                                    );
+                                  } else {
+                                    _showPopup(
+                                      context: context,
+                                      title: 'Gagal',
+                                      message: 'Gagal mengirim file. (${response.statusCode})\n${response.data}',
+                                    );
+                                  }
+                                } catch (e) {
+                                  Navigator.of(context).pop();
+                                  print('❌ Error kirim surat regis: $e');
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Terjadi kesalahan saat mengirim file.\n$e',
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.send_rounded, color: Colors.white),
+                              label: const Text(
+                                'Kirim Surat Registrasi BPJS Tambahan',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1572E8),
+                                minimumSize: const Size(double.infinity, 48),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],            ],
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: uploadFile,
-                      icon: const Icon(Icons.cloud_upload, color: Colors.white),
-                      label: const Text(
-                        'Upload File',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
+
+                  ),
                 ),
-            ],
+                ],
+              ),
+
           ),
         ),
-      ),
-    );
+      );
   }
 }
