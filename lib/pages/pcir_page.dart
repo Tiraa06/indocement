@@ -121,7 +121,7 @@ class _PCIRPageState extends State<PCIRPage>
                       mainAxisSpacing: 16,
                       childAspectRatio: 1,
                     ),
-                    itemCount: 4, // Increased to include Family Data
+                    itemCount: 3, // Changed to 3
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return _buildMenuBox(
@@ -147,25 +147,11 @@ class _PCIRPageState extends State<PCIRPage>
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
-                                      const TambahDataAnakPage()),
-                            );
-                          },
-                        );
-                      } else if (index == 2) {
-                        return _buildMenuBox(
-                          icon: Icons.family_restroom,
-                          title: 'Data Keluarga',
-                          color: Colors.purple,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
                                       const TambahDataPendidikanPage()),
                             );
                           },
                         );
-                      } else if (index == 3) {
+                      } else if (index == 2) {
                         return _buildMenuBox(
                           icon: Icons.family_restroom,
                           title: 'Data Keluarga',

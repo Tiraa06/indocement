@@ -174,14 +174,6 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
           latestBpjsId = latestEntry['Id'];
         }
       }
-
-      // Kirim notifikasi jika dapat Id BPJS terbaru
-      if (idSection != null && latestBpjsId != null) {
-        await sendBpjsNotification(
-          idEmployee: idEmployee!,
-          idSource: latestBpjsId,
-        );
-      }
     } catch (e) {
       Navigator.of(context).pop();
       print("❌ Error saat mengunggah dokumen: $e");
@@ -297,14 +289,6 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
               final latestEntry = bpjsResponse.data.last;
               latestBpjsId = latestEntry['Id'];
             }
-          }
-
-          // Kirim notifikasi jika dapat Id BPJS terbaru
-          if (idSection != null && latestBpjsId != null) {
-            await sendBpjsNotification(
-              idEmployee: idEmployee!,
-              idSource: latestBpjsId,
-            );
           }
         } else {
           throw Exception('Gagal memperbarui data: ${uploadResponse.statusCode}');
