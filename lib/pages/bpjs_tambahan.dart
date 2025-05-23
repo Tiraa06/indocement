@@ -789,6 +789,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                             child: ElevatedButton.icon(
                               // ...tombol kirim anak ke-4 dst...
                               onPressed: () async {
+                                // Validasi file
                                 if (selectedImages['UrlAkteLahirTambahan'] == null) {
                                   _showPopup(
                                     context: context,
@@ -818,6 +819,12 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   final dio = Dio();
                                   final formData = FormData();
 
+                                  // Ambil angka anak ke-berapa dari string, misal "Anak ke-4" -> 4
+                                  int anakKe = 0;
+                                  if (selectedAnggotaBpjs != null && selectedAnggotaBpjs!.startsWith('Anak ke-')) {
+                                    anakKe = int.tryParse(selectedAnggotaBpjs!.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                                  }
+
                                   // Tambahkan file ke array Files & FileTypes
                                   formData.files.addAll([
                                     MapEntry(
@@ -839,7 +846,10 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     MapEntry("IdEmployee", idEmployee.toString()),
                                     MapEntry("FileTypes", "UrlAkteLahir"),
                                     MapEntry("FileTypes", "UrlSuratPotongGaji"),
-                                    MapEntry("AnggotaBpjs", selectedAnggotaBpjs!),
+                                    // Kirim hanya "Anak" ke AnggotaBpjs
+                                    MapEntry("AnggotaBpjs", "Anak"),
+                                    // Kirim hanya angka ke AnakKe
+                                    MapEntry("AnakKe", anakKe.toString()),
                                   ]);
 
                                   final response = await dio.post(
