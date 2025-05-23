@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'chat.dart'; // Import ChatPage
+import 'chat.dart';
 
 class InboxPage extends StatefulWidget {
   const InboxPage({super.key});
@@ -18,20 +18,26 @@ class _InboxPageState extends State<InboxPage> {
   List<Map<String, dynamic>> _complaints = [];
   List<Map<String, dynamic>> _notifications = [];
   List<Map<String, dynamic>> _bpjsData = [];
+  List<Map<String, dynamic>> _verifData = [];
   bool _isLoading = true;
   int? _employeeId;
-  int _selectedTabIndex = 0;
+  String _selectedTab = 'Permintaan Karyawan';
+  final List<String> _tabs = [
+    'Permintaan Karyawan',
+    'Konsultasi',
+    'BPJS',
+    'Verifikasi Data'
+  ];
   bool _hasUnreadNotifications = false;
-  Timer? _pollingTimer;
   List<String> _roomIds = [];
   Map<String, Map<String, dynamic>> _roomOpponentCache = {};
+  DateTime? _lastVerifFetchTime;
 
   @override
   void initState() {
     super.initState();
     _clearLocalData();
     _loadEmployeeId();
-    _startPolling();
   }
 
   Future<void> _clearLocalData() async {
@@ -39,7 +45,6 @@ class _InboxPageState extends State<InboxPage> {
     final roomId = prefs.getString('roomId');
     if (roomId != null) {
       await prefs.remove('messages_$roomId');
-      print('Cleared local messages for roomId: $roomId');
     }
   }
 
@@ -49,11 +54,11 @@ class _InboxPageState extends State<InboxPage> {
       _employeeId = prefs.getInt('idEmployee');
       _isLoading = true;
     });
-    print('Employee ID loaded: $_employeeId');
     if (_employeeId != null) {
       await _fetchRooms();
       await _fetchComplaints();
       await _fetchBpjsData();
+      await _fetchVerifData();
       await _fetchMessages();
     } else {
       if (mounted) {
@@ -68,24 +73,11 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
-  void _startPolling() {
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (_employeeId != null && mounted) {
-        print('Polling for messages... Room IDs: $_roomIds');
-        await _fetchMessages();
-      } else {
-        print('Skipping poll: employeeId=$_employeeId, mounted=$mounted');
-      }
-    });
-  }
-
   Future<void> _fetchRooms() async {
     if (_employeeId == null || !mounted) return;
     try {
       final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms');
       final response = await http.get(url);
-      print('Fetch all rooms - Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         List<Map<String, dynamic>> rooms = [];
@@ -96,60 +88,29 @@ class _InboxPageState extends State<InboxPage> {
         final myRooms = rooms.where((room) {
           final konsultasi = room['Konsultasi'];
           return konsultasi != null &&
-            (konsultasi['IdEmployee']?.toString() == myEmployeeId ||
-             konsultasi['IdKaryawan']?.toString() == myEmployeeId);
+              (konsultasi['IdEmployee']?.toString() == myEmployeeId ||
+                  konsultasi['IdKaryawan']?.toString() == myEmployeeId);
         }).toList();
         setState(() {
           _roomIds = myRooms
               .map((room) => room['Id']?.toString() ?? '')
               .where((id) => id.isNotEmpty)
               .toList();
-          print('Filtered roomIds for employeeId $_employeeId: $_roomIds');
         });
       }
     } catch (e) {
-      print('Error fetching all rooms: $e');
-    }
-  }
-
-  Future<void> _fetchRoomFallback() async {
-    try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms/62');
-      final response = await http.get(url);
-      print(
-          'Fetch room fallback (roomId: 62) - Status: ${response.statusCode}, Body: ${response.body}');
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['Id'] != null) {
-          setState(() {
-            _roomIds = [data['Id'].toString()];
-            print('Fallback successful, roomIds: $_roomIds');
-          });
-        } else {
-          print('Fallback failed: Invalid response format for roomId 62');
-        }
-      } else {
-        print('Fallback failed: ${response.statusCode} ${response.body}');
-      }
-    } catch (e) {
-      print('Error in fetchRoomFallback: $e');
+      print('Error fetching rooms: $e');
     }
   }
 
   Future<void> _fetchMessages() async {
-    if (_employeeId == null || _roomIds.isEmpty || !mounted) {
-      print(
-          'Cannot fetch messages: employeeId=$_employeeId, roomIds=$_roomIds');
-      return;
-    }
+    if (_employeeId == null || _roomIds.isEmpty || !mounted) return;
     try {
       List<Map<String, dynamic>> allMessages = [];
       for (String roomId in _roomIds) {
         final url = Uri.parse(
             'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
         final response = await http.get(url);
-        print(
-            'Fetch messages for room $roomId - Status: ${response.statusCode}, Body: ${response.body}');
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           if (data is Map<String, dynamic> && data['Messages'] is List) {
@@ -157,21 +118,10 @@ class _InboxPageState extends State<InboxPage> {
             if (data['Opponent'] != null) {
               _roomOpponentCache[roomId] =
                   data['Opponent'] as Map<String, dynamic>;
-              print('Opponent cached for room $roomId: ${data['Opponent']}');
-            } else {
-              print('No Opponent data for room $roomId');
             }
-          } else {
-            print(
-                'Unexpected messages response format for room $roomId: $data');
           }
-        } else {
-          print(
-              'Failed to fetch messages for room $roomId: ${response.statusCode} ${response.body}');
         }
       }
-
-      print('All messages from server: $allMessages');
       if (mounted) {
         setState(() {
           _notifications = allMessages.where((msg) {
@@ -184,7 +134,8 @@ class _InboxPageState extends State<InboxPage> {
             return isFromHR && isUnread && isMyRoom;
           }).map((msg) {
             final roomId = msg['RoomId']?.toString() ?? '';
-            final senderName = msg['Sender']?['EmployeeName']?.toString() ?? 'HR Tidak Diketahui';
+            final senderName = msg['Sender']?['EmployeeName']?.toString() ??
+                'HR Tidak Diketahui';
             return {
               'id': msg['Id']?.toString() ?? '',
               'message': msg['Message']?.toString() ?? 'No message',
@@ -200,7 +151,6 @@ class _InboxPageState extends State<InboxPage> {
         });
       }
     } catch (e) {
-      print('Error fetching messages: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -214,24 +164,17 @@ class _InboxPageState extends State<InboxPage> {
     setState(() {
       _isLoading = true;
     });
-
     try {
-      final response = await http.get(
-        Uri.parse(
-            'http://192.168.100.140:5555/api/keluhans?employeeId=$_employeeId'),
-      );
-      print(
-          'Fetch complaints - Status: ${response.statusCode}, Body: ${response.body}');
-
+      final response = await http.get(Uri.parse(
+          'http://192.168.100.140:5555/api/keluhans?employeeId=$_employeeId'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
             _complaints =
                 (data as List).cast<Map<String, dynamic>>().where((complaint) {
-              final matches =
-                  complaint['IdEmployee']?.toString() == _employeeId.toString();
-              return matches;
+              return complaint['IdEmployee']?.toString() ==
+                  _employeeId.toString();
             }).toList();
             _isLoading = false;
           });
@@ -241,8 +184,6 @@ class _InboxPageState extends State<InboxPage> {
           setState(() {
             _isLoading = false;
           });
-        }
-        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content:
@@ -255,8 +196,6 @@ class _InboxPageState extends State<InboxPage> {
         setState(() {
           _isLoading = false;
         });
-      }
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error fetching complaints: $e')),
         );
@@ -269,24 +208,16 @@ class _InboxPageState extends State<InboxPage> {
     setState(() {
       _isLoading = true;
     });
-
     try {
-      final response = await http.get(
-        Uri.parse(
-            'http://192.168.100.140:5555/api/bpjs?employeeId=$_employeeId'),
-      );
-      print(
-          'Fetch BPJS - Status: ${response.statusCode}, Body: ${response.body}');
-
+      final response = await http.get(Uri.parse(
+          'http://192.168.100.140:5555/api/bpjs?employeeId=$_employeeId'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
             _bpjsData =
                 (data as List).cast<Map<String, dynamic>>().where((bpjs) {
-              final matches =
-                  bpjs['IdEmployee']?.toString() == _employeeId.toString();
-              return matches;
+              return bpjs['IdEmployee']?.toString() == _employeeId.toString();
             }).toList();
             _isLoading = false;
           });
@@ -296,8 +227,6 @@ class _InboxPageState extends State<InboxPage> {
           setState(() {
             _isLoading = false;
           });
-        }
-        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content:
@@ -310,10 +239,94 @@ class _InboxPageState extends State<InboxPage> {
         setState(() {
           _isLoading = false;
         });
-      }
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error fetching BPJS data: $e')),
+        );
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchVerifRequestDetails(int idSource) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://192.168.100.140:5555/api/VerifData/requests/$idSource'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> _fetchVerifData({bool forceFetch = false}) async {
+    if (!mounted || _employeeId == null) return;
+
+    // Skip fetch if recent fetch was done (within 1 minute), unless forced
+    if (!forceFetch &&
+        _lastVerifFetchTime != null &&
+        DateTime.now().difference(_lastVerifFetchTime!).inMinutes < 1) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://192.168.100.140:5555/api/VerifData/requests?employeeId=$_employeeId'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        final filteredVerifData =
+            data.cast<Map<String, dynamic>>().where((verif) {
+          final matches =
+              verif['EmployeeId']?.toString() == _employeeId.toString();
+          final validStatus =
+              verif['Status'] == 'Diajukan' || verif['Status'] == 'Approved';
+          return matches && validStatus;
+        }).map((verif) {
+          return {
+            'Id': verif['Id'],
+            'Status': verif['Status'] == 'Diajukan' ? 'Diajukan' : 'Disetujui',
+            'Source': 'VerifData',
+            'FieldName': verif['FieldName']?.toString() ?? 'N/A',
+            'OldValue': verif['OldValue']?.toString() ?? 'N/A',
+            'NewValue': verif['NewValue']?.toString() ?? 'N/A',
+            'RequestedAt': verif['RequestedAt']?.toString(),
+          };
+        }).toList();
+
+        if (mounted) {
+          setState(() {
+            _verifData = filteredVerifData;
+            _isLoading = false;
+            _lastVerifFetchTime = DateTime.now();
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Failed to load verification data: ${response.statusCode}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching verification data: $e')),
         );
       }
     }
@@ -328,8 +341,6 @@ class _InboxPageState extends State<InboxPage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'status': status}),
       );
-      print(
-          'Update server status - Status: ${response.statusCode}, Body: ${response.body}');
       if (response.statusCode != 200) {
         print('Failed to update server status: ${response.body}');
       }
@@ -341,19 +352,16 @@ class _InboxPageState extends State<InboxPage> {
   Future<void> _navigateToChat(String roomId, String notificationId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('roomId', roomId);
-    // Update status to "Dibaca" before navigating, to align with chat.dart behavior
     await _updateServerStatus(notificationId, 'Dibaca');
     if (mounted) {
       setState(() {
         _notifications.removeWhere((notif) => notif['id'] == notificationId);
         _hasUnreadNotifications = _notifications.isNotEmpty;
       });
-      // Navigate to ChatPage
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ChatPage()),
       ).then((_) async {
-        // Refresh notifications after returning from ChatPage
         await _fetchMessages();
       });
     }
@@ -365,17 +373,24 @@ class _InboxPageState extends State<InboxPage> {
     }
     try {
       final formatter = DateFormat('dd MMMM yyyy HH.mm', 'id_ID');
-      final dateTime = formatter.parseLoose(timeString);
-      return DateFormat('dd MMMM yyyy HH.mm', 'id_ID').format(dateTime);
+      final dateTime = DateTime.parse(timeString).toLocal();
+      return formatter.format(dateTime);
     } catch (e) {
-      print('Error parsing timestamp: $timeString, Error: $e');
       return timeString;
     }
   }
 
+  Future<void> _refreshData() async {
+    if (_employeeId == null) return;
+    setState(() {
+      _isLoading = true;
+    });
+    await _fetchMessages();
+    await _fetchVerifData(forceFetch: true);
+  }
+
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     super.dispose();
   }
 
@@ -394,19 +409,16 @@ class _InboxPageState extends State<InboxPage> {
             Text(
               "Inbox",
               style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                fontSize: 22,
-                color: Colors.white,
-              ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 22,
+                  color: Colors.white),
             ),
             if (_hasUnreadNotifications)
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
+                    color: Colors.red, shape: BoxShape.circle),
                 child: Text(
                   _notifications.length.toString(),
                   style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -425,6 +437,13 @@ class _InboxPageState extends State<InboxPage> {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshData,
+            tooltip: 'Refresh Data',
+          ),
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(paddingValue),
@@ -434,131 +453,57 @@ class _InboxPageState extends State<InboxPage> {
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+                  borderRadius: BorderRadius.circular(10)),
               child: Padding(
-                padding: EdgeInsets.all(paddingValue * 0.5),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedTabIndex = 0;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedTabIndex == 0
-                              ? const Color(0xFF1E88E5)
-                              : Colors.grey[200],
-                          foregroundColor: _selectedTabIndex == 0
-                              ? Colors.white
-                              : Colors.black87,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: paddingValue * 0.6,
-                          ),
-                          elevation: _selectedTabIndex == 0 ? 2 : 0,
-                        ),
-                        child: Text(
-                          'Keluhan',
-                          style: GoogleFonts.poppins(
-                            fontSize: fontSizeLabel * 0.9,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: paddingValue * 0.5),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedTabIndex = 1;
-                            _notifications = _notifications.map((notif) {
-                              return {...notif, 'isRead': true};
-                            }).toList();
-                            _hasUnreadNotifications = false;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedTabIndex == 1
-                              ? const Color(0xFF1E88E5)
-                              : Colors.grey[200],
-                          foregroundColor: _selectedTabIndex == 1
-                              ? Colors.white
-                              : Colors.black87,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: paddingValue * 0.6,
-                          ),
-                          elevation: _selectedTabIndex == 1 ? 2 : 0,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Konsultasi',
-                              style: GoogleFonts.poppins(
+                padding: const EdgeInsets.all(8.0),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedTab,
+                  decoration: InputDecoration(
+                    labelText: 'Pilih Kategori',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    labelStyle: GoogleFonts.poppins(fontSize: fontSizeLabel),
+                  ),
+                  items: _tabs.map((String tab) {
+                    return DropdownMenuItem<String>(
+                      value: tab,
+                      child: Row(
+                        children: [
+                          Text(
+                            tab,
+                            style: GoogleFonts.poppins(
                                 fontSize: fontSizeLabel * 0.9,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w500),
+                          ),
+                          if (tab == 'Konsultasi' && _hasUnreadNotifications)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                  color: Colors.red, shape: BoxShape.circle),
+                              child: Text(
+                                _notifications.length.toString(),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
                               ),
                             ),
-                            if (_hasUnreadNotifications)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  _notifications.length.toString(),
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 12),
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
-                    ),
-                    SizedBox(width: paddingValue * 0.5),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedTabIndex = 2;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedTabIndex == 2
-                              ? const Color(0xFF1E88E5)
-                              : Colors.grey[200],
-                          foregroundColor: _selectedTabIndex == 2
-                              ? Colors.white
-                              : Colors.black87,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: paddingValue * 0.6,
-                          ),
-                          elevation: _selectedTabIndex == 2 ? 2 : 0,
-                        ),
-                        child: Text(
-                          'BPJS',
-                          style: GoogleFonts.poppins(
-                            fontSize: fontSizeLabel * 0.9,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedTab = value;
+                        if (value == 'Konsultasi') {
+                          _notifications = _notifications.map((notif) {
+                            return {...notif, 'isRead': true};
+                          }).toList();
+                          _hasUnreadNotifications = false;
+                        }
+                      });
+                    }
+                  },
                 ),
               ),
             ),
@@ -566,15 +511,14 @@ class _InboxPageState extends State<InboxPage> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _selectedTabIndex == 0
+                  : _selectedTab == 'Keluhan'
                       ? _complaints.isEmpty
                           ? Center(
                               child: Text(
                                 "No complaints found.",
                                 style: GoogleFonts.poppins(
-                                  fontSize: fontSizeLabel,
-                                  color: Colors.black87,
-                                ),
+                                    fontSize: fontSizeLabel,
+                                    color: Colors.black87),
                               ),
                             )
                           : ListView.builder(
@@ -588,18 +532,15 @@ class _InboxPageState extends State<InboxPage> {
                                         .toString()
                                         .split('.')[0]
                                     : 'Unknown Date';
-
                                 final keluhan =
                                     complaint['Keluhan']?.toString() ??
                                         complaint['Keluhan1']?.toString() ??
                                         complaint['Message']?.toString() ??
                                         complaint['Description']?.toString() ??
                                         'No message available';
-
                                 final urlFotoKeluhan =
                                     complaint['UrlFotoKeluhan']?.toString() ??
                                         complaint['PhotoUrl']?.toString();
-
                                 final baseUrl = 'http://192.168.100.140:5555';
                                 final imageUrl = urlFotoKeluhan != null &&
                                         urlFotoKeluhan.isNotEmpty
@@ -607,7 +548,6 @@ class _InboxPageState extends State<InboxPage> {
                                         ? urlFotoKeluhan
                                         : '$baseUrl$urlFotoKeluhan')
                                     : null;
-
                                 final isImage = imageUrl != null &&
                                     (imageUrl.endsWith('.jpg') ||
                                         imageUrl.endsWith('.jpeg') ||
@@ -619,8 +559,7 @@ class _InboxPageState extends State<InboxPage> {
                                       const EdgeInsets.symmetric(vertical: 8),
                                   elevation: 3,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                                      borderRadius: BorderRadius.circular(12)),
                                   child: Padding(
                                     padding: const EdgeInsets.all(16.0),
                                     child: Row(
@@ -646,25 +585,22 @@ class _InboxPageState extends State<InboxPage> {
                                               Text(
                                                 "Message: $keluhan",
                                                 style: GoogleFonts.poppins(
-                                                  fontSize: fontSizeLabel - 2,
-                                                  color: Colors.black87,
-                                                ),
+                                                    fontSize: fontSizeLabel - 2,
+                                                    color: Colors.black87),
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
                                                 "Status: ${complaint['Status'] ?? 'Unknown'}",
                                                 style: GoogleFonts.poppins(
-                                                  fontSize: fontSizeLabel - 2,
-                                                  color: Colors.green,
-                                                ),
+                                                    fontSize: fontSizeLabel - 2,
+                                                    color: Colors.green),
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
                                                 "Date: $tglKeluhan",
                                                 style: GoogleFonts.poppins(
-                                                  fontSize: fontSizeLabel - 2,
-                                                  color: Colors.grey,
-                                                ),
+                                                    fontSize: fontSizeLabel - 2,
+                                                    color: Colors.grey),
                                               ),
                                             ],
                                           ),
@@ -677,17 +613,14 @@ class _InboxPageState extends State<InboxPage> {
                                                 fit: BoxFit.cover,
                                                 errorBuilder: (context, error,
                                                     stackTrace) {
-                                                  print(
-                                                      'Error loading image: $error');
                                                   return Container(
                                                     width: imageSize,
                                                     height: imageSize,
                                                     color: Colors.grey[200],
                                                     child: const Icon(
-                                                      Icons.broken_image,
-                                                      color: Colors.grey,
-                                                      size: 40,
-                                                    ),
+                                                        Icons.broken_image,
+                                                        color: Colors.grey,
+                                                        size: 40),
                                                   );
                                                 },
                                               )
@@ -699,10 +632,9 @@ class _InboxPageState extends State<InboxPage> {
                                                   child: Text(
                                                     'No image',
                                                     style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
-                                                      color: Colors.grey,
-                                                    ),
+                                                        fontSize:
+                                                            fontSizeLabel - 2,
+                                                        color: Colors.grey),
                                                   ),
                                                 ),
                                               ),
@@ -712,15 +644,14 @@ class _InboxPageState extends State<InboxPage> {
                                 );
                               },
                             )
-                      : _selectedTabIndex == 1
+                      : _selectedTab == 'Konsultasi'
                           ? _notifications.isEmpty
                               ? Center(
                                   child: Text(
                                     "No unread consultations from HR.",
                                     style: GoogleFonts.poppins(
-                                      fontSize: fontSizeLabel,
-                                      color: Colors.black87,
-                                    ),
+                                        fontSize: fontSizeLabel,
+                                        color: Colors.black87),
                                   ),
                                 )
                               : ListView.builder(
@@ -740,9 +671,8 @@ class _InboxPageState extends State<InboxPage> {
                                             vertical: 8),
                                         elevation: 3,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
                                         color: !isRead ? Colors.red[50] : null,
                                         child: Padding(
                                           padding: const EdgeInsets.all(16.0),
@@ -770,32 +700,27 @@ class _InboxPageState extends State<InboxPage> {
                                                     const SizedBox(height: 8),
                                                     Text(
                                                       "Message: ${notif['message']}",
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize:
-                                                            fontSizeLabel - 2,
-                                                        color: Colors.black87,
-                                                      ),
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color:
+                                                              Colors.black87),
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
                                                       "Status: Belum Dibaca",
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize:
-                                                            fontSizeLabel - 2,
-                                                        color: Colors.red,
-                                                      ),
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color: Colors.red),
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
                                                       "Date: $timestamp",
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize:
-                                                            fontSizeLabel - 2,
-                                                        color: Colors.grey,
-                                                      ),
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color: Colors.grey),
                                                     ),
                                                   ],
                                                 ),
@@ -807,80 +732,205 @@ class _InboxPageState extends State<InboxPage> {
                                     );
                                   },
                                 )
-                          : _bpjsData.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    "No BPJS data found.",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: fontSizeLabel,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: _bpjsData.length,
-                                  itemBuilder: (context, index) {
-                                    final bpjs = _bpjsData[index];
-                                    final timestamp = bpjs['CreatedAt'] != null
-                                        ? _formatTimestamp(bpjs['CreatedAt'])
-                                        : 'Unknown Date';
-                                    final description =
-                                        bpjs['Description']?.toString() ??
-                                            'No description';
-                                    final status =
-                                        bpjs['Status']?.toString() ?? 'Unknown';
+                          : _selectedTab == 'BPJS'
+                              ? _bpjsData.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        "No BPJS data found.",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: fontSizeLabel,
+                                            color: Colors.black87),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: _bpjsData.length,
+                                      itemBuilder: (context, index) {
+                                        final bpjs = _bpjsData[index];
+                                        final timestamp =
+                                            bpjs['CreatedAt'] != null
+                                                ? _formatTimestamp(
+                                                    bpjs['CreatedAt'])
+                                                : 'Unknown Date';
+                                        final description =
+                                            bpjs['Description']?.toString() ??
+                                                'No description';
+                                        final status =
+                                            bpjs['Status']?.toString() ??
+                                                'Unknown';
 
-                                    return Card(
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      elevation: 3,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "Nomor BPJS: ${bpjs['NoBpjs'] ?? 'N/A'}",
-                                              style: GoogleFonts.poppins(
+                                        return Card(
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 8),
+                                          elevation: 3,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "Nomor BPJS: ${bpjs['NoBpjs'] ?? 'N/A'}",
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: fontSizeLabel,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  "Description: $description",
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.black87),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  "Status: $status",
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.green),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  "Date: $timestamp",
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.grey),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    )
+                              : _selectedTab == 'Verifikasi Data'
+                                  ? _verifData.isEmpty
+                                      ? Center(
+                                          child: Text(
+                                            "Tidak ada permintaan verifikasi.",
+                                            style: GoogleFonts.poppins(
                                                 fontSize: fontSizeLabel,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black87,
+                                                color: Colors.black87),
+                                          ),
+                                        )
+                                      : ListView.builder(
+                                          itemCount: _verifData.length,
+                                          itemBuilder: (context, index) {
+                                            final verif = _verifData[index];
+                                            final timestamp =
+                                                verif['RequestedAt'] != null
+                                                    ? _formatTimestamp(
+                                                        verif['RequestedAt'])
+                                                    : 'Unknown Date';
+                                            final fieldName = verif['FieldName']
+                                                    ?.toString() ??
+                                                'N/A';
+                                            final oldValue =
+                                                verif['OldValue']?.toString() ??
+                                                    'N/A';
+                                            final newValue =
+                                                verif['NewValue']?.toString() ??
+                                                    'N/A';
+                                            final source =
+                                                verif['Source']?.toString() ??
+                                                    'N/A';
+                                            final displayStatus =
+                                                verif['Status']?.toString() ??
+                                                    'Unknown';
+
+                                            return Card(
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 8),
+                                              elevation: 3,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12)),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16.0),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "Permintaan Verifikasi",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize: fontSizeLabel,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: const Color(
+                                                            0xFF1E88E5),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      "Field: $fieldName",
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color:
+                                                              Colors.black87),
+                                                    ),
+                                                    Text(
+                                                      "Dari: $oldValue",
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color:
+                                                              Colors.black87),
+                                                    ),
+                                                    Text(
+                                                      "Menjadi: $newValue",
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color:
+                                                              Colors.black87),
+                                                    ),
+                                                    Text(
+                                                      "Status: $displayStatus",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize:
+                                                            fontSizeLabel - 2,
+                                                        color: displayStatus ==
+                                                                'Diajukan'
+                                                            ? Colors.orange
+                                                            : Colors.green,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      "Sumber: $source",
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color:
+                                                              Colors.black87),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      "Tanggal: $timestamp",
+                                                      style: GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel - 2,
+                                                          color: Colors.grey),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              "Description: $description",
-                                              style: GoogleFonts.poppins(
-                                                fontSize: fontSizeLabel - 2,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              "Status: $status",
-                                              style: GoogleFonts.poppins(
-                                                fontSize: fontSizeLabel - 2,
-                                                color: Colors.green,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              "Date: $timestamp",
-                                              style: GoogleFonts.poppins(
-                                                fontSize: fontSizeLabel - 2,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                            );
+                                          },
+                                        )
+                                  : Container(),
             ),
           ],
         ),

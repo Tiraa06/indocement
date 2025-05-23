@@ -456,7 +456,7 @@ class Categories extends StatelessWidget {
       {"icon": "assets/icons/id_card.svg", "text": "ID Card"},
       {"icon": "assets/icons/document.svg", "text": "SK Kerja & Medical"},
       {"icon": "assets/icons/service.svg", "text": "Layanan Karyawan"},
-      {"icon": "assets/icons/hr_care.svg", "text": "HR Care"},
+      {"icon": "assets/icons/hr_care.svg", "text": "HR Chat"},
       {"icon": "assets/icons/more.svg", "text": "Lainnya"},
     ];
 
@@ -508,7 +508,7 @@ class Categories extends StatelessWidget {
                           builder: (context) => const BPJSPage(),
                         ),
                       );
-                    } else if (category["text"] == "HR Care") {
+                    } else if (category["text"] == "HR Chat") {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -684,7 +684,7 @@ class DailyInfo extends StatelessWidget {
                 InfoCard(
                   title: "Ulang Tahun 🎂",
                   subtitle: "Andi P. (Dept. QC)",
-                  description: "Kirim ucapan via HR Care",
+                  description: "Kirim ucapan via HR Chat",
                 ),
                 SizedBox(width: 12),
                 InfoCard(

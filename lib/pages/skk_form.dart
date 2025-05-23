@@ -61,7 +61,6 @@ class _SkkFormPageState extends State<SkkFormPage> {
           'DEBUG: SharedPreferences - idEmployee=$idEmployee, employeeName=$employeeName, employeeNo=$employeeNo');
     });
 
-    // If employeeNo is missing or invalid, fetch from API
     if (employeeNo == null || employeeNo == 'NIK Tidak Diketahui') {
       await _fetchEmployeeData();
     }
@@ -89,7 +88,6 @@ class _SkkFormPageState extends State<SkkFormPage> {
       if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
         setState(() {
-          // Try both 'EmployeeNo' and 'employeeNo' to handle API inconsistencies
           employeeNo = data['EmployeeNo']?.toString() ??
               data['employeeNo']?.toString() ??
               'NIK Tidak Diketahui';
@@ -99,7 +97,6 @@ class _SkkFormPageState extends State<SkkFormPage> {
           isEmployeeDataLoading = false;
         });
 
-        // Save to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('employeeNo', employeeNo!);
         await prefs.setString('employeeName', employeeName!);
@@ -275,7 +272,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
       }
       return true;
     }
-    return true; // iOS doesn't require explicit storage permission
+    return true;
   }
 
   void _showPermissionDeniedDialog() {
@@ -398,6 +395,35 @@ class _SkkFormPageState extends State<SkkFormPage> {
     );
   }
 
+  void _showReturnModal(BuildContext context, String keperluan) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Pengajuan Ditolak'),
+          content: const Text('Silahkan mengajukan ulang permintaan SKK ini'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _keperluanController.text = keperluan;
+                });
+              },
+              child: const Text('Ajukan Ulang'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Batal'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _refreshData() async {
     await _fetchSkkData();
   }
@@ -415,7 +441,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
         ),
         title: const Text(
           'Pengajuan SKK',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         elevation: 0,
       ),
@@ -429,54 +455,54 @@ class _SkkFormPageState extends State<SkkFormPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1572E8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black, width: 1),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 60,
-                        height: 60,
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white, width: 1),
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
                           Icons.description,
-                          size: 30,
+                          size: 32,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Surat Keterangan Kerja',
                               style: TextStyle(
-                                fontSize: 22,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
+                                letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
                               'Ajukan surat keterangan kerja untuk keperluan Anda.',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.white70,
+                                color: Colors.white.withOpacity(0.9),
+                                height: 1.4,
                               ),
                             ),
                           ],
@@ -486,96 +512,141 @@ class _SkkFormPageState extends State<SkkFormPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Nama Karyawan',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    isEmployeeDataLoading
-                        ? const Text(
-                            'Memuat...',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          )
-                        : Text(
-                            employeeName ?? 'Nama Tidak Diketahui',
-                            style: const TextStyle(
-                                fontSize: 16, color: Colors.grey),
-                          ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'NIK',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    isEmployeeDataLoading
-                        ? const Text(
-                            'Memuat...',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          )
-                        : Text(
-                            employeeNo ?? 'NIK Tidak Diketahui',
-                            style: const TextStyle(
-                                fontSize: 16, color: Colors.grey),
-                          ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Keperluan',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _keperluanController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: 'Masukkan keperluan SKK',
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: isEmployeeDataLoading ? null : _submitSkk,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: isEmployeeDataLoading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text(
-                              'Ajukan SKK',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black, width: 1),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Form Pengajuan',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Nama Karyawan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      isEmployeeDataLoading
+                          ? const Text(
+                              'Memuat...',
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.grey),
+                            )
+                          : Text(
+                              employeeName ?? 'Nama Tidak Diketahui',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'NIK',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      isEmployeeDataLoading
+                          ? const Text(
+                              'Memuat...',
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.grey),
+                            )
+                          : Text(
+                              employeeNo ?? 'NIK Tidak Diketahui',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Keperluan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _keperluanController,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[400]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[400]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF1572E8), width: 2),
+                          ),
+                          hintText: 'Masukkan keperluan SKK',
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: isEmployeeDataLoading ? null : _submitSkk,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1572E8),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: isEmployeeDataLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Ajukan SKK',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(20.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
@@ -585,7 +656,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                       const Text(
                         'Riwayat Pengajuan SKK',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -615,50 +686,88 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                 'Status [$index]: ${data['Status']?.toString() ?? 'Tidak diketahui'}');
                             print(
                                 'UrlSkk [$index]: ${data['UrlSkk']?.toString() ?? 'Tidak ada'}');
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                            Color statusColor;
+                            bool isClickable = false;
+                            switch (data['Status']?.toString().toLowerCase()) {
+                              case 'diajukan':
+                                statusColor = Colors.grey;
+                                break;
+                              case 'diapprove':
+                                statusColor = Colors.green;
+                                break;
+                              case 'return':
+                                statusColor = Colors.red;
+                                isClickable = true;
+                                break;
+                              default:
+                                statusColor = Colors.grey;
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Tooltip(
-                                    message: data['Keperluan']?.toString() ??
-                                        'Tidak diketahui',
-                                    child: Text(
-                                      'Keperluan: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}',
-                                      style: const TextStyle(fontSize: 14),
-                                      overflow: TextOverflow.ellipsis,
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Tooltip(
+                                        message:
+                                            data['Keperluan']?.toString() ??
+                                                'Tidak diketahui',
+                                        child: Text(
+                                          'Keperluan: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    if (data['Status']?.toLowerCase() ==
+                                            'diapprove' &&
+                                        data['UrlSkk'] != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8),
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.download,
+                                            color: Color(0xFF1572E8),
+                                            size: 24,
+                                          ),
+                                          onPressed: () => _downloadSkk(
+                                            data['NoSkk'],
+                                            data['UrlSkk'],
+                                          ),
+                                          tooltip: 'Download SKK',
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(minWidth: 120),
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: isClickable
+                                      ? () => _showReturnModal(
+                                            context,
+                                            data['Keperluan']?.toString() ?? '',
+                                          )
+                                      : null,
                                   child: Text(
                                     'Status: ${data['Status'] ?? 'Tidak diketahui'}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey,
+                                      color: statusColor,
+                                      fontWeight: isClickable
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      decoration: isClickable
+                                          ? TextDecoration.underline
+                                          : TextDecoration.none,
                                     ),
-                                    textAlign: TextAlign.right,
                                   ),
                                 ),
-                                if (data['Status']?.toLowerCase() ==
-                                        'diapprove' &&
-                                    data['UrlSkk'] != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.download,
-                                        color: Color(0xFF1572E8),
-                                        size: 24,
-                                      ),
-                                      onPressed: () => _downloadSkk(
-                                        data['NoSkk'],
-                                        data['UrlSkk'],
-                                      ),
-                                      tooltip: 'Download SKK',
-                                    ),
-                                  ),
                               ],
                             );
                           },

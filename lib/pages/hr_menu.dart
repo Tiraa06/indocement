@@ -249,9 +249,9 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                               },
                             },
                             {
-                              'icon': Icons.report,
-                              'title': 'Keluhan Karyawan',
-                              'color': Colors.red,
+                              'icon': Icons.group_add,
+                              'title': 'Permintaan Karyawan',
+                              'color': Colors.green,
                               'onTap': () {
                                 Navigator.push(
                                   context,
