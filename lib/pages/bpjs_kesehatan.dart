@@ -12,7 +12,8 @@ class MenuPage extends StatefulWidget {
   _MenuPageState createState() => _MenuPageState();
 }
 
-class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin {
+class _MenuPageState extends State<MenuPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   bool _isMenuVisible = false;
@@ -60,7 +61,9 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const BPJSPage()), // Navigasi ke halaman BPJS
+              MaterialPageRoute(
+                  builder: (context) =>
+                      const BPJSPage()), // Navigasi ke halaman BPJS
             );
           },
         ),
@@ -85,7 +88,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
               children: [
                 // Banner
                 Container(
-                  margin: const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
+                  margin:
+                      const EdgeInsets.only(bottom: 16.0), // Jarak bawah banner
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16), // Sudut melengkung
                     boxShadow: [
@@ -97,7 +101,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16), // Sudut melengkung untuk gambar
+                    borderRadius: BorderRadius.circular(
+                        16), // Sudut melengkung untuk gambar
                     child: Image.asset(
                       'assets/images/bpjs_kesehatan.png', // Path ke gambar banner
                       width: double.infinity, // Lebar penuh
@@ -122,7 +127,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                 // Menu
                 Expanded(
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2, // Dua kolom
                       crossAxisSpacing: 16, // Jarak horizontal antar kotak
                       mainAxisSpacing: 16, // Jarak vertikal antar kotak
@@ -138,7 +144,9 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const BPJSKaryawanPage()),
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const BPJSKaryawanPage()),
                             );
                           },
                         );
@@ -150,7 +158,9 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const BPJSTambahanPage()),
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const BPJSTambahanPage()),
                             );
                           },
                         );
@@ -174,7 +184,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                   builder: (BuildContext context) {
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // Sudut melengkung
+                        borderRadius:
+                            BorderRadius.circular(16), // Sudut melengkung
                       ),
                       contentPadding: const EdgeInsets.all(16.0),
                       content: SizedBox(
@@ -195,19 +206,23 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                               const SizedBox(height: 16),
                               _buildFAQItem(
                                 question: 'Apa itu BPJS?',
-                                answer: 'BPJS adalah Badan Penyelenggara Jaminan Sosial yang menyediakan layanan kesehatan bagi masyarakat Indonesia.',
+                                answer:
+                                    'BPJS adalah Badan Penyelenggara Jaminan Sosial yang menyediakan layanan kesehatan bagi masyarakat Indonesia.',
                               ),
                               _buildFAQItem(
                                 question: 'Bagaimana cara mendaftar BPJS?',
-                                answer: 'Anda dapat mendaftar melalui aplikasi atau kantor BPJS terdekat.',
+                                answer:
+                                    'Anda dapat mendaftar melalui aplikasi atau kantor BPJS terdekat.',
                               ),
                               _buildFAQItem(
                                 question: 'Apa saja dokumen yang diperlukan?',
-                                answer: 'Dokumen yang diperlukan meliputi KTP, KK, dan dokumen pendukung lainnya.',
+                                answer:
+                                    'Dokumen yang diperlukan meliputi KTP, KK, dan dokumen pendukung lainnya.',
                               ),
                               _buildFAQItem(
                                 question: 'Bagaimana cara mengajukan klaim?',
-                                answer: 'Klaim dapat diajukan melalui aplikasi atau langsung ke kantor BPJS.',
+                                answer:
+                                    'Klaim dapat diajukan melalui aplikasi atau langsung ke kantor BPJS.',
                               ),
                             ],
                           ),
@@ -231,7 +246,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                   },
                 );
               },
-              icon: const Icon(Icons.help_outline, color: Colors.white), // Ikon warna putih
+              icon: const Icon(Icons.help_outline,
+                  color: Colors.white), // Ikon warna putih
               label: const Text(
                 "FAQ",
                 style: TextStyle(color: Colors.white), // Teks warna putih
@@ -348,7 +364,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
       leading: Icon(icon, color: Colors.white),
       title: Text(
         text,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+        style: const TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
       ),
       onTap: onTap,
     );
@@ -357,7 +374,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
 
 Future<bool> checkBpjsData(int idEmployee) async {
   try {
-    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/$idEmployee');
+    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/$idEmployee');
     final response = await http.get(uri);
 
     if (response.statusCode == 200) {

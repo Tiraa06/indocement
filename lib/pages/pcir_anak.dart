@@ -18,7 +18,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
   String? urlAkteLahir;
   String? selectedAnakKe; // Menyimpan pilihan "Anak Ke"
   bool isLoading = false;
-  Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
+  Map<String, File?> selectedImages =
+      {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
 
     try {
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Bpjs',
+        'http://103.31.235.237:5555/api/Bpjs',
         queryParameters: {'idEmployee': idEmployee},
       );
 
@@ -89,7 +90,7 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
   Future<void> _createNewBpjsEntry() async {
     try {
       final response = await Dio().post(
-        'http://192.168.100.140:5555/api/Bpjs',
+        'http://103.31.235.237:5555/api/Bpjs',
         data: {
           'IdEmployee': idEmployee,
           'AnggotaBpjs': 'Anak',
@@ -113,7 +114,9 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
         });
 
         ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('ID baru berhasil dibuat untuk AnggotaBpjs "Anak".')),
+          const SnackBar(
+              content:
+                  Text('ID baru berhasil dibuat untuk AnggotaBpjs "Anak".')),
         );
       } else {
         throw Exception('Gagal membuat ID baru: ${response.statusCode}');
@@ -148,8 +151,12 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
       final int? employeeId = prefs.getInt('IdEmployee');
       final String? anggotaBpjs = prefs.getString('AnggotaBpjs');
 
-      if (id == null || employeeId == null || anggotaBpjs == null || selectedAnakKe == null) {
-        throw Exception('Data ID, IdEmployee, AnggotaBpjs, atau AnakKe tidak ditemukan.');
+      if (id == null ||
+          employeeId == null ||
+          anggotaBpjs == null ||
+          selectedAnakKe == null) {
+        throw Exception(
+            'Data ID, IdEmployee, AnggotaBpjs, atau AnakKe tidak ditemukan.');
       }
 
       // Siapkan data untuk dikirim ke API
@@ -192,7 +199,7 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
 
       // Kirim data ke API dengan metode PUT
       final uploadResponse = await Dio().put(
-        'http://192.168.100.140:5555/api/Bpjs/upload/$id',
+        'http://103.31.235.237:5555/api/Bpjs/upload/$id',
         data: formData,
         options: Options(
           headers: {
@@ -218,7 +225,6 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -236,7 +242,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
                   children: [
                     const Text(
                       'Perbarui Data',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
 
@@ -244,7 +251,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
                     Container(
                       margin: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black), // Border warna hitam
+                        border: Border.all(
+                            color: Colors.black), // Border warna hitam
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: DropdownButtonHideUnderline(
@@ -255,11 +263,13 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
                             child: Text('Pilih Anak Ke-'),
                           ),
                           isExpanded: true,
-                          items: List.generate(5, (index) => (index + 1).toString())
+                          items: List.generate(
+                                  5, (index) => (index + 1).toString())
                               .map((e) => DropdownMenuItem(
                                     value: e,
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
                                       child: Text('Anak ke-$e'),
                                     ),
                                   ))
@@ -296,7 +306,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
                         children: [
                           const Text(
                             'Upload Dokumen',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           _buildBox(
@@ -357,7 +368,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
+          const Icon(Icons.picture_as_pdf,
+              size: 40, color: Colors.red), // Ikon PDF
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -365,7 +377,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -441,7 +454,8 @@ class _TambahDataAnakPageState extends State<TambahDataAnakPage> {
                   const SizedBox(height: 8),
                   Text(
                     selectedImages[fieldName] != null
-                        ? basename(selectedImages[fieldName]!.path) // Hanya nama file
+                        ? basename(
+                            selectedImages[fieldName]!.path) // Hanya nama file
                         : 'Belum ada file yang dipilih',
                     style: const TextStyle(
                       fontSize: 14,

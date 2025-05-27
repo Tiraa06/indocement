@@ -16,7 +16,8 @@ class BPJSKaryawanPage extends StatefulWidget {
 
 class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
   int? idEmployee;
-  Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
+  Map<String, File?> selectedImages =
+      {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
   String? selectedAnakKe; // Ubah tipe data menjadi String
 
   @override
@@ -72,7 +73,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
   void showLoadingDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
+      barrierDismissible:
+          false, // Dialog tidak bisa ditutup dengan klik di luar
       builder: (BuildContext context) {
         return const Center(
           child: CircularProgressIndicator(),
@@ -140,7 +142,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
       _showPopup(
         context: context,
         title: 'Berhasil',
-        message: 'Dokumen BPJS ${anggotaBpjs == "Pasangan" ? "Istri" : "Anak"} berhasil diunggah.',
+        message:
+            'Dokumen BPJS ${anggotaBpjs == "Pasangan" ? "Istri" : "Anak"} berhasil diunggah.',
       );
 
       // Jeda 2 detik sebelum cek BPJS terbaru
@@ -148,11 +151,13 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
       // Ambil data employee dari API
       final empResponse = await Dio().get(
-        'http://192.168.100.140:5555/api/Employees',
+        'http://103.31.235.237:5555/api/Employees',
         queryParameters: {'id': idEmployee},
       );
       int? idSection;
-      if (empResponse.statusCode == 200 && empResponse.data is List && empResponse.data.isNotEmpty) {
+      if (empResponse.statusCode == 200 &&
+          empResponse.data is List &&
+          empResponse.data.isNotEmpty) {
         final employee = empResponse.data.firstWhere(
           (e) => e['Id'] == idEmployee,
           orElse: () => null,
@@ -166,10 +171,12 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
       int? latestBpjsId;
       if (idSection != null) {
         final bpjsResponse = await Dio().get(
-          'http://192.168.100.140:5555/api/Bpjs',
+          'http://103.31.235.237:5555/api/Bpjs',
           queryParameters: {'idSection': idSection},
         );
-        if (bpjsResponse.statusCode == 200 && bpjsResponse.data is List && bpjsResponse.data.isNotEmpty) {
+        if (bpjsResponse.statusCode == 200 &&
+            bpjsResponse.data is List &&
+            bpjsResponse.data.isNotEmpty) {
           final latestEntry = bpjsResponse.data.last;
           latestBpjsId = latestEntry['Id'];
         }
@@ -214,7 +221,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     try {
       // Ambil data dari API untuk mendapatkan ID yang sesuai
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Bpjs',
+        'http://103.31.235.237:5555/api/Bpjs',
         queryParameters: {'idEmployee': idEmployee},
       );
 
@@ -231,7 +238,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         );
 
         if (matchingEntry == null) {
-          throw Exception('Data untuk ID Employee dan kategori BPJS tidak ditemukan.');
+          throw Exception(
+              'Data untuk ID Employee dan kategori BPJS tidak ditemukan.');
         }
 
         final matchingId = matchingEntry['Id']; // Ambil ID yang sesuai
@@ -247,7 +255,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
         // Kirim data ke API dengan endpoint dinamis
         final uploadResponse = await Dio().put(
-          'http://192.168.100.140:5555/api/Bpjs/upload/$matchingId',
+          'http://103.31.235.237:5555/api/Bpjs/upload/$matchingId',
           data: formData,
         );
 
@@ -264,11 +272,13 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
           // Ambil data employee dari API
           final empResponse = await Dio().get(
-            'http://192.168.100.140:5555/api/Employees',
+            'http://103.31.235.237:5555/api/Employees',
             queryParameters: {'id': idEmployee},
           );
           int? idSection;
-          if (empResponse.statusCode == 200 && empResponse.data is List && empResponse.data.isNotEmpty) {
+          if (empResponse.statusCode == 200 &&
+              empResponse.data is List &&
+              empResponse.data.isNotEmpty) {
             final employee = empResponse.data.firstWhere(
               (e) => e['Id'] == idEmployee,
               orElse: () => null,
@@ -282,16 +292,19 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
           int? latestBpjsId;
           if (idSection != null) {
             final bpjsResponse = await Dio().get(
-              'http://192.168.100.140:5555/api/Bpjs',
+              'http://103.31.235.237:5555/api/Bpjs',
               queryParameters: {'idSection': idSection},
             );
-            if (bpjsResponse.statusCode == 200 && bpjsResponse.data is List && bpjsResponse.data.isNotEmpty) {
+            if (bpjsResponse.statusCode == 200 &&
+                bpjsResponse.data is List &&
+                bpjsResponse.data.isNotEmpty) {
               final latestEntry = bpjsResponse.data.last;
               latestBpjsId = latestEntry['Id'];
             }
           }
         } else {
-          throw Exception('Gagal memperbarui data: ${uploadResponse.statusCode}');
+          throw Exception(
+              'Gagal memperbarui data: ${uploadResponse.statusCode}');
         }
       } else {
         throw Exception('Gagal memuat data dari API.');
@@ -365,7 +378,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                   const SizedBox(height: 8),
                   Text(
                     selectedImages[fieldName] != null
-                        ? basename(selectedImages[fieldName]!.path) // Hanya nama file
+                        ? basename(
+                            selectedImages[fieldName]!.path) // Hanya nama file
                         : 'Belum ada file yang dipilih',
                     style: const TextStyle(
                       fontSize: 14,
@@ -454,7 +468,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
+            const Icon(Icons.picture_as_pdf,
+                size: 40, color: Colors.red), // Ikon PDF
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -462,7 +477,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -584,7 +600,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                     icon: Icons.upload_file,
                     onPressed: () async {
                       // Validasi dan pengunggahan dokumen
-                      if (selectedImages['UrlKk'] == null || selectedImages['UrlSuratNikah'] == null) {
+                      if (selectedImages['UrlKk'] == null ||
+                          selectedImages['UrlSuratNikah'] == null) {
                         _showPopup(
                           context: context,
                           title: 'Gagal',
@@ -643,15 +660,17 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                         ),
                         isExpanded: true,
                         // Hanya anak ke 1-3
-                        items: List.generate(3, (index) => (index + 1).toString())
-                            .map((e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: Text('Anak ke-$e'),
-                                  ),
-                                ))
-                            .toList(),
+                        items:
+                            List.generate(3, (index) => (index + 1).toString())
+                                .map((e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        child: Text('Anak ke-$e'),
+                                      ),
+                                    ))
+                                .toList(),
                         onChanged: (value) {
                           setState(() {
                             selectedAnakKe = value;
@@ -703,7 +722,8 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                         return;
                       }
 
-                      if (selectedImages['UrlKkAnak'] == null || selectedImages['UrlAkteLahir'] == null) {
+                      if (selectedImages['UrlKkAnak'] == null ||
+                          selectedImages['UrlAkteLahir'] == null) {
                         _showPopup(
                           context: context,
                           title: 'Gagal',

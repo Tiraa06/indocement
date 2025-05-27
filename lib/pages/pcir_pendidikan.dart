@@ -102,7 +102,7 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
       var request = http.MultipartRequest(
         'PUT',
         Uri.parse(
-            'http://192.168.100.140:5555/api/Employees/$idEmployee/UrlIjazahTerbaru'),
+            'http://103.31.235.237:5555/api/Employees/$idEmployee/UrlIjazahTerbaru'),
       );
 
       request.headers['Accept'] = '*/*';
@@ -160,7 +160,8 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
         ),
         elevation: 0,
         title: const Padding(
-          padding: EdgeInsets.only(left: 4), // Tambahkan padding kiri agar tidak menempel
+          padding: EdgeInsets.only(
+              left: 4), // Tambahkan padding kiri agar tidak menempel
           child: Text(
             'Halaman Upload Ijazah',
             style: TextStyle(

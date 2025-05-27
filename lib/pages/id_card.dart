@@ -203,7 +203,7 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
 
     setState(() => isLoading = true);
 
-    var uri = Uri.parse('http://192.168.100.140:5555/api/IdCards/upload');
+    var uri = Uri.parse('http://103.31.235.237:5555/api/IdCards/upload');
     var request = http.MultipartRequest('POST', uri);
     request.headers['accept'] = 'text/plain';
 
@@ -472,7 +472,6 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                     onChanged: (val) => setState(() => _selectedStatus = val!),
                   ),
                   const SizedBox(height: 24),
-
                   // Upload Foto
                   buildUploadSection('Foto Terbaru', fotoBaru,
                       (f) => setState(() => fotoBaru = f)),
@@ -530,6 +529,130 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              final ScrollController scrollController = ScrollController();
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                contentPadding: const EdgeInsets.all(16.0),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.95,
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Scrollbar(
+                    controller: scrollController,
+                    thumbVisibility: false,
+                    thickness: 3,
+                    radius: const Radius.circular(10),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Frequently Asked Questions (FAQ)',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1572E8),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildFAQItem(
+                            icon: Icons.badge,
+                            question: 'Apa fungsi menu ID Card?',
+                            answer:
+                                'Menu ID Card digunakan oleh karyawan untuk mengajukan pembuatan kartu identitas. Tersedia tiga jenis pengajuan: Baru, Rusak, dan Hilang. Setiap jenis pengajuan memiliki ketentuan unggah dokumen yang berbeda. Pastikan Anda membaca ketentuannya terlebih dahulu dan mengunggah dokumen sesuai dengan status pengajuan.',
+                          ),
+                          _buildFAQItem(
+                            icon: Icons.schedule_send,
+                            question:
+                                'Apa yang terjadi setelah saya mengajukan ID Card?',
+                            answer:
+                                'Setelah pengajuan ID Card dilakukan, permintaan Anda akan diproses oleh tim HR. Silakan menunggu hingga proses selesai dan ID Card Anda siap.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text(
+                        'Tutup',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        icon: const Icon(Icons.help_outline, color: Colors.white),
+        label: const Text(
+          "FAQ",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.blue,
+      ),
     );
   }
+}
+
+Widget _buildFAQItem({
+  required IconData icon,
+  required String question,
+  required String answer,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: const Color(0xFF1572E8)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                question,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                answer,
+                style: const TextStyle(
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }

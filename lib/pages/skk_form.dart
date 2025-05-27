@@ -23,7 +23,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
   List<Map<String, dynamic>> skkData = [];
   bool isLoading = false;
   bool isEmployeeDataLoading = true;
-  final String baseUrl = 'http://192.168.100.140:5555';
+  final String baseUrl = 'http://103.31.235.237:5555';
   Timer? _refreshTimer;
 
   @override

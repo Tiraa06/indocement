@@ -60,7 +60,7 @@ class _ChatPageState extends State<ChatPage> {
           'Initializing SignalR for room: $roomId (Attempt ${_reconnectAttempts + 1})');
       _hubConnection = HubConnectionBuilder()
           .withUrl(
-            'http://192.168.100.140:5555/chatHub',
+            'http://103.31.235.237:5555/chatHub',
             options: HttpConnectionOptions(
               requestTimeout: 30000,
               transport: HttpTransportType.WebSockets,
@@ -195,7 +195,7 @@ class _ChatPageState extends State<ChatPage> {
 
     try {
       final url =
-          Uri.parse('http://192.168.100.140:5555/api/ChatMessages/join-room');
+          Uri.parse('http://103.31.235.237:5555/api/ChatMessages/join-room');
       final response = await retry(
         () => http.post(
           url,
@@ -352,7 +352,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       final url = Uri.parse(
-          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
+          'http://103.31.235.237:5555/api/ChatMessages/update-status/$messageId');
       final response = await retry(
         () => http.put(
           url,
@@ -482,7 +482,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       final url = Uri.parse(
-          'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+          'http://103.31.235.237:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
       final response = await retry(
         () => http.get(url, headers: {'Content-Type': 'application/json'}),
         maxAttempts: 3,
@@ -640,7 +640,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       final url = Uri.parse(
-          'http://192.168.100.140:5555/api/Konsultasis/employee/$idEmployee');
+          'http://103.31.235.237:5555/api/Konsultasis/employee/$idEmployee');
       final response = await retry(
         () => http.get(url, headers: {'Content-Type': 'application/json'}),
         maxAttempts: 3,
@@ -676,7 +676,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     final prefs = await SharedPreferences.getInstance();
     final url = Uri.parse(
-        'http://192.168.100.140:5555/api/Konsultasis/create-consultation');
+        'http://103.31.235.237:5555/api/Konsultasis/create-consultation');
     try {
       final response = await retry(
         () => http.post(
@@ -738,7 +738,7 @@ class _ChatPageState extends State<ChatPage> {
 
     try {
       final url = Uri.parse(
-          'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
+          'http://103.31.235.237:5555/api/ChatMessages/room/$roomId?currentUserId=$idEmployee');
       final response = await retry(
         () => http.get(url, headers: {'Content-Type': 'application/json'}),
         maxAttempts: 3,
@@ -897,7 +897,7 @@ class _ChatPageState extends State<ChatPage> {
       print('Error sending message via SignalR: $e\nStack trace: $stackTrace');
       try {
         final url = Uri.parse(
-            'http://192.168.100.140:5555/api/ChatMessages/send-message');
+            'http://103.31.235.237:5555/api/ChatMessages/send-message');
         final response = await retry(
           () => http.post(
             url,
@@ -945,7 +945,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       final url = Uri.parse(
-          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
+          'http://103.31.235.237:5555/api/ChatMessages/update-status/$messageId');
       final response = await retry(
         () => http.put(
           url,

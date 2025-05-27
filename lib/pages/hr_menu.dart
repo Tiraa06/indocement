@@ -44,14 +44,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
     super.dispose();
   }
 
-  void _toggleMenu() {
-    if (_animationController.isCompleted) {
-      _animationController.reverse();
-    } else {
-      _animationController.forward();
-    }
-  }
-
   Future<void> _checkAccess(BuildContext context) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -62,7 +54,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
       }
 
       final employeeResponse = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$idEmployee'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
       );
 
       if (employeeResponse.statusCode == 200) {
@@ -169,7 +161,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
               },
             ),
             title: Text(
-              "HR Care",
+              "HR Chat",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: baseFontSize * 1.25,
@@ -178,12 +170,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
             ),
             backgroundColor: const Color(0xFF1572E8),
             iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: _toggleMenu,
-              ),
-            ],
           ),
           body: Stack(
             children: [
@@ -215,7 +201,7 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                       ),
                     ),
                     Text(
-                      "Selamat datang di HR Care. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
+                      "Selamat datang di HR Chat. Pilih salah satu menu di bawah untuk informasi lebih lanjut.",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: baseFontSize * 0.9,
@@ -315,36 +301,24 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                                     ),
                                     const SizedBox(height: 16),
                                     _buildFAQItem(
-                                      icon: Icons.home,
-                                      question: 'Apa fungsi halaman Home?',
-                                      answer:
-                                          'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
-                                    ),
-                                    _buildFAQItem(
-                                      icon: Icons.category,
-                                      question: 'Apa saja menu yang tersedia?',
-                                      answer:
-                                          'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
-                                    ),
-                                    _buildFAQItem(
-                                      icon: Icons.info,
-                                      question: 'Apa itu Info Harian?',
-                                      answer:
-                                          'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
-                                    ),
-                                    _buildFAQItem(
-                                      icon: Icons.help_outline,
+                                      icon: Icons.support_agent,
                                       question:
-                                          'Bagaimana cara mengakses menu BPJS?',
+                                          'Apa saja fitur yang tersedia di HR Chat?',
                                       answer:
-                                          'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                          'Terdapat dua fitur utama di HR Chat: Konsultasi dan Permintaan Karyawan. Masing-masing memiliki fungsi dan alur yang berbeda.',
                                     ),
                                     _buildFAQItem(
-                                      icon: Icons.notifications,
-                                      question:
-                                          'Apa itu pengingat di Info Harian?',
+                                      icon: Icons.chat_bubble_outline,
+                                      question: 'Apa itu fitur Konsultasi?',
                                       answer:
-                                          'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                          'Fitur Konsultasi memungkinkan Anda melakukan percakapan langsung (real-time) dengan HR melalui chat. Jika HR sudah membalas pesan Anda dan Anda belum membacanya, maka balasan tersebut akan muncul di Inbox Konsultasi sebagai pesan baru.',
+                                    ),
+                                    _buildFAQItem(
+                                      icon: Icons.assignment_outlined,
+                                      question:
+                                          'Apa itu fitur Permintaan Karyawan?',
+                                      answer:
+                                          'Fitur ini menyediakan form untuk mengajukan permintaan kepada HR. Silakan isi form sesuai ketentuan yang berlaku. Anda juga dapat mengunggah gambar sebagai pendukung, namun hal ini bersifat opsional.',
                                     ),
                                   ],
                                 ),
@@ -409,62 +383,6 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                           color: Colors.black.withOpacity(0.2),
                           blurRadius: 10,
                           offset: const Offset(-4, 0),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Text(
-                            "Menu",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        const Divider(color: Colors.grey),
-                        _buildMenuItem(
-                          context,
-                          title: "BPJS",
-                          icon: Icons.health_and_safety,
-                          color: Colors.blue,
-                          onTap: () {
-                            _checkAccess(context);
-                          },
-                        ),
-                        SizedBox(height: paddingValue * 0.5),
-                        _buildMenuItem(
-                          context,
-                          title: "ID & Slip Salary",
-                          icon: Icons.badge,
-                          color: Colors.blue,
-                          onTap: () {
-                            // Aksi untuk ID & Slip Salary
-                          },
-                        ),
-                        SizedBox(height: paddingValue * 0.5),
-                        _buildMenuItem(
-                          context,
-                          title: "SK Kerja & Medical",
-                          icon: Icons.description,
-                          color: Colors.blue,
-                          onTap: () {
-                            // Aksi untuk SK Kerja & Medical
-                          },
-                        ),
-                        SizedBox(height: paddingValue * 0.5),
-                        _buildMenuItem(
-                          context,
-                          title: "Layanan Karyawan",
-                          icon: Icons.support_agent,
-                          color: Colors.blue,
-                          onTap: () {
-                            // Aksi untuk Layanan Karyawan
-                          },
                         ),
                       ],
                     ),

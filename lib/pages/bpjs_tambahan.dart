@@ -17,10 +17,12 @@ class BPJSTambahanPage extends StatefulWidget {
 
 class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   int? idEmployee;
-  Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
+  Map<String, File?> selectedImages =
+      {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
   String? selectedAnggotaBpjs; // Menyimpan pilihan dropdown
   String? selectedRelationship; // Menyimpan pilihan relationship
-  bool _isPopupVisible = false; // Menyimpan status apakah popup sedang ditampilkan
+  bool _isPopupVisible =
+      false; // Menyimpan status apakah popup sedang ditampilkan
   bool isDownloaded = false; // Menyimpan status apakah file sudah didownload
   bool isFormVisible = false; // Status untuk menampilkan form upload
   File? uploadedFile; // File yang diunggah
@@ -88,7 +90,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
 
     final dio = Dio();
     final String fileUrl =
-        'http://192.168.100.140:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
+        'http://103.31.235.237:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
 
     try {
       // Minta izin penyimpanan
@@ -102,7 +104,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       // Tampilkan dialog loading
       showDialog(
         context: this.context,
-        barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
+        barrierDismissible:
+            false, // Dialog tidak bisa ditutup dengan klik di luar
         builder: (BuildContext context) {
           return AlertDialog(
             content: Column(
@@ -220,7 +223,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
     required String title,
     required String message,
   }) {
-    if (_isPopupVisible) return; // Jika popup sedang ditampilkan, jangan tampilkan lagi
+    if (_isPopupVisible)
+      return; // Jika popup sedang ditampilkan, jangan tampilkan lagi
 
     _isPopupVisible = true; // Tandai bahwa popup sedang ditampilkan
     showDialog(
@@ -280,7 +284,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   void showLoadingDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Dialog tidak bisa ditutup dengan klik di luar
+      barrierDismissible:
+          false, // Dialog tidak bisa ditutup dengan klik di luar
       builder: (BuildContext context) {
         return const Center(
           child: CircularProgressIndicator(),
@@ -292,7 +297,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   Future<void> uploadBpjsWithArray({
     required BuildContext context,
     required String anggotaBpjs,
-    required List<Map<String, dynamic>> documents, required String anakKe,
+    required List<Map<String, dynamic>> documents,
+    required String anakKe,
   }) async {
     if (idEmployee == null) {
       _showPopup(
@@ -568,7 +574,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                             width: 1.5,
                           ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 2),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: selectedAnggotaBpjs,
@@ -580,7 +587,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                               ),
                             ),
                             isExpanded: true,
-                            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF1572E8), size: 32),
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Color(0xFF1572E8), size: 32),
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
@@ -595,16 +603,18 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                               'Anak ke-5',
                               'Anak ke-6',
                               'Anak ke-7',
-                            ].map((e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.person, color: Colors.blue[400]),
-                                      const SizedBox(width: 8),
-                                      Text(e),
-                                    ],
-                                  ),
-                                ))
+                            ]
+                                .map((e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.person,
+                                              color: Colors.blue[400]),
+                                          const SizedBox(width: 8),
+                                          Text(e),
+                                        ],
+                                      ),
+                                    ))
                                 .toList(),
                             onChanged: (value) {
                               setState(() {
@@ -644,7 +654,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                         if (selectedAnggotaBpjs!.startsWith('Anak ke-')) ...[
                           // Hanya tampil jika pilih Anak ke-4 dst
                           GestureDetector(
-                            onTap: () => pickImage(fieldName: 'UrlAkteLahirTambahan'),
+                            onTap: () =>
+                                pickImage(fieldName: 'UrlAkteLahirTambahan'),
                             child: Container(
                               padding: const EdgeInsets.all(16.0),
                               decoration: BoxDecoration(
@@ -666,14 +677,19 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF1572E8),
                                       borderRadius: BorderRadius.circular(8),
-                                      image: selectedImages['UrlAkteLahirTambahan'] != null
+                                      image: selectedImages[
+                                                  'UrlAkteLahirTambahan'] !=
+                                              null
                                           ? DecorationImage(
-                                              image: FileImage(selectedImages['UrlAkteLahirTambahan']!),
+                                              image: FileImage(selectedImages[
+                                                  'UrlAkteLahirTambahan']!),
                                               fit: BoxFit.cover,
                                             )
                                           : null,
                                     ),
-                                    child: selectedImages['UrlAkteLahirTambahan'] == null
+                                    child: selectedImages[
+                                                'UrlAkteLahirTambahan'] ==
+                                            null
                                         ? const Icon(
                                             Icons.upload_file,
                                             size: 30,
@@ -684,7 +700,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Upload Akte Kelahiran',
@@ -696,8 +713,12 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          selectedImages['UrlAkteLahirTambahan'] != null
-                                              ? basename(selectedImages['UrlAkteLahirTambahan']!.path)
+                                          selectedImages[
+                                                      'UrlAkteLahirTambahan'] !=
+                                                  null
+                                              ? basename(selectedImages[
+                                                      'UrlAkteLahirTambahan']!
+                                                  .path)
                                               : 'Belum ada file yang dipilih',
                                           style: const TextStyle(
                                             fontSize: 14,
@@ -738,7 +759,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     ),
                                     child: uploadedFile != null
                                         ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             child: Image.file(
                                               uploadedFile!,
                                               width: 60,
@@ -755,7 +777,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Upload Surat Registrasi BPJS Tambahan',
@@ -790,11 +813,13 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                               // ...tombol kirim anak ke-4 dst...
                               onPressed: () async {
                                 // Validasi file
-                                if (selectedImages['UrlAkteLahirTambahan'] == null) {
+                                if (selectedImages['UrlAkteLahirTambahan'] ==
+                                    null) {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message: 'Anda harus mengunggah Akte Kelahiran terlebih dahulu.',
+                                    message:
+                                        'Anda harus mengunggah Akte Kelahiran terlebih dahulu.',
                                   );
                                   return;
                                 }
@@ -802,7 +827,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message: 'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
+                                    message:
+                                        'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
                                   );
                                   return;
                                 }
@@ -821,8 +847,13 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
 
                                   // Ambil angka anak ke-berapa dari string, misal "Anak ke-4" -> 4
                                   int anakKe = 0;
-                                  if (selectedAnggotaBpjs != null && selectedAnggotaBpjs!.startsWith('Anak ke-')) {
-                                    anakKe = int.tryParse(selectedAnggotaBpjs!.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                                  if (selectedAnggotaBpjs != null &&
+                                      selectedAnggotaBpjs!
+                                          .startsWith('Anak ke-')) {
+                                    anakKe = int.tryParse(selectedAnggotaBpjs!
+                                            .replaceAll(
+                                                RegExp(r'[^0-9]'), '')) ??
+                                        0;
                                   }
 
                                   // Tambahkan file ke array Files & FileTypes
@@ -830,8 +861,11 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     MapEntry(
                                       "Files",
                                       await MultipartFile.fromFile(
-                                        selectedImages['UrlAkteLahirTambahan']!.path,
-                                        filename: basename(selectedImages['UrlAkteLahirTambahan']!.path),
+                                        selectedImages['UrlAkteLahirTambahan']!
+                                            .path,
+                                        filename: basename(selectedImages[
+                                                'UrlAkteLahirTambahan']!
+                                            .path),
                                       ),
                                     ),
                                     MapEntry(
@@ -843,7 +877,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     ),
                                   ]);
                                   formData.fields.addAll([
-                                    MapEntry("IdEmployee", idEmployee.toString()),
+                                    MapEntry(
+                                        "IdEmployee", idEmployee.toString()),
                                     MapEntry("FileTypes", "UrlAkteLahir"),
                                     MapEntry("FileTypes", "UrlSuratPotongGaji"),
                                     // Kirim hanya "Anak" ke AnggotaBpjs
@@ -853,7 +888,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   ]);
 
                                   final response = await dio.post(
-                                    'http://192.168.100.140:5555/api/Bpjs/upload',
+                                    'http://103.31.235.237:5555/api/Bpjs/upload',
                                     data: formData,
                                     options: Options(
                                       headers: {
@@ -873,7 +908,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     _showPopup(
                                       context: context,
                                       title: 'Gagal',
-                                      message: 'Gagal mengirim data anak. (${response.statusCode})\n${response.data}',
+                                      message:
+                                          'Gagal mengirim data anak. (${response.statusCode})\n${response.data}',
                                     );
                                   }
                                 } catch (e) {
@@ -882,11 +918,13 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message: 'Terjadi kesalahan saat mengirim data anak.\n$e',
+                                    message:
+                                        'Terjadi kesalahan saat mengirim data anak.\n$e',
                                   );
                                 }
                               },
-                              icon: const Icon(Icons.send_rounded, color: Colors.white),
+                              icon: const Icon(Icons.send_rounded,
+                                  color: Colors.white),
                               label: const Text(
                                 'Kirim Data Anak',
                                 style: TextStyle(
@@ -939,7 +977,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     ),
                                     child: uploadedFile != null
                                         ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             child: Image.file(
                                               uploadedFile!,
                                               width: 60,
@@ -956,7 +995,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Upload Surat Registrasi BPJS Tambahan',
@@ -993,7 +1033,8 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message: 'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
+                                    message:
+                                        'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
                                   );
                                   return;
                                 }
@@ -1020,13 +1061,15 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     ),
                                   ]);
                                   formData.fields.addAll([
-                                    MapEntry("IdEmployee", idEmployee.toString()),
+                                    MapEntry(
+                                        "IdEmployee", idEmployee.toString()),
                                     MapEntry("FileTypes", "UrlSuratPotongGaji"),
-                                    MapEntry("AnggotaBpjs", selectedAnggotaBpjs!),
+                                    MapEntry(
+                                        "AnggotaBpjs", selectedAnggotaBpjs!),
                                   ]);
 
                                   final response = await dio.post(
-                                    'http://192.168.100.140:5555/api/Bpjs/upload',
+                                    'http://103.31.235.237:5555/api/Bpjs/upload',
                                     data: formData,
                                     options: Options(
                                       headers: {
@@ -1040,13 +1083,15 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     _showPopup(
                                       context: context,
                                       title: 'Berhasil',
-                                      message: 'Surat Registrasi BPJS Tambahan berhasil dikirim.',
+                                      message:
+                                          'Surat Registrasi BPJS Tambahan berhasil dikirim.',
                                     );
                                   } else {
                                     _showPopup(
                                       context: context,
                                       title: 'Gagal',
-                                      message: 'Gagal mengirim file. (${response.statusCode})\n${response.data}',
+                                      message:
+                                          'Gagal mengirim file. (${response.statusCode})\n${response.data}',
                                     );
                                   }
                                 } catch (e) {
@@ -1055,11 +1100,13 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message: 'Terjadi kesalahan saat mengirim file.\n$e',
+                                    message:
+                                        'Terjadi kesalahan saat mengirim file.\n$e',
                                   );
                                 }
                               },
-                              icon: const Icon(Icons.send_rounded, color: Colors.white),
+                              icon: const Icon(Icons.send_rounded,
+                                  color: Colors.white),
                               label: const Text(
                                 'Kirim Surat Registrasi BPJS Tambahan',
                                 style: TextStyle(
@@ -1079,16 +1126,15 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                             ),
                           ),
                         ],
-                      ],            ],
-                    ),
-
+                      ],
+                    ],
                   ),
                 ),
-                ],
               ),
-
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 }

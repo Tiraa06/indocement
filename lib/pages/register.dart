@@ -50,7 +50,7 @@ class _RegisterState extends State<Register> {
     try {
       print('Sending payload: ${json.encode(userData)}');
       final response = await http.post(
-        Uri.parse('http://192.168.100.140:5555/api/User/register'),
+        Uri.parse('http://103.31.235.237:5555/api/User/register'),
         body: json.encode(userData),
         headers: {'Content-Type': 'application/json'},
       );

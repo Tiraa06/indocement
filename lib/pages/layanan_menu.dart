@@ -105,14 +105,6 @@ class _LayananMenuPageState extends State<LayananMenuPage>
     super.dispose();
   }
 
-  void _toggleMenu() {
-    if (_animationController.isCompleted) {
-      _animationController.reverse();
-    } else {
-      _animationController.forward();
-    }
-  }
-
   void _navigateToFeature(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Menu $feature belum tersedia')),
@@ -149,12 +141,6 @@ class _LayananMenuPageState extends State<LayananMenuPage>
             ),
             backgroundColor: const Color(0xFF1572E8),
             iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: _toggleMenu,
-              ),
-            ],
           ),
           body: SingleChildScrollView(
             child: Padding(
@@ -254,36 +240,59 @@ class _LayananMenuPageState extends State<LayananMenuPage>
                               ),
                               const SizedBox(height: 16),
                               _buildFAQItem(
-                                icon: Icons.home,
-                                question: 'Apa fungsi halaman Home?',
+                                icon: Icons.monetization_on,
+                                question: 'Apa itu menu Uang Duka?',
                                 answer:
-                                    'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                    'Menu Uang Duka disediakan untuk mengajukan bantuan atau klaim terkait musibah duka. Fitur ini akan tersedia pada pembaruan selanjutnya.',
                               ),
                               _buildFAQItem(
-                                icon: Icons.category,
-                                question: 'Apa saja menu yang tersedia?',
+                                icon: Icons.calendar_today,
+                                question: 'Apa itu menu Cuti?',
                                 answer:
-                                    'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                    'Menu Cuti akan digunakan untuk mengajukan dan memantau permohonan cuti karyawan secara online. Fitur ini sedang dalam tahap pengembangan.',
                               ),
                               _buildFAQItem(
-                                icon: Icons.info,
-                                question: 'Apa itu Info Harian?',
+                                icon: Icons.schedule,
+                                question: 'Apa itu menu Schedule Shift?',
                                 answer:
-                                    'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                    'Menu Schedule Shift berfungsi untuk melihat jadwal kerja atau shift Anda setiap harinya. Fitur ini sudah aktif dan dapat digunakan.',
                               ),
                               _buildFAQItem(
-                                icon: Icons.help_outline,
+                                icon: Icons.fingerprint,
+                                question: 'Apa itu menu Absensi?',
+                                answer:
+                                    'Menu Absensi ditujukan untuk melihat riwayat kehadiran dan melakukan proses absensi secara digital. Fitur ini akan tersedia di versi mendatang.',
+                              ),
+                              _buildFAQItem(
+                                icon: Icons.account_balance_wallet,
+                                question: 'Apa itu menu Dispensasi/Kompensasi?',
+                                answer:
+                                    'Menu ini digunakan untuk mengajukan dispensasi atau kompensasi waktu kerja. Fitur ini masih dalam tahap pengembangan.',
+                              ),
+                              _buildFAQItem(
+                                icon: Icons.folder,
+                                question: 'Apa itu menu File Aktif?',
+                                answer:
+                                    'Menu File Aktif akan menampilkan dokumen penting terkait karyawan yang sedang aktif. Fitur ini akan segera tersedia.',
+                              ),
+                              _buildFAQItem(
+                                icon: Icons.school,
+                                question: 'Apa itu menu Bea Siswa?',
+                                answer:
+                                    'Menu Bea Siswa disiapkan untuk pengajuan beasiswa karyawan atau keluarga karyawan. Fitur ini belum tersedia dan masih dikembangkan.',
+                              ),
+                              _buildFAQItem(
+                                icon: Icons.star,
                                 question:
-                                    'Bagaimana cara mengakses menu BPJS?',
+                                    'Apa itu menu Penghargaan Masa Kerja?',
                                 answer:
-                                    'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                    'Menu ini akan digunakan untuk melihat dan mengajukan penghargaan berdasarkan masa kerja karyawan. Akan tersedia dalam pembaruan berikutnya.',
                               ),
                               _buildFAQItem(
-                                icon: Icons.notifications,
-                                question:
-                                    'Apa itu pengingat di Info Harian?',
+                                icon: Icons.group,
+                                question: 'Apa itu menu Internal Recruitment?',
                                 answer:
-                                    'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                    'Menu Internal Recruitment memungkinkan karyawan melamar posisi yang tersedia di lingkungan perusahaan. Fitur ini masih dalam proses pengembangan.',
                               ),
                             ],
                           ),

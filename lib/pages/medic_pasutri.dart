@@ -17,7 +17,7 @@ class MedicPasutriPage extends StatefulWidget {
 
 class _MedicPasutriPageState extends State<MedicPasutriPage> {
   final String fileUrl =
-      'http://192.168.100.140:5555/templates/medical.pdf'; // URL file
+      'http://103.31.235.237:5555/templates/medical.pdf'; // URL file
   bool isLoadingDownload =
       false; // Untuk menampilkan indikator loading download
   bool isDownloaded = false; // Status apakah file sudah didownload
@@ -71,7 +71,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       );
 
       final url =
-          'http://192.168.100.140:5555/api/Medical/generate-medical-document/$idEmployee';
+          'http://103.31.235.237:5555/api/Medical/generate-medical-document/$idEmployee';
 
       final response = await dio.post(
         url,
@@ -173,7 +173,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       });
 
       final response = await dio.post(
-        'http://192.168.100.140:5555/api/Medical/upload',
+        'http://103.31.235.237:5555/api/Medical/upload',
         data: formData,
         options: Options(
           headers: {
@@ -224,7 +224,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     try {
       // Panggil API untuk mendapatkan idEmployee
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Employee/get-id', // Ganti dengan endpoint API yang sesuai
+        'http://103.31.235.237:5555/api/Employee/get-id', // Ganti dengan endpoint API yang sesuai
       );
 
       print('Response data: ${response.data}');
@@ -241,13 +241,15 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           });
 
           ScaffoldMessenger.of(this.context).showSnackBar(
-            SnackBar(content: Text('ID Employee berhasil disimpan: $idEmployee')),
+            SnackBar(
+                content: Text('ID Employee berhasil disimpan: $idEmployee')),
           );
         } else {
           throw Exception('ID Employee tidak ditemukan di respons API.');
         }
       } else {
-        throw Exception('Gagal mendapatkan ID Employee: ${response.statusCode}');
+        throw Exception(
+            'Gagal mendapatkan ID Employee: ${response.statusCode}');
       }
     } catch (e) {
       ScaffoldMessenger.of(this.context).showSnackBar(
@@ -260,7 +262,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     try {
       // Panggil API untuk mendapatkan data Medical
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Medical',
+        'http://103.31.235.237:5555/api/Medical',
       );
 
       if (response.statusCode == 200) {
@@ -291,7 +293,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
 
       // Ambil data employee
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Employees/$idEmployee',
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
         options: Options(headers: {'accept': 'text/plain'}),
       );
 
@@ -331,7 +333,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           namaPasanganController.text = pasangan['NamaPasangan'] ?? '';
           statusPasanganController.text = pasangan['StatusPasangan'] ?? '';
           tempatLahirPasanganController.text = pasangan['AlamatPasangan'] ?? '';
-          tanggalLahirPasanganController.text = pasangan['TglLahirPasangan'] ?? '';
+          tanggalLahirPasanganController.text =
+              pasangan['TglLahirPasangan'] ?? '';
         } else {
           namaPasanganController.clear();
           statusPasanganController.clear();
@@ -344,18 +347,30 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
             ? pasangan['Children'] as List
             : [];
         if (children.isNotEmpty) {
-          namaAnak1Controller.text = children.length > 0 ? (children[0]['NamaAnak'] ?? '') : '';
-          ttlAnak1Controller.text = children.length > 0 ? (children[0]['TglLahirAnak'] ?? '') : '';
-          tempatLahirAnak1Controller.text = children.length > 0 ? (children[0]['TempatLahirAnak'] ?? '') : '';
-          pendidikanAnak1Controller.text = children.length > 0 ? (children[0]['PendidikanAnak'] ?? '') : '';
-          namaAnak2Controller.text = children.length > 1 ? (children[1]['NamaAnak'] ?? '') : '';
-          ttlAnak2Controller.text = children.length > 1 ? (children[1]['TglLahirAnak'] ?? '') : '';
-          tempatLahirAnak2Controller.text = children.length > 1 ? (children[1]['TempatLahirAnak'] ?? '') : '';
-          pendidikanAnak2Controller.text = children.length > 1 ? (children[1]['PendidikanAnak'] ?? '') : '';
-          namaAnak3Controller.text = children.length > 2 ? (children[2]['NamaAnak'] ?? '') : '';
-          ttlAnak3Controller.text = children.length > 2 ? (children[2]['TglLahirAnak'] ?? '') : '';
-          tempatLahirAnak3Controller.text = children.length > 2 ? (children[2]['TempatLahirAnak'] ?? '') : '';
-          pendidikanAnak3Controller.text = children.length > 2 ? (children[2]['PendidikanAnak'] ?? '') : '';
+          namaAnak1Controller.text =
+              children.length > 0 ? (children[0]['NamaAnak'] ?? '') : '';
+          ttlAnak1Controller.text =
+              children.length > 0 ? (children[0]['TglLahirAnak'] ?? '') : '';
+          tempatLahirAnak1Controller.text =
+              children.length > 0 ? (children[0]['TempatLahirAnak'] ?? '') : '';
+          pendidikanAnak1Controller.text =
+              children.length > 0 ? (children[0]['PendidikanAnak'] ?? '') : '';
+          namaAnak2Controller.text =
+              children.length > 1 ? (children[1]['NamaAnak'] ?? '') : '';
+          ttlAnak2Controller.text =
+              children.length > 1 ? (children[1]['TglLahirAnak'] ?? '') : '';
+          tempatLahirAnak2Controller.text =
+              children.length > 1 ? (children[1]['TempatLahirAnak'] ?? '') : '';
+          pendidikanAnak2Controller.text =
+              children.length > 1 ? (children[1]['PendidikanAnak'] ?? '') : '';
+          namaAnak3Controller.text =
+              children.length > 2 ? (children[2]['NamaAnak'] ?? '') : '';
+          ttlAnak3Controller.text =
+              children.length > 2 ? (children[2]['TglLahirAnak'] ?? '') : '';
+          tempatLahirAnak3Controller.text =
+              children.length > 2 ? (children[2]['TempatLahirAnak'] ?? '') : '';
+          pendidikanAnak3Controller.text =
+              children.length > 2 ? (children[2]['PendidikanAnak'] ?? '') : '';
         } else {
           namaAnak1Controller.clear();
           ttlAnak1Controller.clear();
@@ -374,7 +389,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
         // Data ESL (jika perlu ambil dari API lain, lakukan di sini)
         if (idEslController.text.isNotEmpty) {
           final eslResp = await Dio().get(
-            'http://192.168.100.140:5555/api/Esls',
+            'http://103.31.235.237:5555/api/Esls',
             options: Options(headers: {'accept': 'text/plain'}),
           );
           if (eslResp.statusCode == 200 && eslResp.data is List) {
@@ -401,21 +416,30 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   // Controller untuk field wajib
   final TextEditingController namaAtasanController = TextEditingController();
   final TextEditingController jabatanAtasanController = TextEditingController();
-  final TextEditingController namaPerusahaanController = TextEditingController();
-  final TextEditingController alamatPerusahaanController = TextEditingController();
+  final TextEditingController namaPerusahaanController =
+      TextEditingController();
+  final TextEditingController alamatPerusahaanController =
+      TextEditingController();
   final TextEditingController namaKaryawanController = TextEditingController();
-  final TextEditingController tempatLahirKaryawanController = TextEditingController();
-  final TextEditingController tanggalLahirKaryawanController = TextEditingController();
-  final TextEditingController alamatKaryawanController = TextEditingController();
+  final TextEditingController tempatLahirKaryawanController =
+      TextEditingController();
+  final TextEditingController tanggalLahirKaryawanController =
+      TextEditingController();
+  final TextEditingController alamatKaryawanController =
+      TextEditingController();
   final TextEditingController tglMulaiKerjaController = TextEditingController();
-  final TextEditingController jabatanTerakhirController = TextEditingController();
+  final TextEditingController jabatanTerakhirController =
+      TextEditingController();
   final TextEditingController sectionController = TextEditingController();
 
   // Controller untuk pasangan & anak (opsional)
   final TextEditingController namaPasanganController = TextEditingController();
-  final TextEditingController statusPasanganController = TextEditingController();
-  final TextEditingController tempatLahirPasanganController = TextEditingController();
-  final TextEditingController tanggalLahirPasanganController = TextEditingController();
+  final TextEditingController statusPasanganController =
+      TextEditingController();
+  final TextEditingController tempatLahirPasanganController =
+      TextEditingController();
+  final TextEditingController tanggalLahirPasanganController =
+      TextEditingController();
 
   final TextEditingController namaAnak1Controller = TextEditingController();
   final TextEditingController ttlAnak1Controller = TextEditingController();
@@ -435,15 +459,23 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   final TextEditingController departementController = TextEditingController();
   final TextEditingController tahunController = TextEditingController();
   final TextEditingController namaSuamiController = TextEditingController();
-  final TextEditingController tempatLahirSuamiController = TextEditingController();
-  final TextEditingController tanggalLahirSuamiController = TextEditingController();
+  final TextEditingController tempatLahirSuamiController =
+      TextEditingController();
+  final TextEditingController tanggalLahirSuamiController =
+      TextEditingController();
   final TextEditingController bidangUsahaController = TextEditingController();
-  final TextEditingController tempatLahirAnak1Controller = TextEditingController();
-  final TextEditingController pendidikanAnak1Controller = TextEditingController();
-  final TextEditingController tempatLahirAnak2Controller = TextEditingController();
-  final TextEditingController pendidikanAnak2Controller = TextEditingController();
-  final TextEditingController tempatLahirAnak3Controller = TextEditingController();
-  final TextEditingController pendidikanAnak3Controller = TextEditingController();
+  final TextEditingController tempatLahirAnak1Controller =
+      TextEditingController();
+  final TextEditingController pendidikanAnak1Controller =
+      TextEditingController();
+  final TextEditingController tempatLahirAnak2Controller =
+      TextEditingController();
+  final TextEditingController pendidikanAnak2Controller =
+      TextEditingController();
+  final TextEditingController tempatLahirAnak3Controller =
+      TextEditingController();
+  final TextEditingController pendidikanAnak3Controller =
+      TextEditingController();
 
   // 1. Tambahkan controller baru
   final TextEditingController nikPegawaiController = TextEditingController();
@@ -567,7 +599,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                       // Judul dengan icon di kiri
                       Row(
                         children: const [
-                          Icon(Icons.edit_document, color: Color(0xFF1572E8), size: 28),
+                          Icon(Icons.edit_document,
+                              color: Color(0xFF1572E8), size: 28),
                           SizedBox(width: 8),
                           Text(
                             'Pembuatan Surat Medis',
@@ -590,7 +623,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               decoration: const InputDecoration(
                                 labelText: 'Pilih Jenis Surat',
                                 border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                               value: selectedJenisSurat,
                               items: const [
@@ -628,15 +662,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.person, color: Color(0xFF1572E8)),
+                                          Icon(Icons.person,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Atasan',
@@ -653,10 +690,14 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAtasanController,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Atasan *',
-                                          prefixIcon: Icon(Icons.badge_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.badge_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
-                                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
@@ -665,7 +706,9 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           labelText: 'Jabatan Atasan *',
                                           prefixIcon: Icon(Icons.work_outline),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                     ],
                                   ),
@@ -676,15 +719,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.business, color: Color(0xFF1572E8)),
+                                          Icon(Icons.business,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Perusahaan',
@@ -703,25 +749,33 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           labelText: 'Nama Perusahaan *',
                                           prefixIcon: Icon(Icons.apartment),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: alamatPerusahaanController,
                                         decoration: const InputDecoration(
                                           labelText: 'Alamat Perusahaan *',
-                                          prefixIcon: Icon(Icons.location_on_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.location_on_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: unitController,
                                         decoration: const InputDecoration(
                                           labelText: 'Unit *',
-                                          prefixIcon: Icon(Icons.account_tree_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.account_tree_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                     ],
                                   ),
@@ -732,15 +786,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.account_circle, color: Color(0xFF1572E8)),
+                                          Icon(Icons.account_circle,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Karyawan',
@@ -757,40 +814,59 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaKaryawanController,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Karyawan *',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
-                                        autovalidateMode: AutovalidateMode.onUserInteraction, // Tambahkan ini
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
+                                        autovalidateMode: AutovalidateMode
+                                            .onUserInteraction, // Tambahkan ini
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
-                                        controller: tempatLahirKaryawanController,
+                                        controller:
+                                            tempatLahirKaryawanController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Karyawan *',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
-                                        controller: tanggalLahirKaryawanController,
+                                        controller:
+                                            tanggalLahirKaryawanController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tanggal Lahir Karyawan *',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
-                                            initialDate: tanggalLahirKaryawanController.text.isNotEmpty
-                                                ? DateTime.tryParse(tanggalLahirKaryawanController.text) ?? DateTime.now()
-                                                : DateTime.now(),
+                                            initialDate:
+                                                tanggalLahirKaryawanController
+                                                        .text.isNotEmpty
+                                                    ? DateTime.tryParse(
+                                                            tanggalLahirKaryawanController
+                                                                .text) ??
+                                                        DateTime.now()
+                                                    : DateTime.now(),
                                             firstDate: DateTime(1900),
                                             lastDate: DateTime.now(),
                                           );
                                           if (picked != null) {
-                                            tanggalLahirKaryawanController.text =
+                                            tanggalLahirKaryawanController
+                                                    .text =
                                                 "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
                                           }
                                         },
@@ -803,41 +879,53 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           labelText: 'Alamat Karyawan *',
                                           prefixIcon: Icon(Icons.home_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tglMulaiKerjaController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tanggal Mulai Kerja *',
-                                          prefixIcon: Icon(Icons.date_range_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.date_range_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: jabatanTerakhirController,
                                         decoration: const InputDecoration(
                                           labelText: 'Jabatan Terakhir *',
-                                          prefixIcon: Icon(Icons.work_history_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.work_history_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: sectionController,
                                         decoration: const InputDecoration(
                                           labelText: 'Section *',
-                                          prefixIcon: Icon(Icons.layers_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.layers_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tanggalSuratController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tanggal Surat',
-                                          prefixIcon: Icon(Icons.event_note_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.event_note_outlined),
                                         ),
                                         readOnly: true,
                                       ),
@@ -850,15 +938,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.family_restroom, color: Color(0xFF1572E8)),
+                                          Icon(Icons.family_restroom,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Pasangan',
@@ -875,48 +966,69 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaPasanganController,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Pasangan *',
-                                          prefixIcon: Icon(Icons.person_2_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.person_2_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: statusPasanganController,
                                         decoration: const InputDecoration(
-                                          labelText: 'Status Pasangan (Suami/Istri) *',
+                                          labelText:
+                                              'Status Pasangan (Suami/Istri) *',
                                           prefixIcon: Icon(Icons.transgender),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
-                                        controller: tempatLahirPasanganController,
+                                        controller:
+                                            tempatLahirPasanganController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Pasangan *',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
-                                        controller: tanggalLahirPasanganController,
+                                        controller:
+                                            tanggalLahirPasanganController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tanggal Lahir Pasangan *',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
-                                            initialDate: tanggalLahirPasanganController.text.isNotEmpty
-                                                ? DateTime.tryParse(tanggalLahirPasanganController.text) ?? DateTime.now()
-                                                : DateTime.now(),
+                                            initialDate:
+                                                tanggalLahirPasanganController
+                                                        .text.isNotEmpty
+                                                    ? DateTime.tryParse(
+                                                            tanggalLahirPasanganController
+                                                                .text) ??
+                                                        DateTime.now()
+                                                    : DateTime.now(),
                                             firstDate: DateTime(1900),
                                             lastDate: DateTime.now(),
                                           );
                                           if (picked != null) {
-                                            tanggalLahirPasanganController.text =
+                                            tanggalLahirPasanganController
+                                                    .text =
                                                 "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
                                           }
                                         },
@@ -931,15 +1043,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                          Icon(Icons.child_care,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Anak Pertama (Opsional)',
@@ -956,27 +1071,33 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAnak1Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Anak Pertama',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tempatLahirAnak1Controller,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tempat Lahir Anak Pertama',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          labelText:
+                                              'Tempat Lahir Anak Pertama',
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: ttlAnak1Controller,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tanggal Lahir Anak Pertama',
+                                          labelText:
+                                              'Tanggal Lahir Anak Pertama',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -994,7 +1115,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: pendidikanAnak1Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Pendidikan Anak Pertama',
-                                          prefixIcon: Icon(Icons.school_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.school_outlined),
                                         ),
                                       ),
                                     ],
@@ -1006,15 +1128,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                          Icon(Icons.child_care,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Anak Kedua (Opsional)',
@@ -1031,7 +1156,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAnak2Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Anak Kedua',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1039,7 +1165,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: tempatLahirAnak2Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Anak Kedua',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1050,8 +1177,10 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -1069,7 +1198,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: pendidikanAnak2Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Pendidikan Anak Kedua',
-                                          prefixIcon: Icon(Icons.school_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.school_outlined),
                                         ),
                                       ),
                                     ],
@@ -1081,15 +1211,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                          Icon(Icons.child_care,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Anak Ketiga (Opsional)',
@@ -1106,7 +1239,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAnak3Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Anak Ketiga',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1114,19 +1248,23 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: tempatLahirAnak3Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Anak Ketiga',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: ttlAnak3Controller,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tanggal Lahir Anak Ketiga',
+                                          labelText:
+                                              'Tanggal Lahir Anak Ketiga',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -1144,7 +1282,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: pendidikanAnak3Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Pendidikan Anak Ketiga',
-                                          prefixIcon: Icon(Icons.school_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.school_outlined),
                                         ),
                                       ),
                                     ],
@@ -1156,15 +1295,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.info, color: Color(0xFF1572E8)),
+                                          Icon(Icons.info,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Lainnya',
@@ -1181,16 +1323,20 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: unitController,
                                         decoration: const InputDecoration(
                                           labelText: 'Unit *',
-                                          prefixIcon: Icon(Icons.account_tree_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.account_tree_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tanggalSuratController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tanggal Surat',
-                                          prefixIcon: Icon(Icons.event_note_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.event_note_outlined),
                                         ),
                                         readOnly: true,
                                       ),
@@ -1205,15 +1351,20 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                 onPressed: isSending
                                     ? null
                                     : () async {
-                                        if (_formKey.currentState?.validate() ?? false) {
+                                        if (_formKey.currentState?.validate() ??
+                                            false) {
                                           setState(() {
                                             isSending = true;
                                           });
                                           try {
-                                            final prefs = await SharedPreferences.getInstance();
-                                            final idEmployee = prefs.getInt('idEmployee');
+                                            final prefs =
+                                                await SharedPreferences
+                                                    .getInstance();
+                                            final idEmployee =
+                                                prefs.getInt('idEmployee');
                                             if (idEmployee == null) {
-                                              throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
+                                              throw Exception(
+                                                  'ID Employee tidak ditemukan. Harap login ulang.');
                                             }
 
                                             // Tampilkan loading dialog
@@ -1226,13 +1377,15 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                                     SizedBox(
                                                       width: 28,
                                                       height: 28,
-                                                      child: CircularProgressIndicator(),
+                                                      child:
+                                                          CircularProgressIndicator(),
                                                     ),
                                                     SizedBox(width: 20),
                                                     Expanded(
                                                       child: Text(
                                                         'Mohon tunggu, surat sedang diproses...',
-                                                        style: TextStyle(fontSize: 15),
+                                                        style: TextStyle(
+                                                            fontSize: 15),
                                                       ),
                                                     ),
                                                   ],
@@ -1241,15 +1394,19 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                             );
 
                                             // Tentukan endpoint dan data sesuai jenis surat
-                                            String jenisSurat = selectedJenisSurat ?? 'keterangan';
+                                            String jenisSurat =
+                                                selectedJenisSurat ??
+                                                    'keterangan';
                                             String url =
-                                                'http://192.168.100.140:5555/api/Medical/generate-medical-document?jenisSurat=$jenisSurat';
+                                                'http://103.31.235.237:5555/api/Medical/generate-medical-document?jenisSurat=$jenisSurat';
 
                                             Map<String, dynamic> data;
                                             if (jenisSurat == 'pernyataan') {
-                                              data = buildDataPernyataan(idEmployee: idEmployee);
+                                              data = buildDataPernyataan(
+                                                  idEmployee: idEmployee);
                                             } else {
-                                              data = buildDataKeterangan(idEmployee: idEmployee);
+                                              data = buildDataKeterangan(
+                                                  idEmployee: idEmployee);
                                             }
 
                                             final response = await Dio().post(
@@ -1257,23 +1414,30 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                               options: Options(
                                                 headers: {
                                                   'accept': '*/*',
-                                                  'Content-Type': 'application/json',
+                                                  'Content-Type':
+                                                      'application/json',
                                                 },
-                                                responseType: ResponseType.bytes,
+                                                responseType:
+                                                    ResponseType.bytes,
                                               ),
                                               data: data,
                                             );
 
-                                            Navigator.of(context).pop(); // Tutup dialog loading
+                                            Navigator.of(context)
+                                                .pop(); // Tutup dialog loading
 
                                             if (response.statusCode == 200) {
-                                              final directory = Directory('/storage/emulated/0/Download');
+                                              final directory = Directory(
+                                                  '/storage/emulated/0/Download');
                                               if (!directory.existsSync()) {
-                                                directory.createSync(recursive: true);
+                                                directory.createSync(
+                                                    recursive: true);
                                               }
-                                              final filePath = '${directory.path}/medical_$idEmployee.pdf';
+                                              final filePath =
+                                                  '${directory.path}/medical_$idEmployee.pdf';
                                               final file = File(filePath);
-                                              await file.writeAsBytes(response.data!);
+                                              await file
+                                                  .writeAsBytes(response.data!);
 
                                               setState(() {
                                                 isDownloaded = true;
@@ -1284,25 +1448,37 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                               // Tutup dropdown jika masih terbuka
                                               FocusScope.of(context).unfocus();
 
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('File berhasil didownload ke $filePath')),
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        'File berhasil didownload ke $filePath')),
                                               );
 
                                               // Reload halaman setelah download selesai
-                                              Navigator.of(context).pushReplacement(
+                                              Navigator.of(context)
+                                                  .pushReplacement(
                                                 MaterialPageRoute(
-                                                  builder: (context) => const MedicPasutriPage(),
+                                                  builder: (context) =>
+                                                      const MedicPasutriPage(),
                                                 ),
                                               );
                                             } else {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('Gagal mengirim data: ${response.statusCode}')),
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        'Gagal mengirim data: ${response.statusCode}')),
                                               );
                                             }
                                           } catch (e) {
-                                            Navigator.of(context).pop(); // Tutup dialog loading jika error
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Terjadi kesalahan: $e')),
+                                            Navigator.of(context)
+                                                .pop(); // Tutup dialog loading jika error
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      'Terjadi kesalahan: $e')),
                                             );
                                           } finally {
                                             setState(() {
@@ -1314,11 +1490,15 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           showDialog(
                                             context: context,
                                             builder: (context) => AlertDialog(
-                                              title: const Text('Lengkapi Data'),
-                                              content: const Text('Silakan lengkapi semua data yang wajib diisi sebelum mengirim.'),
+                                              title:
+                                                  const Text('Lengkapi Data'),
+                                              content: const Text(
+                                                  'Silakan lengkapi semua data yang wajib diisi sebelum mengirim.'),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(context).pop(),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
                                                   child: const Text('OK'),
                                                 ),
                                               ],
@@ -1326,7 +1506,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           );
                                         }
                                       },
-                                icon: const Icon(Icons.description, color: Colors.white),
+                                icon: const Icon(Icons.description,
+                                    color: Colors.white),
                                 label: Text(
                                   selectedJenisSurat == 'pernyataan'
                                       ? 'Buat Surat Pernyataan'
@@ -1348,7 +1529,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: const [
-                                  Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                                  Icon(Icons.info_outline,
+                                      color: Colors.blue, size: 18),
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -1380,15 +1562,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.account_circle, color: Color(0xFF1572E8)),
+                                          Icon(Icons.account_circle,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Pegawai',
@@ -1405,9 +1590,12 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaKaryawanController,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Pegawai *',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
@@ -1416,7 +1604,9 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           labelText: 'NIK Pegawai *',
                                           prefixIcon: Icon(Icons.credit_card),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
@@ -1468,7 +1658,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: tahunController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tahun',
-                                          prefixIcon: Icon(Icons.calendar_today),
+                                          prefixIcon:
+                                              Icon(Icons.calendar_today),
                                         ),
                                         readOnly: true,
                                       ),
@@ -1481,15 +1672,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.family_restroom, color: Color(0xFF1572E8)),
+                                          Icon(Icons.family_restroom,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Suami',
@@ -1506,18 +1700,24 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaSuamiController,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Suami *',
-                                          prefixIcon: Icon(Icons.person_2_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.person_2_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tempatLahirSuamiController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Suami *',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
@@ -1526,13 +1726,21 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           labelText: 'Tanggal Lahir Suami *',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
-                                            initialDate: tanggalLahirSuamiController.text.isNotEmpty
-                                                ? DateTime.tryParse(tanggalLahirSuamiController.text) ?? DateTime.now()
+                                            initialDate: tanggalLahirSuamiController
+                                                    .text.isNotEmpty
+                                                ? DateTime.tryParse(
+                                                        tanggalLahirSuamiController
+                                                            .text) ??
+                                                    DateTime.now()
                                                 : DateTime.now(),
                                             firstDate: DateTime(1900),
                                             lastDate: DateTime.now(),
@@ -1549,19 +1757,23 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: bidangUsahaController,
                                         decoration: const InputDecoration(
                                           labelText: 'Bidang Usaha Suami',
-                                          prefixIcon: Icon(Icons.business_center_outlined),
+                                          prefixIcon: Icon(
+                                              Icons.business_center_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tanggalSuamiController,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tanggal Berhenti Kerja Suami',
+                                          labelText:
+                                              'Tanggal Berhenti Kerja Suami',
                                           prefixIcon: Icon(Icons.event_busy),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -1583,15 +1795,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                          Icon(Icons.child_care,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Anak Pertama (Opsional)',
@@ -1608,27 +1823,33 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAnak1Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Anak Pertama',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tempatLahirAnak1Controller,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tempat Lahir Anak Pertama',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          labelText:
+                                              'Tempat Lahir Anak Pertama',
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: ttlAnak1Controller,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tanggal Lahir Anak Pertama',
+                                          labelText:
+                                              'Tanggal Lahir Anak Pertama',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -1646,7 +1867,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: pendidikanAnak1Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Pendidikan Anak Pertama',
-                                          prefixIcon: Icon(Icons.school_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.school_outlined),
                                         ),
                                       ),
                                     ],
@@ -1658,15 +1880,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                          Icon(Icons.child_care,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Anak Kedua (Opsional)',
@@ -1683,7 +1908,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAnak2Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Anak Kedua',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1691,7 +1917,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: tempatLahirAnak2Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Anak Kedua',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1702,8 +1929,10 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -1721,7 +1950,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: pendidikanAnak2Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Pendidikan Anak Kedua',
-                                          prefixIcon: Icon(Icons.school_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.school_outlined),
                                         ),
                                       ),
                                     ],
@@ -1733,15 +1963,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                          Icon(Icons.child_care,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Anak Ketiga (Opsional)',
@@ -1758,7 +1991,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: namaAnak3Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Nama Anak Ketiga',
-                                          prefixIcon: Icon(Icons.person_outline),
+                                          prefixIcon:
+                                              Icon(Icons.person_outline),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1766,19 +2000,23 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: tempatLahirAnak3Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Tempat Lahir Anak Ketiga',
-                                          prefixIcon: Icon(Icons.place_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.place_outlined),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: ttlAnak3Controller,
                                         decoration: const InputDecoration(
-                                          labelText: 'Tanggal Lahir Anak Ketiga',
+                                          labelText:
+                                              'Tanggal Lahir Anak Ketiga',
                                           prefixIcon: Icon(Icons.cake_outlined),
                                         ),
                                         onTap: () async {
-                                          FocusScope.of(context).requestFocus(FocusNode());
-                                          DateTime? picked = await showDatePicker(
+                                          FocusScope.of(context)
+                                              .requestFocus(FocusNode());
+                                          DateTime? picked =
+                                              await showDatePicker(
                                             context: context,
                                             initialDate: DateTime.now(),
                                             firstDate: DateTime(1900),
@@ -1796,7 +2034,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: pendidikanAnak3Controller,
                                         decoration: const InputDecoration(
                                           labelText: 'Pendidikan Anak Ketiga',
-                                          prefixIcon: Icon(Icons.school_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.school_outlined),
                                         ),
                                       ),
                                     ],
@@ -1808,15 +2047,18 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: const [
-                                          Icon(Icons.info, color: Color(0xFF1572E8)),
+                                          Icon(Icons.info,
+                                              color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
                                           Text(
                                             'Data Lainnya',
@@ -1833,16 +2075,20 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         controller: unitController,
                                         decoration: const InputDecoration(
                                           labelText: 'Unit *',
-                                          prefixIcon: Icon(Icons.account_tree_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.account_tree_outlined),
                                         ),
-                                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                        validator: (v) => v == null || v.isEmpty
+                                            ? 'Wajib diisi'
+                                            : null,
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
                                         controller: tanggalSuratController,
                                         decoration: const InputDecoration(
                                           labelText: 'Tanggal Surat',
-                                          prefixIcon: Icon(Icons.event_note_outlined),
+                                          prefixIcon:
+                                              Icon(Icons.event_note_outlined),
                                         ),
                                         readOnly: true,
                                       ),
@@ -1857,15 +2103,20 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                 onPressed: isSending
                                     ? null
                                     : () async {
-                                        if (_formKey.currentState?.validate() ?? false) {
+                                        if (_formKey.currentState?.validate() ??
+                                            false) {
                                           setState(() {
                                             isSending = true;
                                           });
                                           try {
-                                            final prefs = await SharedPreferences.getInstance();
-                                            final idEmployee = prefs.getInt('idEmployee');
+                                            final prefs =
+                                                await SharedPreferences
+                                                    .getInstance();
+                                            final idEmployee =
+                                                prefs.getInt('idEmployee');
                                             if (idEmployee == null) {
-                                              throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
+                                              throw Exception(
+                                                  'ID Employee tidak ditemukan. Harap login ulang.');
                                             }
 
                                             // Tampilkan loading dialog
@@ -1878,13 +2129,15 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                                     SizedBox(
                                                       width: 28,
                                                       height: 28,
-                                                      child: CircularProgressIndicator(),
+                                                      child:
+                                                          CircularProgressIndicator(),
                                                     ),
                                                     SizedBox(width: 20),
                                                     Expanded(
                                                       child: Text(
                                                         'Mohon tunggu, surat sedang diproses...',
-                                                        style: TextStyle(fontSize: 15),
+                                                        style: TextStyle(
+                                                            fontSize: 15),
                                                       ),
                                                     ),
                                                   ],
@@ -1893,32 +2146,40 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                             );
 
                                             String url =
-                                                'http://192.168.100.140:5555/api/Medical/generate-medical-document?jenisSurat=pernyataan';
+                                                'http://103.31.235.237:5555/api/Medical/generate-medical-document?jenisSurat=pernyataan';
 
-                                            final data = buildDataPernyataan(idEmployee: idEmployee);
+                                            final data = buildDataPernyataan(
+                                                idEmployee: idEmployee);
 
                                             final response = await Dio().post(
                                               url,
                                               options: Options(
                                                 headers: {
                                                   'accept': '*/*',
-                                                  'Content-Type': 'application/json',
+                                                  'Content-Type':
+                                                      'application/json',
                                                 },
-                                                responseType: ResponseType.bytes,
+                                                responseType:
+                                                    ResponseType.bytes,
                                               ),
                                               data: data,
                                             );
 
-                                            Navigator.of(context).pop(); // Tutup dialog loading
+                                            Navigator.of(context)
+                                                .pop(); // Tutup dialog loading
 
                                             if (response.statusCode == 200) {
-                                              final directory = Directory('/storage/emulated/0/Download');
+                                              final directory = Directory(
+                                                  '/storage/emulated/0/Download');
                                               if (!directory.existsSync()) {
-                                                directory.createSync(recursive: true);
+                                                directory.createSync(
+                                                    recursive: true);
                                               }
-                                              final filePath = '${directory.path}/medical_$idEmployee.pdf';
+                                              final filePath =
+                                                  '${directory.path}/medical_$idEmployee.pdf';
                                               final file = File(filePath);
-                                              await file.writeAsBytes(response.data!);
+                                              await file
+                                                  .writeAsBytes(response.data!);
 
                                               setState(() {
                                                 isDownloaded = true;
@@ -1928,24 +2189,36 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
 
                                               FocusScope.of(context).unfocus();
 
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('File berhasil didownload ke $filePath')),
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        'File berhasil didownload ke $filePath')),
                                               );
 
-                                              Navigator.of(context).pushReplacement(
+                                              Navigator.of(context)
+                                                  .pushReplacement(
                                                 MaterialPageRoute(
-                                                  builder: (context) => const MedicPasutriPage(),
+                                                  builder: (context) =>
+                                                      const MedicPasutriPage(),
                                                 ),
                                               );
                                             } else {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('Gagal mengirim data: ${response.statusCode}')),
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        'Gagal mengirim data: ${response.statusCode}')),
                                               );
                                             }
                                           } catch (e) {
-                                            Navigator.of(context).pop(); // Tutup dialog loading jika error
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Terjadi kesalahan: $e')),
+                                            Navigator.of(context)
+                                                .pop(); // Tutup dialog loading jika error
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      'Terjadi kesalahan: $e')),
                                             );
                                           } finally {
                                             setState(() {
@@ -1956,11 +2229,15 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           showDialog(
                                             context: context,
                                             builder: (context) => AlertDialog(
-                                              title: const Text('Lengkapi Data'),
-                                              content: const Text('Silakan lengkapi semua data yang wajib diisi sebelum mengirim.'),
+                                              title:
+                                                  const Text('Lengkapi Data'),
+                                              content: const Text(
+                                                  'Silakan lengkapi semua data yang wajib diisi sebelum mengirim.'),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(context).pop(),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
                                                   child: const Text('OK'),
                                                 ),
                                               ],
@@ -1968,7 +2245,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                           );
                                         }
                                       },
-                                icon: const Icon(Icons.description, color: Colors.white),
+                                icon: const Icon(Icons.description,
+                                    color: Colors.white),
                                 label: const Text(
                                   'Buat Surat Pernyataan',
                                   style: TextStyle(color: Colors.white),
@@ -1985,7 +2263,8 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: const [
-                                  Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                                  Icon(Icons.info_outline,
+                                      color: Colors.blue, size: 18),
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -2003,7 +2282,6 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                             ],
                           ),
                         ),
-
                     ],
                   ),
                 ),
@@ -2021,7 +2299,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   Future<void> isiIdEslDanNamaEslDariEmployee(int idEmployee) async {
     try {
       final empResp = await Dio().get(
-        'http://192.168.100.140:5555/api/Employees/$idEmployee',
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
         options: Options(headers: {'accept': 'text/plain'}),
       );
       if (empResp.statusCode == 200 && empResp.data != null) {
@@ -2031,7 +2309,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
 
         if (idEsl.isNotEmpty) {
           final eslResp = await Dio().get(
-            'http://192.168.100.140:5555/api/Esls',
+            'http://103.31.235.237:5555/api/Esls',
             options: Options(headers: {'accept': 'text/plain'}),
           );
           if (eslResp.statusCode == 200 && eslResp.data is List) {
@@ -2056,14 +2334,14 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   Future<void> isiPlandivDanDepartementDariEmployee(int idEmployee) async {
     try {
       final empResp = await Dio().get(
-        'http://192.168.100.140:5555/api/Employees/$idEmployee',
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
         options: Options(headers: {'accept': 'text/plain'}),
       );
       if (empResp.statusCode == 200 && empResp.data != null) {
         final idSection = empResp.data['IdSection']?.toString() ?? '';
         if (idSection.isNotEmpty) {
           final unitsResp = await Dio().get(
-            'http://192.168.100.140:5555/api/Units',
+            'http://103.31.235.237:5555/api/Units',
             options: Options(headers: {'accept': 'text/plain'}),
           );
           if (unitsResp.statusCode == 200 && unitsResp.data is List) {
@@ -2109,7 +2387,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       if (idEmployee == null) return;
 
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Employees/$idEmployee',
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
         options: Options(headers: {'accept': 'text/plain'}),
       );
 
@@ -2122,9 +2400,12 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
           tanggalLahirSuamiController.text = pasangan['TglLahirPasangan'] ?? '';
 
           final List children = pasangan['Children'] ?? [];
-          pendidikanAnak1Controller.text = children.length > 0 ? (children[0]['PendidikanAnak'] ?? '') : '';
-          pendidikanAnak2Controller.text = children.length > 1 ? (children[1]['PendidikanAnak'] ?? '') : '';
-          pendidikanAnak3Controller.text = children.length > 2 ? ( children[2]['PendidikanAnak'] ?? '') : '';
+          pendidikanAnak1Controller.text =
+              children.length > 0 ? (children[0]['PendidikanAnak'] ?? '') : '';
+          pendidikanAnak2Controller.text =
+              children.length > 1 ? (children[1]['PendidikanAnak'] ?? '') : '';
+          pendidikanAnak3Controller.text =
+              children.length > 2 ? (children[2]['PendidikanAnak'] ?? '') : '';
         }
       }
     } catch (e) {
@@ -2137,39 +2418,40 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   }
 
   Future<void> isiOtomatisAtasanPICDariSection() async {
-  try {
-    final idSection = idSectionController.text; // Pastikan sudah diisi dari data employee
-    if (idSection.isEmpty) return;
+    try {
+      final idSection =
+          idSectionController.text; // Pastikan sudah diisi dari data employee
+      if (idSection.isEmpty) return;
 
-    final response = await Dio().get(
-      'http://192.168.100.140:5555/api/Sections',
-      options: Options(headers: {'accept': 'text/plain'}),
-    );
-
-    if (response.statusCode == 200 && response.data is List) {
-      final List sections = response.data;
-      // Cari section dengan Id yang sama
-      final section = sections.firstWhere(
-        (s) => (s['Id']?.toString() ?? '') == idSection,
-        orElse: () => null,
+      final response = await Dio().get(
+        'http://103.31.235.237:5555/api/Sections',
+        options: Options(headers: {'accept': 'text/plain'}),
       );
-      if (section != null && section['Employees'] is List) {
-        // Cari employee dengan JobTitle "PIC"
-        final pic = (section['Employees'] as List).firstWhere(
-          (e) => (e['JobTitle'] ?? '').toString().toUpperCase() == 'PIC',
+
+      if (response.statusCode == 200 && response.data is List) {
+        final List sections = response.data;
+        // Cari section dengan Id yang sama
+        final section = sections.firstWhere(
+          (s) => (s['Id']?.toString() ?? '') == idSection,
           orElse: () => null,
         );
-        if (pic != null) {
-          namaAtasanController.text = pic['EmployeeName'] ?? '';
-          jabatanAtasanController.text = pic['JobTitle'] ?? '';
+        if (section != null && section['Employees'] is List) {
+          // Cari employee dengan JobTitle "PIC"
+          final pic = (section['Employees'] as List).firstWhere(
+            (e) => (e['JobTitle'] ?? '').toString().toUpperCase() == 'PIC',
+            orElse: () => null,
+          );
+          if (pic != null) {
+            namaAtasanController.text = pic['EmployeeName'] ?? '';
+            jabatanAtasanController.text = pic['JobTitle'] ?? '';
+          }
         }
       }
+    } catch (e) {
+      namaAtasanController.text = '';
+      jabatanAtasanController.text = '';
     }
-  } catch (e) {
-    namaAtasanController.text = '';
-    jabatanAtasanController.text = '';
   }
-}
 
   Map<String, dynamic> buildDataPernyataan({
     required int idEmployee,
@@ -2182,7 +2464,6 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       "{{nama_perusahaan}}": namaPerusahaanController.text,
       "{{alamat_perusahaan}}": alamatPerusahaanController.text,
       "{{nama_pegawai}}": namaKaryawanController.text,
-
 
       "{{id_esl_pegawai}}": idEslController.text,
       "{{nama_esl}}": namaEslController.text,
@@ -2257,22 +2538,23 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   }
 
   Future<void> fetchAndSaveIdEmployeeFromEmployee(int idEmployee) async {
-  try {
-    final response = await Dio().get(
-      'http://192.168.100.140:5555/api/Employees/$idEmployee',
-      options: Options(headers: {'accept': 'text/plain'}),
-    );
+    try {
+      final response = await Dio().get(
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
+        options: Options(headers: {'accept': 'text/plain'}),
+      );
 
-    if (response.statusCode == 200 && response.data != null) {
-      final employee = response.data;
-      final id = employee['id']; // atau 'Id'
-      if (id != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('idEmployee', id);
-        setState(() {});
+      if (response.statusCode == 200 && response.data != null) {
+        final employee = response.data;
+        final id = employee['id']; // atau 'Id'
+        if (id != null) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('idEmployee', id);
+          setState(() {});
+        }
       }
+    } catch (e) {
+      // error handling
     }
-  } catch (e) {
-    // error handling
   }
-}}
+}

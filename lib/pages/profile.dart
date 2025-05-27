@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:indocement_apk/pages/edit_profile.dart';
+import 'package:indocement_apk/pages/faq.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -65,7 +66,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -84,7 +85,7 @@ class _ProfilePageState extends State<ProfilePage> {
           // Tambahkan URL dasar jika UrlFoto adalah path relatif
           if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
             if (data['UrlFoto'].startsWith('/')) {
-              _urlFoto = 'http://192.168.100.140:5555${data['UrlFoto']}';
+              _urlFoto = 'http://103.31.235.237:5555${data['UrlFoto']}';
             } else {
               _urlFoto = data['UrlFoto'];
             }
@@ -254,7 +255,12 @@ class _ProfilePageState extends State<ProfilePage> {
               MenuItem(
                 icon: 'assets/icons/faq.svg',
                 title: 'FAQ',
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => FAQPage()),
+                  );
+                },
               ),
               MenuItem(
                 icon: 'assets/icons/logout.svg',

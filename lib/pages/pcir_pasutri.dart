@@ -19,7 +19,8 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
   String? urlKk;
   String? urlSuratNikah;
   bool isLoading = false;
-  Map<String, File?> selectedImages = {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
+  Map<String, File?> selectedImages =
+      {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
 
     try {
       final response = await Dio().get(
-        'http://192.168.100.140:5555/api/Bpjs',
+        'http://103.31.235.237:5555/api/Bpjs',
         queryParameters: {'idEmployee': idEmployee},
       );
 
@@ -99,147 +100,151 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
     }
   }
 
-Future<void> uploadDokumenPasutriGanda() async {
-  try {
-    setState(() => isLoading = true);
+  Future<void> uploadDokumenPasutriGanda() async {
+    try {
+      setState(() => isLoading = true);
 
-    // Ambil data dari SharedPreferences
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int? id = prefs.getInt('Id');
-    final int? employeeId = prefs.getInt('IdEmployee');
-    final String? anggotaBpjs = prefs.getString('AnggotaBpjs');
+      // Ambil data dari SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final int? id = prefs.getInt('Id');
+      final int? employeeId = prefs.getInt('IdEmployee');
+      final String? anggotaBpjs = prefs.getString('AnggotaBpjs');
 
-    if (id == null || employeeId == null || anggotaBpjs == null) {
-      throw Exception('Data ID, IdEmployee, atau AnggotaBpjs tidak ditemukan.');
-    }
+      if (id == null || employeeId == null || anggotaBpjs == null) {
+        throw Exception(
+            'Data ID, IdEmployee, atau AnggotaBpjs tidak ditemukan.');
+      }
 
-    // Siapkan data untuk dikirim ke API
-    final formData = FormData();
+      // Siapkan data untuk dikirim ke API
+      final formData = FormData();
 
-    // Tambahkan file UrlKk ke FormData
-    if (selectedImages['UrlKk'] != null) {
-      formData.files.add(
-        MapEntry(
-          'Files',
-          await MultipartFile.fromFile(
-            selectedImages['UrlKk']!.path,
-            filename: basename(selectedImages['UrlKk']!.path),
+      // Tambahkan file UrlKk ke FormData
+      if (selectedImages['UrlKk'] != null) {
+        formData.files.add(
+          MapEntry(
+            'Files',
+            await MultipartFile.fromFile(
+              selectedImages['UrlKk']!.path,
+              filename: basename(selectedImages['UrlKk']!.path),
+            ),
           ),
+        );
+      }
+
+      // Tambahkan file UrlSuratNikah ke FormData
+      if (selectedImages['UrlSuratNikah'] != null) {
+        formData.files.add(
+          MapEntry(
+            'Files',
+            await MultipartFile.fromFile(
+              selectedImages['UrlSuratNikah']!.path,
+              filename: basename(selectedImages['UrlSuratNikah']!.path),
+            ),
+          ),
+        );
+      }
+
+      // Tambahkan field tambahan ke FormData
+      formData.fields.addAll([
+        MapEntry('idEmployee', employeeId.toString()),
+        MapEntry('FileTypes', 'UrlKk'),
+        MapEntry('FileTypes', 'UrlSuratNikah'),
+        MapEntry('AnggotaBpjs', anggotaBpjs),
+      ]);
+
+      // Kirim data ke API dengan metode PUT
+      final uploadResponse = await Dio().put(
+        'http://103.31.235.237:5555/api/Bpjs/upload/$id',
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         ),
       );
-    }
 
-    // Tambahkan file UrlSuratNikah ke FormData
-    if (selectedImages['UrlSuratNikah'] != null) {
-      formData.files.add(
-        MapEntry(
-          'Files',
-          await MultipartFile.fromFile(
-            selectedImages['UrlSuratNikah']!.path,
-            filename: basename(selectedImages['UrlSuratNikah']!.path),
-          ),
-        ),
-      );
-    }
-
-    // Tambahkan field tambahan ke FormData
-    formData.fields.addAll([
-      MapEntry('idEmployee', employeeId.toString()),
-      MapEntry('FileTypes', 'UrlKk'),
-      MapEntry('FileTypes', 'UrlSuratNikah'),
-      MapEntry('AnggotaBpjs', anggotaBpjs),
-    ]);
-
-    // Kirim data ke API dengan metode PUT
-    final uploadResponse = await Dio().put(
-      'http://192.168.100.140:5555/api/Bpjs/upload/$id',
-      data: formData,
-      options: Options(
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      ),
-    );
-
-    if (uploadResponse.statusCode == 200) {
+      if (uploadResponse.statusCode == 200) {
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          const SnackBar(content: Text('File berhasil diunggah.')),
+        );
+        await _fetchUploadedData(); // Refresh data setelah upload
+      } else {
+        throw Exception('Upload gagal: ${uploadResponse.statusCode}');
+      }
+    } catch (e) {
       ScaffoldMessenger.of(this.context).showSnackBar(
-        const SnackBar(content: Text('File berhasil diunggah.')),
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
-      await _fetchUploadedData(); // Refresh data setelah upload
-    } else {
-      throw Exception('Upload gagal: ${uploadResponse.statusCode}');
+    } finally {
+      setState(() => isLoading = false);
     }
-  } catch (e) {
-    ScaffoldMessenger.of(this.context).showSnackBar(
-      SnackBar(content: Text('Terjadi kesalahan: $e')),
-    );
-  } finally {
-    setState(() => isLoading = false);
   }
-}
 
-void _showUploadPrompt() {
-  showDialog(
-    context: this.context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16), // Membuat sudut membulat
-        ),
-        title: Row(
-          children: const [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28), // Ikon peringatan
-            SizedBox(width: 8),
-            Text(
-              'Data Belum Tersedia',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Data KK dan Surat Nikah belum diunggah. Silakan unggah data terlebih dahulu di halaman BPJS Kesehatan.',
-          style: TextStyle(fontSize: 16, color: Colors.black87),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Tutup popup
-              Navigator.pop(context); // Kembali ke halaman PCIR Page
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey, // Warna teks tombol
-            ),
-            child: const Text(
-              'Batal',
-              style: TextStyle(fontSize: 16),
-            ),
+  void _showUploadPrompt() {
+    showDialog(
+      context: this.context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16), // Membuat sudut membulat
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Tutup popup
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const BPJSKaryawanPage(), // Ganti dengan halaman BPJS Kesehatan
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1572E8), // Warna tombol biru
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8), // Membuat sudut membulat
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded,
+                  color: Colors.orange, size: 28), // Ikon peringatan
+              SizedBox(width: 8),
+              Text(
+                'Data Belum Tersedia',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Data KK dan Surat Nikah belum diunggah. Silakan unggah data terlebih dahulu di halaman BPJS Kesehatan.',
+            style: TextStyle(fontSize: 16, color: Colors.black87),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Tutup popup
+                Navigator.pop(context); // Kembali ke halaman PCIR Page
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey, // Warna teks tombol
+              ),
+              child: const Text(
+                'Batal',
+                style: TextStyle(fontSize: 16),
               ),
             ),
-            child: const Text(
-              'Unggah Sekarang',
-              style: TextStyle(fontSize: 16, color: Colors.white),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Tutup popup
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const BPJSKaryawanPage(), // Ganti dengan halaman BPJS Kesehatan
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1572E8), // Warna tombol biru
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(8), // Membuat sudut membulat
+                ),
+              ),
+              child: const Text(
+                'Unggah Sekarang',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
             ),
-          ),
-        ],
-      );
-    },
-  );
-}
+          ],
+        );
+      },
+    );
+  }
 
   void _openPdfViewer(String url, String title) {
     Navigator.push(
@@ -265,7 +270,8 @@ void _showUploadPrompt() {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red), // Ikon PDF
+            const Icon(Icons.picture_as_pdf,
+                size: 40, color: Colors.red), // Ikon PDF
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -273,7 +279,8 @@ void _showUploadPrompt() {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -341,7 +348,8 @@ void _showUploadPrompt() {
                     const SizedBox(height: 8),
                     Text(
                       selectedImages[fieldName] != null
-                          ? basename(selectedImages[fieldName]!.path) // Hanya nama file
+                          ? basename(selectedImages[fieldName]!
+                              .path) // Hanya nama file
                           : 'Belum ada file yang dipilih',
                       style: const TextStyle(
                         fontSize: 14,
@@ -370,7 +378,8 @@ void _showUploadPrompt() {
           ),
         ),
         backgroundColor: const Color(0xFF1572E8),
-        iconTheme: const IconThemeData(color: Colors.white), // Icon back juga putih
+        iconTheme:
+            const IconThemeData(color: Colors.white), // Icon back juga putih
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -383,7 +392,8 @@ void _showUploadPrompt() {
                     // Data yang Telah Diunggah
                     const Text(
                       'Data yang Telah Diunggah',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     _buildUploadedFileBox(urlKk, 'Kartu Keluarga'),
@@ -393,7 +403,8 @@ void _showUploadPrompt() {
                     // Perbarui Data
                     const Text(
                       'Perbarui Data',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
 
@@ -411,7 +422,8 @@ void _showUploadPrompt() {
                           children: [
                             const Text(
                               'Upload Dokumen',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 16),
                             _buildBox(

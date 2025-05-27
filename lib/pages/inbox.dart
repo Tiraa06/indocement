@@ -76,7 +76,7 @@ class _InboxPageState extends State<InboxPage> {
   Future<void> _fetchRooms() async {
     if (_employeeId == null || !mounted) return;
     try {
-      final url = Uri.parse('http://192.168.100.140:5555/api/ChatRooms');
+      final url = Uri.parse('http://103.31.235.237:5555/api/ChatRooms');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -109,7 +109,7 @@ class _InboxPageState extends State<InboxPage> {
       List<Map<String, dynamic>> allMessages = [];
       for (String roomId in _roomIds) {
         final url = Uri.parse(
-            'http://192.168.100.140:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
+            'http://103.31.235.237:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
         final response = await http.get(url);
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -166,16 +166,22 @@ class _InboxPageState extends State<InboxPage> {
     });
     try {
       final response = await http.get(Uri.parse(
-          'http://192.168.100.140:5555/api/keluhans?employeeId=$_employeeId'));
+          'http://103.31.235.237:5555/api/keluhans?employeeId=$_employeeId'));
+      print('Fetch Complaints Status: ${response.statusCode}');
+      print('Fetch Complaints Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
             _complaints =
                 (data as List).cast<Map<String, dynamic>>().where((complaint) {
-              return complaint['IdEmployee']?.toString() ==
-                  _employeeId.toString();
+              final isMatch =
+                  complaint['IdEmployee']?.toString() == _employeeId.toString();
+              print(
+                  'Complaint Id=${complaint['Id']}, IdEmployee=${complaint['IdEmployee']}, MatchesEmployeeId=$isMatch');
+              return isMatch;
             }).toList();
+            print('Filtered Complaints: $_complaints');
             _isLoading = false;
           });
         }
@@ -210,7 +216,7 @@ class _InboxPageState extends State<InboxPage> {
     });
     try {
       final response = await http.get(Uri.parse(
-          'http://192.168.100.140:5555/api/bpjs?employeeId=$_employeeId'));
+          'http://103.31.235.237:5555/api/bpjs?employeeId=$_employeeId'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
@@ -250,7 +256,7 @@ class _InboxPageState extends State<InboxPage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://192.168.100.140:5555/api/VerifData/requests/$idSource'),
+            'http://103.31.235.237:5555/api/VerifData/requests/$idSource'),
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -278,7 +284,7 @@ class _InboxPageState extends State<InboxPage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://192.168.100.140:5555/api/VerifData/requests?employeeId=$_employeeId'),
+            'http://103.31.235.237:5555/api/VerifData/requests?employeeId=$_employeeId'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
@@ -335,7 +341,7 @@ class _InboxPageState extends State<InboxPage> {
   Future<void> _updateServerStatus(String messageId, String status) async {
     try {
       final url = Uri.parse(
-          'http://192.168.100.140:5555/api/ChatMessages/update-status/$messageId');
+          'http://103.31.235.237:5555/api/ChatMessages/update-status/$messageId');
       final response = await http.put(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -386,6 +392,8 @@ class _InboxPageState extends State<InboxPage> {
       _isLoading = true;
     });
     await _fetchMessages();
+    await _fetchComplaints();
+    await _fetchBpjsData();
     await _fetchVerifData(forceFetch: true);
   }
 
@@ -511,11 +519,11 @@ class _InboxPageState extends State<InboxPage> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _selectedTab == 'Keluhan'
+                  : _selectedTab == 'Permintaan Karyawan'
                       ? _complaints.isEmpty
                           ? Center(
                               child: Text(
-                                "No complaints found.",
+                                "No complaints found. Try submitting a new complaint.",
                                 style: GoogleFonts.poppins(
                                     fontSize: fontSizeLabel,
                                     color: Colors.black87),
@@ -541,7 +549,7 @@ class _InboxPageState extends State<InboxPage> {
                                 final urlFotoKeluhan =
                                     complaint['UrlFotoKeluhan']?.toString() ??
                                         complaint['PhotoUrl']?.toString();
-                                final baseUrl = 'http://192.168.100.140:5555';
+                                final baseUrl = 'http://103.31.235.237:5555';
                                 final imageUrl = urlFotoKeluhan != null &&
                                         urlFotoKeluhan.isNotEmpty
                                     ? (urlFotoKeluhan.startsWith('http')
@@ -602,6 +610,18 @@ class _InboxPageState extends State<InboxPage> {
                                                     fontSize: fontSizeLabel - 2,
                                                     color: Colors.grey),
                                               ),
+                                              if (complaint['NamaFile'] !=
+                                                      null &&
+                                                  complaint['NamaFile']
+                                                      .toString()
+                                                      .isNotEmpty)
+                                                Text(
+                                                  "Attachment: ${complaint['NamaFile']}",
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize:
+                                                          fontSizeLabel - 2,
+                                                      color: Colors.blue),
+                                                ),
                                             ],
                                           ),
                                         ),

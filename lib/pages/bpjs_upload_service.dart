@@ -14,7 +14,7 @@ Future<void> uploadBpjsDocument({
   required String fieldName, // contoh: urlKk atau urlSuratNikah
   required File file,
 }) async {
-  final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
+  final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload');
 
   var request = http.MultipartRequest('POST', uri);
   request.fields['idEmployee'] = idEmployee.toString();
@@ -52,12 +52,13 @@ Future<void> uploadBpjsDocumentAsPdf({
     final pdfFile = await _convertImageToPdf(compressedFile);
 
     // 3. Kirim PDF ke API
-    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
     request.fields['idEmployee'] = idEmployee.toString();
     request.fields['anggotaBpjs'] = anggotaBpjs;
     request.fields['tglPengajuan'] = DateTime.now().toIso8601String();
-    request.files.add(await http.MultipartFile.fromPath(fieldName, pdfFile.path));
+    request.files
+        .add(await http.MultipartFile.fromPath(fieldName, pdfFile.path));
 
     print("Fields: ${request.fields}");
     print("Files: ${request.files.map((f) => f.filename).toList()}");
@@ -85,14 +86,15 @@ Future<void> uploadBpjsDocumentCompressed({
     final compressedImage = await _compressImage(file);
     final compressedFile = File(compressedImage.path);
 
-    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
     request.fields['idEmployee'] = idEmployee.toString();
     request.fields['anggotaBpjs'] = anggotaBpjs;
     request.fields['fieldName'] = fieldName;
 
     // Kirim file gambar langsung (bukan PDF)
-    request.files.add(await http.MultipartFile.fromPath('Files', compressedFile.path));
+    request.files
+        .add(await http.MultipartFile.fromPath('Files', compressedFile.path));
     request.fields['FileTypes'] = fieldName;
 
     print("Fields: ${request.fields}");
@@ -106,13 +108,15 @@ Future<void> uploadBpjsDocumentCompressed({
 
       // Ambil ID BPJS terbaru untuk idSource
       final bpjsResp = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Bpjs?idEmployee=$idEmployee'),
+        Uri.parse('http://103.31.235.237:5555/api/Bpjs?idEmployee=$idEmployee'),
       );
       if (bpjsResp.statusCode == 200) {
         final List<dynamic> bpjsData = jsonDecode(bpjsResp.body);
         // Cari entry terbaru berdasarkan anggotaBpjs dan fieldName (jika perlu)
         final matchingEntry = bpjsData.lastWhere(
-          (item) => item['IdEmployee'] == idEmployee && item['AnggotaBpjs'] == anggotaBpjs,
+          (item) =>
+              item['IdEmployee'] == idEmployee &&
+              item['AnggotaBpjs'] == anggotaBpjs,
           orElse: () => null,
         );
         if (matchingEntry != null) {
@@ -150,7 +154,7 @@ Future<void> uploadBpjsDocumentsCompressed({
       throw Exception("Jumlah Files dan FileTypes harus sama.");
     }
 
-    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
 
     // Tambahkan field ke request
@@ -164,8 +168,10 @@ Future<void> uploadBpjsDocumentsCompressed({
 
     // Tambahkan file dan tipe file
     for (int i = 0; i < files.length; i++) {
-      request.files.add(await http.MultipartFile.fromPath('Files', files[i].path));
-      request.fields['FileTypes[$i]'] = fieldNames[i]; // Format array untuk FileTypes
+      request.files
+          .add(await http.MultipartFile.fromPath('Files', files[i].path));
+      request.fields['FileTypes[$i]'] =
+          fieldNames[i]; // Format array untuk FileTypes
     }
 
     print("Fields: ${request.fields}");
@@ -196,7 +202,7 @@ Future<void> uploadBpjsDocuments({
   try {
     // Ambil data dari API untuk mendapatkan ID yang sesuai
     final response = await http.get(
-      Uri.parse('http://192.168.100.140:5555/api/Bpjs?idEmployee=$idEmployee'),
+      Uri.parse('http://103.31.235.237:5555/api/Bpjs?idEmployee=$idEmployee'),
     );
 
     if (response.statusCode == 200) {
@@ -212,7 +218,8 @@ Future<void> uploadBpjsDocuments({
       );
 
       if (matchingEntry == null) {
-        throw Exception('Data untuk ID Employee dan kategori BPJS tidak ditemukan.');
+        throw Exception(
+            'Data untuk ID Employee dan kategori BPJS tidak ditemukan.');
       }
 
       final matchingId = matchingEntry['Id']; // Ambil ID yang sesuai
@@ -220,7 +227,7 @@ Future<void> uploadBpjsDocuments({
       // Siapkan data untuk dikirim ke API
       var request = http.MultipartRequest(
         'PUT',
-        Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload/$matchingId'),
+        Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload/$matchingId'),
       );
 
       // Tambahkan dokumen ke request
@@ -250,7 +257,8 @@ Future<void> uploadBpjsDocuments({
         );
       } else {
         final responseBody = await uploadResponse.stream.bytesToString();
-        throw Exception("Gagal upload: ${uploadResponse.statusCode}, Respons: $responseBody");
+        throw Exception(
+            "Gagal upload: ${uploadResponse.statusCode}, Respons: $responseBody");
       }
     } else {
       throw Exception('Gagal memuat data dari API: ${response.statusCode}');
@@ -271,7 +279,7 @@ Future<void> uploadBpjsDocumentsMultipart({
   File? urlSuratPotongGaji,
 }) async {
   try {
-    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/upload');
+    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload');
     var request = http.MultipartRequest('POST', uri);
 
     // Tambahkan field ke request
@@ -285,13 +293,16 @@ Future<void> uploadBpjsDocumentsMultipart({
       request.files.add(await http.MultipartFile.fromPath('UrlKk', urlKk.path));
     }
     if (urlSuratNikah != null) {
-      request.files.add(await http.MultipartFile.fromPath('UrlSuratNikah', urlSuratNikah.path));
+      request.files.add(await http.MultipartFile.fromPath(
+          'UrlSuratNikah', urlSuratNikah.path));
     }
     if (urlAkteLahir != null) {
-      request.files.add(await http.MultipartFile.fromPath('UrlAkteLahir', urlAkteLahir.path));
+      request.files.add(
+          await http.MultipartFile.fromPath('UrlAkteLahir', urlAkteLahir.path));
     }
     if (urlSuratPotongGaji != null) {
-      request.files.add(await http.MultipartFile.fromPath('UrlSuratPotongGaji', urlSuratPotongGaji.path));
+      request.files.add(await http.MultipartFile.fromPath(
+          'UrlSuratPotongGaji', urlSuratPotongGaji.path));
     }
 
     print("Fields: ${request.fields}");
@@ -323,7 +334,7 @@ Future<void> updateBpjsDocuments({
   String? urlSuratPotongGaji,
 }) async {
   try {
-    final uri = Uri.parse('http://192.168.100.140:5555/api/Bpjs/update');
+    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/update');
     final body = {
       "IdEmployee": idEmployee,
       "AnggotaBpjs": anggotaBpjs ?? "",
@@ -401,7 +412,7 @@ Future<void> sendBpjsNotification({
 }) async {
   // Ambil IdSection dari Employees
   final empResponse = await http.get(
-    Uri.parse('http://192.168.100.140:5555/api/Employees?id=$idEmployee'),
+    Uri.parse('http://103.31.235.237:5555/api/Employees?id=$idEmployee'),
   );
   if (empResponse.statusCode == 200) {
     final List<dynamic> empData = jsonDecode(empResponse.body);
@@ -415,14 +426,15 @@ Future<void> sendBpjsNotification({
       });
       print("🔔 Mengirim notifikasi BPJS: $notifBody");
       final notifResp = await http.post(
-        Uri.parse('http://192.168.100.140:5555/api/Notifications'),
+        Uri.parse('http://103.31.235.237:5555/api/Notifications'),
         headers: {
           'accept': 'text/plain',
           'Content-Type': 'application/json',
         },
         body: notifBody,
       );
-      print("🔔 Response notifikasi: ${notifResp.statusCode} - ${notifResp.body}");
+      print(
+          "🔔 Response notifikasi: ${notifResp.statusCode} - ${notifResp.body}");
       if (notifResp.statusCode == 200 || notifResp.statusCode == 201) {
         print("✅ Notifikasi BPJS terkirim!");
       } else {
@@ -437,7 +449,8 @@ Future<void> startBpjsWatcher() async {
   Timer.periodic(const Duration(seconds: 10), (timer) async {
     try {
       print("🔎 Mengecek data BPJS terbaru di /api/Bpjs/29 ...");
-      final resp = await http.get(Uri.parse('http://192.168.100.140:5555/api/Bpjs/29'));
+      final resp =
+          await http.get(Uri.parse('http://103.31.235.237:5555/api/Bpjs/29'));
       print("📥 Response watcher: ${resp.statusCode} - ${resp.body}");
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -448,14 +461,20 @@ Future<void> startBpjsWatcher() async {
           final anggotaBpjs = data['AnggotaBpjs']?.toString().toLowerCase();
           final anakKe = data['AnakKe'];
           final isPasangan = anggotaBpjs == 'pasangan';
-          final isAnak = anggotaBpjs == 'anak' && anakKe != null && anakKe.toString().isNotEmpty && anakKe.toString() != '0';
+          final isAnak = anggotaBpjs == 'anak' &&
+              anakKe != null &&
+              anakKe.toString().isNotEmpty &&
+              anakKe.toString() != '0';
 
-          if ((isPasangan || isAnak) && (_lastKnownId == null || currentId != _lastKnownId)) {
+          if ((isPasangan || isAnak) &&
+              (_lastKnownId == null || currentId != _lastKnownId)) {
             _lastKnownId = currentId;
-            print("🔔 Ada data BPJS baru untuk pasangan/anak dengan Id: $currentId, mengirim notifikasi...");
+            print(
+                "🔔 Ada data BPJS baru untuk pasangan/anak dengan Id: $currentId, mengirim notifikasi...");
             await sendBpjsNotificationWatcher(data);
           } else {
-            print("ℹ️ Data BPJS bukan pasangan/anak atau belum ada data baru, tidak mengirim notifikasi.");
+            print(
+                "ℹ️ Data BPJS bukan pasangan/anak atau belum ada data baru, tidak mengirim notifikasi.");
           }
         } else {
           print("⚠️ Data BPJS tidak valid atau tidak ada Id.");
@@ -472,13 +491,14 @@ Future<void> startBpjsWatcher() async {
 Future<void> sendBpjsNotificationWatcher(Map data) async {
   final idEmployee = data['IdEmployee'];
   if (idEmployee == null) {
-    print("❌ [Watcher] Tidak ada IdEmployee pada data BPJS, notifikasi dibatalkan.");
+    print(
+        "❌ [Watcher] Tidak ada IdEmployee pada data BPJS, notifikasi dibatalkan.");
     return;
   }
 
   // Ambil IdSection dari Employees sesuai idEmployee pada data BPJS
   final empResponse = await http.get(
-    Uri.parse('http://192.168.100.140:5555/api/Employees?id=$idEmployee'),
+    Uri.parse('http://103.31.235.237:5555/api/Employees?id=$idEmployee'),
   );
   if (empResponse.statusCode == 200) {
     final List<dynamic> empData = jsonDecode(empResponse.body);
@@ -492,23 +512,26 @@ Future<void> sendBpjsNotificationWatcher(Map data) async {
       });
       print("🔔 [Watcher] Mengirim notifikasi BPJS: $notifBody");
       final notifResp = await http.post(
-        Uri.parse('http://192.168.100.140:5555/api/Notifications'),
+        Uri.parse('http://103.31.235.237:5555/api/Notifications'),
         headers: {
           'accept': 'text/plain',
           'Content-Type': 'application/json',
         },
         body: notifBody,
       );
-      print("🔔 [Watcher] Response notifikasi: ${notifResp.statusCode} - ${notifResp.body}");
+      print(
+          "🔔 [Watcher] Response notifikasi: ${notifResp.statusCode} - ${notifResp.body}");
       if (notifResp.statusCode == 200 || notifResp.statusCode == 201) {
         print("✅ [Watcher] Notifikasi BPJS terkirim!");
       } else {
         print("❌ [Watcher] Gagal kirim notifikasi: ${notifResp.statusCode}");
       }
     } else {
-      print("❌ [Watcher] Data Employees tidak ditemukan untuk idEmployee: $idEmployee");
+      print(
+          "❌ [Watcher] Data Employees tidak ditemukan untuk idEmployee: $idEmployee");
     }
   } else {
-    print("❌ [Watcher] Gagal mengambil data Employees: ${empResponse.statusCode}");
+    print(
+        "❌ [Watcher] Gagal mengambil data Employees: ${empResponse.statusCode}");
   }
 }

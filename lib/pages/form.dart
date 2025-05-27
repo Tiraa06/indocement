@@ -70,7 +70,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$_employeeId'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$_employeeId'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -119,7 +119,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/sections/$_idSection'),
+        Uri.parse('http://103.31.235.237:5555/api/sections/$_idSection'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -270,7 +270,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.100.140:5555/api/keluhans'),
+        Uri.parse('http://103.31.235.237:5555/api/keluhans'),
       );
 
       print('Submitting complaint with the following data:');

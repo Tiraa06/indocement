@@ -25,15 +25,14 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
   // Form controllers and state
   final _formKey = GlobalKey<FormState>();
   List<Map<String, dynamic>> _employees = [];
-  final List<Map<String, dynamic>> _selectedPairs =
-      []; // Store pairs of employees with their shifts
+  final List<Map<String, dynamic>> _selectedPairs = [];
   DateTime? _selectedDate;
   final _keteranganController = TextEditingController();
   bool _isLoading = false;
   String? _userSection;
   int? _userIdEmployee;
 
-  // Shift options (adjust based on actual shifts)
+  // Shift options
   final List<String> _shiftOptions = [
     'Shift A',
     'Shift B',
@@ -90,7 +89,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       _userIdEmployee = idEmployee;
 
       final employeeResponse = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$idEmployee'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -102,14 +101,15 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       }
       final employeeData = json.decode(employeeResponse.body);
       _userSection = employeeData['IdSection']?.toString();
-      print('User ID: $idEmployee, IdSection: $_userSection');
+      print(
+          'User ID: $idEmployee, IdSection: $_userSection, User Data: $employeeData');
 
       if (_userSection == null || _userSection!.isEmpty) {
         throw Exception('IdSection pengguna tidak ditemukan dalam data.');
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -118,9 +118,13 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        print('Raw Employee Data: $data');
         final Map<int, Map<String, dynamic>> uniqueEmployees = {};
         for (var e in data) {
-          if (e['IdSection']?.toString() == _userSection) {
+          final idEsl = e['IdEsl'] ?? e['idEsl'] ?? e['IDESL'];
+          print(
+              'Employee: Id=${e['Id']}, Name=${e['EmployeeName']}, IdSection=${e['IdSection']}, IdEsl=$idEsl');
+          if (e['IdSection']?.toString() == _userSection && idEsl == 6) {
             final int id = e['Id'];
             if (!uniqueEmployees.containsKey(id)) {
               uniqueEmployees[id] = {
@@ -128,11 +132,19 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                 'EmployeeName': e['EmployeeName'] ?? 'Unknown',
                 'IdSection': e['IdSection']?.toString() ?? '',
               };
+              print('Included Employee: Id=$id, Name=${e['EmployeeName']}');
+            } else {
+              print('Skipped Duplicate Employee: Id=$id');
             }
+          } else {
+            print(
+                'Excluded Employee: Id=${e['Id']}, Reason: IdSection=${e['IdSection']} != $_userSection or IdEsl=$idEsl != 6');
           }
         }
         setState(() {
           _employees = uniqueEmployees.values.toList();
+          print(
+              'Filtered Employees (IdSection=$_userSection, IdEsl=6): $_employees');
           if (_employees.any((e) => e['IdEmployee'] == idEmployee)) {
             _selectedPairs.add({
               'IdEmployee': idEmployee,
@@ -140,8 +152,12 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
               'DariShift': null,
               'KeShift': null,
             });
+            print(
+                'Added current user to selectedPairs: IdEmployee=$idEmployee');
+          } else {
+            print(
+                'Warning: Current user (IdEmployee=$idEmployee) not found in filtered employees');
           }
-          print('Filtered Employees: $_employees');
         });
 
         final idSet = _employees.map((e) => e['IdEmployee']).toSet();
@@ -203,7 +219,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       final response = await http
           .post(
             Uri.parse(
-                'http://192.168.100.140:5555/api/TukarSchedule/generate-document'),
+                'http://103.31.235.237:5555/api/TukarSchedule/generate-document'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': '*/*',
@@ -389,63 +405,76 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                             ),
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 12, vertical: 8),
-                                            child: DropdownButton<int>(
-                                              isExpanded: true,
-                                              hint:
-                                                  const Text("Pilih karyawan"),
-                                              value: null,
-                                              items: availableEmployees
-                                                  .map((employee) {
-                                                return DropdownMenuItem<int>(
-                                                  value: employee['IdEmployee']
-                                                      as int,
-                                                  child: Text(
-                                                      employee['EmployeeName']),
-                                                );
-                                              }).toList(),
-                                              onChanged: (int? value) {
-                                                if (value != null) {
-                                                  if (_selectedPairs.length <
-                                                      4) {
-                                                    final employee =
-                                                        _employees.firstWhere(
-                                                      (e) =>
-                                                          e['IdEmployee'] ==
-                                                          value,
-                                                      orElse: () => {
-                                                        'IdEmployee': value,
-                                                        'EmployeeName':
-                                                            'Unknown',
-                                                        'IdSection':
-                                                            _userSection ?? '',
-                                                      },
-                                                    );
-                                                    setState(() {
-                                                      _selectedPairs.add({
-                                                        'IdEmployee': value,
-                                                        'EmployeeName':
-                                                            employee[
-                                                                'EmployeeName'],
-                                                        'DariShift': null,
-                                                        'KeShift': null,
-                                                      });
-                                                    });
-                                                  } else {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
-                                                      const SnackBar(
-                                                          content: Text(
-                                                              'Maksimal 2 pasangan (4 karyawan)')),
-                                                    );
-                                                  }
-                                                }
-                                              },
-                                              underline: const SizedBox(),
-                                            ),
+                                            child: availableEmployees.isEmpty
+                                                ? Text(
+                                                    "Tidak ada karyawan yang tersedia. Pastikan ada karyawan di seksi $_userSection dengan IdEsl=6.",
+                                                    style: const TextStyle(
+                                                        color: Colors.red,
+                                                        fontSize: 14),
+                                                  )
+                                                : DropdownButton<int>(
+                                                    isExpanded: true,
+                                                    hint: const Text(
+                                                        "Pilih karyawan"),
+                                                    value: null,
+                                                    items: availableEmployees
+                                                        .map((employee) {
+                                                      return DropdownMenuItem<
+                                                          int>(
+                                                        value: employee[
+                                                                'IdEmployee']
+                                                            as int,
+                                                        child: Text(employee[
+                                                            'EmployeeName']),
+                                                      );
+                                                    }).toList(),
+                                                    onChanged: (int? value) {
+                                                      if (value != null) {
+                                                        if (_selectedPairs
+                                                                .length <
+                                                            4) {
+                                                          final employee =
+                                                              _employees
+                                                                  .firstWhere(
+                                                            (e) =>
+                                                                e['IdEmployee'] ==
+                                                                value,
+                                                            orElse: () => {
+                                                              'IdEmployee':
+                                                                  value,
+                                                              'EmployeeName':
+                                                                  'Unknown',
+                                                              'IdSection':
+                                                                  _userSection ??
+                                                                      '',
+                                                            },
+                                                          );
+                                                          setState(() {
+                                                            _selectedPairs.add({
+                                                              'IdEmployee':
+                                                                  value,
+                                                              'EmployeeName':
+                                                                  employee[
+                                                                      'EmployeeName'],
+                                                              'DariShift': null,
+                                                              'KeShift': null,
+                                                            });
+                                                          });
+                                                        } else {
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            const SnackBar(
+                                                                content: Text(
+                                                                    'Maksimal 2 pasangan (4 karyawan)')),
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                                    underline: const SizedBox(),
+                                                  ),
                                           ),
                                           const SizedBox(height: 8),
-                                          // Display selected pairs
                                           ...List.generate(
                                               (_selectedPairs.length / 2)
                                                   .ceil(), (index) {
@@ -471,7 +500,8 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                   children: [
                                                     Text(
                                                       'Pasangan ${index + 1}',
-                                                      style: GoogleFonts.poppins(
+                                                      style:
+                                                          GoogleFonts.poppins(
                                                         fontSize:
                                                             baseFontSize * 0.9,
                                                         fontWeight:
@@ -827,7 +857,8 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                       color: Colors.white)
                                                   : Text(
                                                       'Kirim Pengajuan',
-                                                      style: GoogleFonts.poppins(
+                                                      style:
+                                                          GoogleFonts.poppins(
                                                         color: Colors.white,
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -886,36 +917,17 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                     ),
                                     const SizedBox(height: 16),
                                     _buildFAQItem(
-                                      icon: Icons.home,
-                                      question: 'Apa fungsi halaman Home?',
+                                      icon: Icons.schedule,
+                                      question: 'Apa itu menu Schedule Shift?',
                                       answer:
-                                          'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                          'Menu Schedule Shift berfungsi untuk melihat jadwal kerja atau shift Anda setiap harinya. Fitur ini sudah aktif dan dapat digunakan.',
                                     ),
                                     _buildFAQItem(
-                                      icon: Icons.category,
-                                      question: 'Apa saja menu yang tersedia?',
-                                      answer:
-                                          'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
-                                    ),
-                                    _buildFAQItem(
-                                      icon: Icons.info,
-                                      question: 'Apa itu Info Harian?',
-                                      answer:
-                                          'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
-                                    ),
-                                    _buildFAQItem(
-                                      icon: Icons.help_outline,
+                                      icon: Icons.swap_horiz,
                                       question:
-                                          'Bagaimana cara mengakses menu BPJS?',
+                                          'Bagaimana cara mengajukan Tukar Schedule?',
                                       answer:
-                                          'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
-                                    ),
-                                    _buildFAQItem(
-                                      icon: Icons.notifications,
-                                      question:
-                                          'Apa itu pengingat di Info Harian?',
-                                      answer:
-                                          'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                          'Pada halaman Tukar Schedule, disediakan form yang harus Anda isi. Anda perlu memilih karyawan lain yang ingin diajak bertukar shift, lalu tentukan tanggal penukaran shift dan cantumkan keterangan alasan penukaran dengan jelas.',
                                     ),
                                   ],
                                 ),

@@ -8,8 +8,7 @@ import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
-import 'package:indocement_apk/pages/inbox.dart'; // Import the functional InboxPage
-// Import LayananMenuPage
+import 'package:indocement_apk/pages/inbox.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -190,7 +189,6 @@ class _MasterScreenState extends State<MasterScreen>
   }
 }
 
-// Separated MasterScreen content into a new widget
 class MasterContent extends StatefulWidget {
   const MasterContent({super.key});
 
@@ -208,14 +206,14 @@ class _MasterContentState extends State<MasterContent> {
   @override
   void initState() {
     super.initState();
-    _fetchProfilePhoto(); // Ambil foto profil berdasarkan idEmployee
-    _loadProfileData();   // Ambil data profil berdasarkan idEmployee
+    _fetchProfilePhoto();
+    _loadProfileData();
   }
 
   Future<void> _fetchProfilePhoto() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final employeeId = prefs.getInt('idEmployee'); // Ambil idEmployee dari SharedPreferences
+      final employeeId = prefs.getInt('idEmployee');
 
       if (employeeId == null || employeeId <= 0) {
         print('Invalid or missing employeeId: $employeeId');
@@ -223,7 +221,7 @@ class _MasterContentState extends State<MasterContent> {
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -232,12 +230,12 @@ class _MasterContentState extends State<MasterContent> {
         setState(() {
           if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
             if (data['UrlFoto'].startsWith('/')) {
-              _urlFoto = 'http://192.168.100.140:5555${data['UrlFoto']}';
+              _urlFoto = 'http://103.31.235.237:5555${data['UrlFoto']}';
             } else {
               _urlFoto = data['UrlFoto'];
             }
           } else {
-            _urlFoto = null; // Gunakan ikon profil jika URL tidak valid
+            _urlFoto = null;
           }
         });
       } else {
@@ -250,7 +248,7 @@ class _MasterContentState extends State<MasterContent> {
 
   Future<void> _loadProfileData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final employeeId = prefs.getInt('idEmployee'); // Ambil idEmployee dari SharedPreferences
+    final employeeId = prefs.getInt('idEmployee');
 
     if (employeeId == null || employeeId <= 0) {
       print('Invalid or missing employeeId: $employeeId');
@@ -259,7 +257,7 @@ class _MasterContentState extends State<MasterContent> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -270,7 +268,7 @@ class _MasterContentState extends State<MasterContent> {
           _jobTitle = data['JobTitle'] ?? "Departemen Tidak Tersedia";
           _urlFoto = data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty
               ? (data['UrlFoto'].startsWith('/')
-                  ? 'http://192.168.100.140:5555${data['UrlFoto']}'
+                  ? 'http://103.31.235.237:5555${data['UrlFoto']}'
                   : data['UrlFoto'])
               : null;
           _email = data['Email'] ?? "Email Tidak Tersedia";
@@ -305,6 +303,118 @@ class _MasterContentState extends State<MasterContent> {
                   ],
                 ),
               ),
+            ),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    final ScrollController scrollController =
+                        ScrollController();
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      contentPadding: const EdgeInsets.all(16.0),
+                      content: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.95,
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: Scrollbar(
+                          controller: scrollController,
+                          thumbVisibility: false,
+                          thickness: 3,
+                          radius: const Radius.circular(10),
+                          child: SingleChildScrollView(
+                            controller: scrollController,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Frequently Asked Questions (FAQ)',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1572E8),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFAQItem(
+                                  icon: Icons.home,
+                                  question: 'Apa fungsi halaman Home?',
+                                  answer:
+                                      'Halaman Home adalah tampilan awal aplikasi yang menyediakan akses cepat ke berbagai fitur utama seperti layanan karyawan, HR Chat, dan lainnya. Di halaman ini, pengguna juga dapat melihat informasi harian seperti jadwal shift, ulang tahun karyawan, dan pengingat tugas penting.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.category,
+                                  question: 'Apa saja menu yang tersedia?',
+                                  answer:
+                                      'Menu yang tersedia mencakup BPJS, ID Card, SK Kerja & Medical, Layanan Karyawan, HR Chat, dan fitur lainnya yang menunjang kebutuhan karyawan.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.info,
+                                  question: 'Apa itu Info Harian?',
+                                  answer:
+                                      'Info Harian adalah fitur yang menyajikan informasi penting setiap hari, seperti jadwal shift kerja, ulang tahun karyawan, dan daftar pengingat tugas.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.mail,
+                                  question: 'Apa fungsi halaman Inbox?',
+                                  answer:
+                                      'Halaman Inbox menampilkan riwayat aktivitas dari berbagai fitur dalam aplikasi, seperti pengajuan layanan, status permintaan, dan pesan dari HR.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.person,
+                                  question: 'Apa fungsi halaman Profile?',
+                                  answer:
+                                      'Halaman Profile menampilkan informasi akun karyawan seperti nama, jabatan, kontak, dan data lainnya. Pengguna juga dapat mengedit informasi pribadi melalui halaman ini.',
+                                ),
+                                
+                                _buildFAQItem(
+                                  icon: Icons.help_outline,
+                                  question:
+                                      'Di mana saya bisa melihat semua FAQ?',
+                                  answer:
+                                      'Seluruh daftar FAQ dapat diakses melalui halaman Profile, pada bagian FAQ.',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                            ),
+                            child: const Text(
+                              'Tutup',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.help_outline, color: Colors.white),
+              label: const Text(
+                "FAQ",
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.blue,
             ),
           ),
         ],
@@ -530,7 +640,6 @@ class Categories extends StatelessWidget {
                         ),
                       );
                     } else if (category["text"] == "Layanan Karyawan") {
-
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -682,7 +791,7 @@ class DailyInfo extends StatelessWidget {
                 ),
                 SizedBox(width: 12),
                 InfoCard(
-                  title: "Ulang Tahun 🎂",
+                  title: "Ulang Tahun ðŸŽ‚",
                   subtitle: "Andi P. (Dept. QC)",
                   description: "Kirim ucapan via HR Chat",
                 ),
@@ -803,45 +912,40 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
-void _showLoading(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+Widget _buildFAQItem({
+  required IconData icon,
+  required String question,
+  required String answer,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: const Color(0xFF1572E8)),
+        const SizedBox(width: 8),
+        Expanded(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircularProgressIndicator(
-                color: Colors.blue,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                "Memuat halaman...",
-                style: TextStyle(
-                  fontSize: 16,
+              Text(
+                question,
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                "Harap tunggu sebentar",
-                style: TextStyle(
+              const SizedBox(height: 4),
+              Text(
+                answer,
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey,
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
-      );
-    },
+      ],
+    ),
   );
 }

@@ -21,7 +21,7 @@ class _LoginState extends State<Login> {
   Future<Map<String, dynamic>?> _fetchIdEmployee(String email) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees?email=$email'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees?email=$email'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -81,7 +81,7 @@ class _LoginState extends State<Login> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.100.140:5555/api/User/login'),
+        Uri.parse('http://103.31.235.237:5555/api/User/login'),
         body: json.encode({
           'email': email,
           'password': password,

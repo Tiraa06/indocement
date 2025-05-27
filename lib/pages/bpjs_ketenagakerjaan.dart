@@ -9,7 +9,8 @@ class BPJSKetenagakerjaanPage extends StatefulWidget {
   const BPJSKetenagakerjaanPage({super.key});
 
   @override
-  State<BPJSKetenagakerjaanPage> createState() => _BPJSKetenagakerjaanPageState();
+  State<BPJSKetenagakerjaanPage> createState() =>
+      _BPJSKetenagakerjaanPageState();
 }
 
 class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
@@ -29,14 +30,18 @@ class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
 
     // Ambil data user login dari API, simpan IdSection & IdEsl ke SharedPreferences
     try {
-      final response = await Dio().get('http://192.168.100.140:5555/api/Employees');
+      final response =
+          await Dio().get('http://103.31.235.237:5555/api/Employees');
       if (response.statusCode == 200) {
         final List data = response.data;
 
         // --- Ganti logika ini sesuai identitas user login Anda ---
         // Contoh: ambil user pertama sebagai user login (seharusnya pakai id login sebenarnya)
         final user = data.firstWhere(
-          (e) => e['Id'] == prefs.getInt('idEmployee'), // pastikan idEmployee sudah diset saat login
+          (e) =>
+              e['Id'] ==
+              prefs.getInt(
+                  'idEmployee'), // pastikan idEmployee sudah diset saat login
           orElse: () => null,
         );
         if (user != null) {
@@ -100,7 +105,8 @@ class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SizedBox(
-        height: MediaQuery.of(context).size.height, // Gunakan tinggi layar penuh
+        height:
+            MediaQuery.of(context).size.height, // Gunakan tinggi layar penuh
         child: Stack(
           children: [
             SingleChildScrollView(
@@ -201,7 +207,8 @@ class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ListTile(
-                                leading: const Icon(Icons.person, color: Colors.blue),
+                                leading: const Icon(Icons.person,
+                                    color: Colors.blue),
                                 title: Text(
                                   atasanName ?? 'Memuat...',
                                   style: const TextStyle(
@@ -209,30 +216,34 @@ class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                subtitle: atasanPhone != null && atasanPhone != '-'
-                                    ? Text(
-                                        'No Telepon PIC: $atasanPhone',
-                                        style: const TextStyle(
-                                          fontFamily: 'Roboto',
-                                          color: Colors.grey,
-                                        ),
-                                      )
-                                    : null,
+                                subtitle:
+                                    atasanPhone != null && atasanPhone != '-'
+                                        ? Text(
+                                            'No Telepon PIC: $atasanPhone',
+                                            style: const TextStyle(
+                                              fontFamily: 'Roboto',
+                                              color: Colors.grey,
+                                            ),
+                                          )
+                                        : null,
                               ),
                               const SizedBox(height: 8),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.end, // Pindahkan tombol ke kanan
+                                mainAxisAlignment: MainAxisAlignment
+                                    .end, // Pindahkan tombol ke kanan
                                 children: [
                                   ElevatedButton.icon(
                                     onPressed: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => const ChatPage(), // Ganti dengan halaman chat Anda
+                                          builder: (context) =>
+                                              const ChatPage(), // Ganti dengan halaman chat Anda
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.support_agent, size: 18),
+                                    icon: const Icon(Icons.support_agent,
+                                        size: 18),
                                     label: const Text(
                                       "Hubungi via Helpdesk",
                                       style: TextStyle(fontFamily: 'Roboto'),

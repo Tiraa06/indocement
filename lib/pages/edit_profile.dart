@@ -121,7 +121,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Sections/$idSection'),
+        Uri.parse('http://103.31.235.237:5555/api/Sections/$idSection'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -143,7 +143,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://192.168.100.140:5555/api/VerifData/requests?employeeId=$employeeId'),
+            'http://103.31.235.237:5555/api/VerifData/requests?employeeId=$employeeId'),
       );
 
       if (response.statusCode == 200) {
@@ -263,7 +263,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees/$employeeId'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
@@ -324,7 +324,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
           if (employee['UrlFoto'] != null && employee['UrlFoto'].isNotEmpty) {
             _photoUrl = employee['UrlFoto'].startsWith('/')
-                ? 'http://192.168.100.140:5555${employee['UrlFoto']}'
+                ? 'http://103.31.235.237:5555${employee['UrlFoto']}'
                 : employee['UrlFoto'];
           } else {
             _photoUrl = null;
@@ -381,7 +381,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       try {
         final request = http.MultipartRequest(
           'POST',
-          Uri.parse('http://192.168.100.140:5555/api/VerifData/request'),
+          Uri.parse('http://103.31.235.237:5555/api/VerifData/request'),
         );
         request.fields['EmployeeId'] = employeeId.toString();
         request.fields['FieldName'] = fieldName;
@@ -478,7 +478,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final request = http.MultipartRequest(
         'PUT',
         Uri.parse(
-            'http://192.168.100.140:5555/api/Employees/$employeeId/UrlFoto'),
+            'http://103.31.235.237:5555/api/Employees/$employeeId/UrlFoto'),
       );
       request.files.add(await http.MultipartFile.fromPath(
         'File',
