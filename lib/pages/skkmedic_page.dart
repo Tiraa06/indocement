@@ -227,7 +227,7 @@ class _SKKMedicPageState extends State<SKKMedicPage>
                                     icon: Icons.info,
                                     question: 'Bagaimana Sistem Pengajuan Surat Keterangan Kerja?',
                                     answer:
-                                        'Anda perlu mengisi form kecil untuk menyebutkan keperluan surat tersebut. Setelah diajukan, pengajuan akan masuk ke riwayat pengajuan SKK, di mana Anda bisa melihat statusnya:\n\n'
+                                        'Anda perlu mengisi form kecil untuk menyebutkan keperluan surat tersebut. Setelah diajukan, pengajuan akan masuk ke riwayat pengajuan SKK silahkan refresh dengan cara scroll down, di mana Anda bisa melihat statusnya:\n\n'
                                         '-Diajukan: Masih diproses oleh HR\n'
                                         '-Approved: Telah disetujui, dan tombol download akan muncul di bagian keperluan\n'
                                         '-Return: Pengajuan dikembalikan, Anda perlu mengajukan ulang',

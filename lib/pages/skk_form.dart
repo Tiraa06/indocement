@@ -57,18 +57,23 @@ class _SkkFormPageState extends State<SkkFormPage> {
       employeeName = prefs.getString('employeeName') ?? 'Nama Tidak Diketahui';
       employeeNo = prefs.getString('employeeNo') ?? 'NIK Tidak Diketahui';
       isEmployeeDataLoading = false;
-      print(
-          'DEBUG: SharedPreferences - idEmployee=$idEmployee, employeeName=$employeeName, employeeNo=$employeeNo');
     });
 
-    if (employeeNo == null || employeeNo == 'NIK Tidak Diketahui') {
-      await _fetchEmployeeData();
-    }
+    // Fetch employee data regardless of what's in SharedPreferences to ensure freshness
+    await _fetchEmployeeData();
   }
 
   Future<void> _fetchEmployeeData() async {
-    if (idEmployee == null) {
-      print('DEBUG: Cannot fetch employee data, idEmployee is null');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? employeeId = prefs.getInt('idEmployee');
+
+    if (employeeId == null || employeeId <= 0) {
+      if (mounted) {
+        _showPopup(
+            context, 'Gagal', 'ID karyawan tidak valid, silakan login ulang');
+        Navigator.pushReplacementNamed(
+            context, '/login'); // Adjust based on your app's navigation setup
+      }
       return;
     }
 
@@ -78,46 +83,39 @@ class _SkkFormPageState extends State<SkkFormPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/Employees/$idEmployee'),
-        headers: {'Accept': 'application/json'},
-      );
-
-      print('DEBUG: Fetch Employee Status: ${response.statusCode}');
-      print('DEBUG: Fetch Employee Body: ${response.body}');
+        Uri.parse('$baseUrl/api/Employees/$employeeId'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
         setState(() {
-          employeeNo = data['EmployeeNo']?.toString() ??
-              data['employeeNo']?.toString() ??
-              'NIK Tidak Diketahui';
-          employeeName = data['EmployeeName']?.toString() ??
-              data['name']?.toString() ??
-              'Nama Tidak Diketahui';
+          employeeName =
+              data['EmployeeName']?.toString() ?? 'Nama Tidak Diketahui';
+          employeeNo = data['EmployeeNo']?.toString() ?? 'NIK Tidak Diketahui';
+          idEmployee = employeeId;
           isEmployeeDataLoading = false;
         });
 
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('employeeNo', employeeNo!);
+        // Save to SharedPreferences for future use
+        await prefs.setInt('idEmployee', idEmployee!);
         await prefs.setString('employeeName', employeeName!);
-        print(
-            'DEBUG: Fetched from API - employeeNo=$employeeNo, employeeName=$employeeName');
+        await prefs.setString('employeeNo', employeeNo!);
       } else {
-        print(
-            'DEBUG: Failed to fetch employee data: ${response.statusCode} - ${response.body}');
         if (mounted) {
           _showPopup(context, 'Gagal',
-              'Gagal mengambil data karyawan: ${response.statusCode}');
+              'Gagal memuat data karyawan: ${response.statusCode}');
           setState(() {
             isEmployeeDataLoading = false;
           });
         }
       }
     } catch (e) {
-      print('DEBUG: Error fetching employee data: $e');
       if (mounted) {
-        _showPopup(
-            context, 'Gagal', 'Terjadi kesalahan saat mengambil data: $e');
+        _showPopup(context, 'Gagal', 'Terjadi kesalahan: $e');
         setState(() {
           isEmployeeDataLoading = false;
         });

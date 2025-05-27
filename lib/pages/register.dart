@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 import 'login.dart';
@@ -43,8 +44,38 @@ class _RegisterState extends State<Register> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _telpController = TextEditingController();
-
+  String? _selectedSectionId;
+  List<Map<String, dynamic>> _sections = [];
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSections();
+  }
+
+  Future<void> _fetchSections() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/Sections'),
+        headers: {'accept': 'text/plain'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _sections = data
+              .cast<Map<String, dynamic>>()
+              .where((section) => section['NamaSection'] != 'Unknown')
+              .toList();
+        });
+      } else {
+        _showMessage('Gagal memuat daftar section');
+      }
+    } catch (e) {
+      _showMessage('Terjadi kesalahan saat memuat section: $e');
+    }
+  }
 
   Future<void> registerUser(Map<String, dynamic> userData) async {
     try {
@@ -65,12 +96,10 @@ class _RegisterState extends State<Register> {
               responseBody.containsKey('id')) {
             _user = User.fromJson(responseBody);
           }
-          // Periksa apakah widget masih mounted sebelum menampilkan modal
           if (mounted) {
             _showSuccessModal();
           }
         } catch (e) {
-          // Periksa apakah widget masih mounted sebelum menampilkan modal
           if (mounted) {
             _showSuccessModal();
           }
@@ -98,6 +127,7 @@ class _RegisterState extends State<Register> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final telp = _telpController.text.trim();
+    final sectionId = _selectedSectionId;
 
     if (nama.isEmpty) {
       _showMessage('Nama karyawan tidak boleh kosong.');
@@ -105,6 +135,10 @@ class _RegisterState extends State<Register> {
     }
     if (nomerid.isEmpty) {
       _showMessage('Nomor Karyawan tidak boleh kosong.');
+      return;
+    }
+    if (sectionId == null) {
+      _showMessage('Section harus dipilih.');
       return;
     }
     if (email.isEmpty) {
@@ -141,17 +175,16 @@ class _RegisterState extends State<Register> {
         "email": email,
         "password": password,
         "telepon": telp,
+        "idSection": int.parse(sectionId),
       };
 
       await registerUser(userData);
     } catch (e) {
-      // Periksa apakah widget masih mounted sebelum menampilkan pesan
       if (mounted) {
         _showMessage(e.toString().replaceFirst('Exception: ', ''));
       }
     }
 
-    // Periksa apakah widget masih mounted sebelum mengubah state
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -162,13 +195,21 @@ class _RegisterState extends State<Register> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Berhasil!'),
-        content: const Text('Akun berhasil dibuat.'),
+        title: Text(
+          'Berhasil!',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: Text(
+          'Akun berhasil dibuat.',
+          style: GoogleFonts.poppins(fontSize: 16),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              // Periksa apakah widget masih mounted sebelum navigasi
               if (mounted) {
                 Navigator.pushReplacement(
                   context,
@@ -176,7 +217,14 @@ class _RegisterState extends State<Register> {
                 );
               }
             },
-            child: const Text('OK'),
+            child: Text(
+              'OK',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: const Color(0xFF1572E8),
+              ),
+            ),
           ),
         ],
       ),
@@ -184,8 +232,14 @@ class _RegisterState extends State<Register> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+      ),
+    );
   }
 
   @override
@@ -195,8 +249,10 @@ class _RegisterState extends State<Register> {
       body: Stack(
         children: [
           SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+              padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width * 0.05),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -215,22 +271,23 @@ class _RegisterState extends State<Register> {
                   const SizedBox(height: 30),
                   FadeInLeft(
                     duration: const Duration(milliseconds: 800),
-                    child: const Text(
+                    child: Text(
                       'Register',
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2035),
+                        color: const Color(0xFF1A2035),
                       ),
                     ),
                   ),
                   const SizedBox(height: 30),
                   _buildField('Nama', _namaController, 900),
                   _buildField('Nomor Karyawan', _nomoridController, 900),
-                  _buildField('Email', _emailController, 900),
-                  _buildField('Password', _passwordController, 1100,
+                  _buildSectionField(1000),
+                  _buildField('Email', _emailController, 1100),
+                  _buildField('Password', _passwordController, 1200,
                       obscure: true),
-                  _buildField('Nomor Telepon', _telpController, 900,
+                  _buildField('Nomor Telepon', _telpController, 1300,
                       keyboardType: TextInputType.phone),
                   const SizedBox(height: 30),
                   FadeInUp(
@@ -249,14 +306,18 @@ class _RegisterState extends State<Register> {
                         child: _isLoading
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
-                            : const Text(
+                            : Text(
                                 'REGISTER',
-                                style: TextStyle(color: Colors.white),
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -288,10 +349,62 @@ class _RegisterState extends State<Register> {
             controller: controller,
             obscureText: obscure,
             keyboardType: keyboardType,
+            style: GoogleFonts.poppins(fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionField(int duration) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: FadeInLeft(
+        duration: Duration(milliseconds: duration),
+        child: Flexible(
+          child: Container(
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.grey)),
+            ),
+            child: DropdownButtonFormField<String>(
+              isExpanded: true, // Ensures the dropdown takes full width
+              value: _selectedSectionId,
+              hint: Text(
+                'Pilih Section',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              items: _sections.map((section) {
+                return DropdownMenuItem<String>(
+                  value: section['Id'].toString(),
+                  child: Text(
+                    section['NamaSection'],
+                    style: GoogleFonts.poppins(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedSectionId = value;
+                });
+              },
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              ),
             ),
           ),
         ),

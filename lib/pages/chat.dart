@@ -638,7 +638,7 @@ class _ChatPageState extends State<ChatPage> {
       print('Skipping checkExistingConsultation: Page is disposed');
       return null;
     }
-    try {
+    {
       final url = Uri.parse(
           'http://103.31.235.237:5555/api/Konsultasis/employee/$idEmployee');
       final response = await retry(
@@ -653,19 +653,7 @@ class _ChatPageState extends State<ChatPage> {
         return (data is List && data.isNotEmpty)
             ? Map<String, dynamic>.from(data[0] as Map)
             : (data is Map ? Map<String, dynamic>.from(data) : null);
-      } else {
-        if (mounted && !_isDisposed) {
-          setState(() =>
-              _errorMessage = 'Gagal memeriksa konsultasi: ${response.body}');
-        }
-        return null;
-      }
-    } catch (e) {
-      print('Error checking consultation: $e');
-      if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal memeriksa konsultasi: $e');
-      }
-      return null;
+      } 
     }
   }
 
