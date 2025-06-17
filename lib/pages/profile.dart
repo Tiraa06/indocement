@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:indocement_apk/pages/edit_profile.dart';
 import 'package:indocement_apk/pages/faq.dart';
+import 'package:indocement_apk/utils/network_helper.dart'; // Tambahkan import ini
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -65,10 +66,14 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      final response = await safeRequest(
+        context,
+        () => http.get(
+          Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
+      if (response == null) return; // Sudah redirect ke error
 
       print('Fetch Employee Status: ${response.statusCode}');
       print('Fetch Employee Body: ${response.body}');

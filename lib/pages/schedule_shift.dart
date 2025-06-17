@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:indocement_apk/utils/network_helper.dart';
 
 class ScheduleShiftPage extends StatefulWidget {
   const ScheduleShiftPage({super.key});
@@ -88,10 +89,14 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       }
       _userIdEmployee = idEmployee;
 
-      final employeeResponse = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      final employeeResponse = await safeRequest(
+        context,
+        () => http.get(
+          Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
+      if (employeeResponse == null) return; // Sudah redirect ke error
 
       print('Fetch User Employee Status: ${employeeResponse.statusCode}');
       print('Fetch User Employee Body: ${employeeResponse.body}');
@@ -108,10 +113,14 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         throw Exception('IdSection pengguna tidak ditemukan dalam data.');
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      final response = await safeRequest(
+        context,
+        () => http.get(
+          Uri.parse('http://103.31.235.237:5555/api/Employees'),
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
+      if (response == null) return; // Sudah redirect ke error
 
       print('Fetch All Employees Status: ${response.statusCode}');
       print('Fetch All Employees Body: ${response.body}');

@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indocement_apk/pages/register.dart';
 import 'package:indocement_apk/pages/forgot.dart';
+import 'package:indocement_apk/pages/master.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -18,12 +20,78 @@ class _LoginState extends State<Login> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Memuat...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Harap tunggu sebentar",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _checkNetwork() async {
+    try {
+      var connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        print('No network connectivity');
+        return false;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 3));
+      print('Network check response: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Network check failed: $e');
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>?> _fetchIdEmployee(String email) async {
     try {
+      _showLoading(context);
       final response = await http.get(
         Uri.parse('http://103.31.235.237:5555/api/Employees?email=$email'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
+
+      Navigator.pop(context); // Close loading dialog
 
       print('Fetch idEmployee Status: ${response.statusCode}');
       print('Fetch idEmployee Body: ${response.body}');
@@ -31,7 +99,6 @@ class _LoginState extends State<Login> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List && data.isNotEmpty) {
-          // Cari karyawan yang email-nya benar-benar cocok
           final matchingEmployee = data.firstWhere(
             (employee) =>
                 employee['Email']?.toLowerCase() == email.toLowerCase(),
@@ -60,6 +127,7 @@ class _LoginState extends State<Login> {
       return null;
     } catch (e) {
       print('Error fetching idEmployee: $e');
+      Navigator.pop(context); // Close loading dialog
       return null;
     }
   }
@@ -80,6 +148,15 @@ class _LoginState extends State<Login> {
     setState(() => _isLoading = true);
 
     try {
+      final hasNetwork = await _checkNetwork();
+      if (!hasNetwork) {
+        _showMessage('Tidak ada koneksi internet. Silakan cek jaringan Anda.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      _showLoading(context);
+
       final response = await http.post(
         Uri.parse('http://103.31.235.237:5555/api/User/login'),
         body: json.encode({
@@ -88,6 +165,8 @@ class _LoginState extends State<Login> {
         }),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
+
+      Navigator.pop(context); // Close loading dialog
 
       print('Sending payload: ${json.encode({
             'email': email,
@@ -101,7 +180,6 @@ class _LoginState extends State<Login> {
         print('Parsed User: $user');
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
-          // Check if the user's role is "Karyawan"
           final String role = user['Role'] ?? '';
           if (role.toLowerCase() != 'karyawan') {
             _showMessage(
@@ -119,18 +197,17 @@ class _LoginState extends State<Login> {
           }
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
+          // Remove specific keys to avoid stale data
           await prefs.remove('id');
           await prefs.remove('idEmployee');
           await prefs.remove('email');
           await prefs.remove('employeeName');
           await prefs.remove('jobTitle');
           await prefs.remove('telepon');
-          await prefs.remove('livingArea');
           await prefs.remove('urlFoto');
-          print(
-              'After manual clear - SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
+          await prefs.remove('livingArea');
+          await prefs.remove('employeeNo');
 
-          // Gunakan IdEmployee dari user jika employeeData kosong
           final int idEmployee =
               employeeData['idEmployee'] ?? user['IdEmployee'] ?? 0;
           if (idEmployee <= 0) {
@@ -154,8 +231,6 @@ class _LoginState extends State<Login> {
 
           if (employeeData['urlFoto'] != null) {
             await prefs.setString('urlFoto', employeeData['urlFoto']);
-          } else {
-            await prefs.remove('urlFoto');
           }
 
           final savedEmployeeName = prefs.getString('employeeName');
@@ -168,9 +243,9 @@ class _LoginState extends State<Login> {
                 'Nama karyawan tidak tersedia. Silakan hubungi admin.');
           }
 
-          Navigator.pushNamedAndRemoveUntil(
+          Navigator.pushAndRemoveUntil(
             context,
-            '/master',
+            MaterialPageRoute(builder: (context) => const MasterScreen()),
             (route) => false,
           );
         } else {
@@ -189,7 +264,8 @@ class _LoginState extends State<Login> {
       }
     } catch (e) {
       print('Error: $e');
-      _showMessage('Terjadi kesalahan: ${e.toString()}');
+      _showMessage('Terjadi kesalahan. Silakan coba lagi.');
+      Navigator.pop(context, false); // Close loading dialog if open
     }
 
     setState(() => _isLoading = false);

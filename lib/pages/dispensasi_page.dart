@@ -1,58 +1,34 @@
 import 'dart:convert';
-import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
 
-import 'login.dart';
-
-User? _user;
-
-class Register extends StatefulWidget {
-  const Register({super.key});
+class DispensasiPage extends StatefulWidget {
+  const DispensasiPage({super.key});
 
   @override
-  _RegisterState createState() => _RegisterState();
+  _DispensasiPageState createState() => _DispensasiPageState();
 }
 
-class User {
-  final int id;
-  final String email;
-  final String jobTitle;
-  final int idEmployee;
-
-  User({
-    required this.id,
-    required this.email,
-    required this.jobTitle,
-    required this.idEmployee,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] ?? 0,
-      email: json['email'] ?? '',
-      jobTitle: json['jobTitle'] ?? '',
-      idEmployee: json['idEmployee'] ?? 0,
-    );
-  }
-}
-
-class _RegisterState extends State<Register> {
-  final _namaController = TextEditingController();
-  final _nomoridController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _telpController = TextEditingController();
-  String? _selectedSectionId;
-  List<Map<String, dynamic>> _sections = [];
+class _DispensasiPageState extends State<DispensasiPage> {
+  final _jenisDispensasiController = TextEditingController();
+  final _keteranganController = TextEditingController();
+  PlatformFile? _suratKeteranganMeninggal;
+  PlatformFile? _ktp;
+  PlatformFile? _sim;
+  PlatformFile? _dokumenLain;
   bool _isLoading = false;
 
   @override
-  void initState() {
-    super.initState();
-    _fetchSections();
+  void dispose() {
+    _jenisDispensasiController.dispose();
+    _keteranganController.dispose();
+    super.dispose();
   }
 
   Future<bool> _checkNetwork() async {
@@ -64,7 +40,7 @@ class _RegisterState extends State<Register> {
       }
 
       final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+        Uri.parse('http://192.168.100.140:5555/api/Employees'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 3));
       print('Network check response: ${response.statusCode}');
@@ -72,44 +48,6 @@ class _RegisterState extends State<Register> {
     } catch (e) {
       print('Network check failed: $e');
       return false;
-    }
-  }
-
-  Future<void> _fetchSections() async {
-    try {
-      final hasNetwork = await _checkNetwork();
-      if (!hasNetwork) {
-        if (mounted) {
-          _showMessage('Tidak ada koneksi internet. Silakan cek jaringan Anda.');
-        }
-        setState(() {
-          _sections = [];
-        });
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Sections'),
-        headers: {'accept': 'text/plain'},
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        setState(() {
-          _sections = data
-              .cast<Map<String, dynamic>>()
-              .where((section) => section['NamaSection'] != 'Unknown')
-              .toList();
-        });
-      } else {
-        if (mounted) {
-          _showMessage('Gagal memuat daftar section');
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        _showMessage('Terjadi kesalahan saat memuat section: $e');
-      }
     }
   }
 
@@ -131,18 +69,18 @@ class _RegisterState extends State<Register> {
                   color: Colors.blue,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  "Memuat...",
-                  style: TextStyle(
+                Text(
+                  "Mengirim...",
+                  style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Harap tunggu sebentar",
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Colors.grey,
                   ),
@@ -156,92 +94,55 @@ class _RegisterState extends State<Register> {
     );
   }
 
-  Future<void> registerUser(Map<String, dynamic> userData) async {
+  Future<void> _pickFile(String field) async {
     try {
-      print('Sending payload: ${json.encode(userData)}');
-      final response = await http.post(
-        Uri.parse('http://103.31.235.237:5555/api/User/register'),
-        body: json.encode(userData),
-        headers: {'Content-Type': 'application/json'},
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
       );
 
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          final responseBody = json.decode(response.body);
-          if (responseBody is Map<String, dynamic> &&
-              responseBody.containsKey('id')) {
-            _user = User.fromJson(responseBody);
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          switch (field) {
+            case 'SuratKeteranganMeninggal':
+              _suratKeteranganMeninggal = result.files.first;
+              break;
+            case 'Ktp':
+              _ktp = result.files.first;
+              break;
+            case 'Sim':
+              _sim = result.files.first;
+              break;
+            case 'DokumenLain':
+              _dokumenLain = result.files.first;
+              break;
           }
-          if (mounted) {
-            _showSuccessModal();
-          }
-        } catch (e) {
-          if (mounted) {
-            _showSuccessModal();
-          }
-        }
-      } else {
-        String errorMessage = 'Gagal membuat akun';
-        try {
-          final responseBody = json.decode(response.body);
-          errorMessage = responseBody['message'] ?? errorMessage;
-        } catch (e) {
-          errorMessage =
-              response.body.isNotEmpty ? response.body : errorMessage;
-        }
-        throw Exception(errorMessage);
+        });
       }
     } catch (e) {
-      print('Error: $e');
-      throw Exception('Registrasi gagal: ${e.toString()}');
+      _showMessage('Gagal memilih file: $e');
     }
   }
 
-  Future<void> _handleRegister() async {
-    final nama = _namaController.text.trim();
-    final nomerid = _nomoridController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final telp = _telpController.text.trim();
-    final sectionId = _selectedSectionId;
-
-    if (nama.isEmpty) {
-      _showMessage('Nama karyawan tidak boleh kosong.');
+  Future<void> _handleSubmit() async {
+    if (_jenisDispensasiController.text.trim().isEmpty) {
+      _showMessage('Jenis dispensasi tidak boleh kosong.');
       return;
     }
-    if (nomerid.isEmpty) {
-      _showMessage('Nomor Karyawan tidak boleh kosong.');
+    if (_keteranganController.text.trim().isEmpty) {
+      _showMessage('Keterangan tidak boleh kosong.');
       return;
     }
-    if (sectionId == null) {
-      _showMessage('Section harus dipilih.');
+    if (_suratKeteranganMeninggal == null) {
+      _showMessage('Surat Keterangan Meninggal wajib diunggah.');
       return;
     }
-    if (email.isEmpty) {
-      _showMessage('Email tidak boleh kosong.');
+    if (_ktp == null) {
+      _showMessage('KTP wajib diunggah.');
       return;
     }
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      _showMessage('Format email tidak valid.');
-      return;
-    }
-    if (password.isEmpty) {
-      _showMessage('Password tidak boleh kosong.');
-      return;
-    }
-    if (password.length < 6) {
-      _showMessage('Password minimal 6 karakter.');
-      return;
-    }
-    if (telp.isEmpty) {
-      _showMessage('Nomor telepon tidak boleh kosong.');
-      return;
-    }
-    if (!RegExp(r'^\d{10,13}$').hasMatch(telp)) {
-      _showMessage('Nomor telepon harus 10-13 digit.');
+    if (_sim == null) {
+      _showMessage('SIM wajib diunggah.');
       return;
     }
 
@@ -255,28 +156,84 @@ class _RegisterState extends State<Register> {
         return;
       }
 
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final idEmployee = prefs.getInt('idEmployee');
+      if (idEmployee == null || idEmployee <= 0) {
+        _showMessage('ID karyawan tidak valid. Silakan login ulang.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
       _showLoading(context);
 
-      final userData = {
-        "employeeName": nama,
-        "employeeNo": nomerid,
-        "email": email,
-        "password": password,
-        "telepon": telp,
-        "idSection": int.parse(sectionId),
-      };
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://192.168.100.140:5555/api/Dispensasi'),
+      );
 
-      await registerUser(userData);
-    } catch (e) {
-      if (mounted) {
-        _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      request.headers['accept'] = 'text/plain';
+      request.fields['IdEmployee'] = idEmployee.toString();
+      request.fields['JenisDispensasi'] =
+          _jenisDispensasiController.text.trim();
+      request.fields['Keterangan'] = _keteranganController.text.trim();
+
+      // Add files
+      if (_suratKeteranganMeninggal != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'SuratKeteranganMeninggal',
+          _suratKeteranganMeninggal!.path!,
+          filename: path.basename(_suratKeteranganMeninggal!.path!),
+        ));
       }
-      Navigator.pop(context, false); // Close loading dialog if open
+      if (_ktp != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'Ktp',
+          _ktp!.path!,
+          filename: path.basename(_ktp!.path!),
+        ));
+      }
+      if (_sim != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'Sim',
+          _sim!.path!,
+          filename: path.basename(_sim!.path!),
+        ));
+      }
+      if (_dokumenLain != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'DokumenLain',
+          _dokumenLain!.path!,
+          filename: path.basename(_dokumenLain!.path!),
+        ));
+      }
+
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: $responseBody');
+
+      Navigator.pop(context); // Close loading dialog
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSuccessModal();
+      } else {
+        String errorMessage = 'Gagal mengajukan dispensasi';
+        try {
+          final decoded = json.decode(responseBody);
+          errorMessage = decoded['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = responseBody.isNotEmpty ? responseBody : errorMessage;
+        }
+        _showMessage(errorMessage);
+      }
+    } catch (e) {
+      print('Error: $e');
+      Navigator.pop(context); // Close loading dialog if open
+      _showMessage('Terjadi kesalahan: $e');
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
+    setState(() => _isLoading = false);
   }
 
   void _showSuccessModal() {
@@ -292,19 +249,15 @@ class _RegisterState extends State<Register> {
           ),
         ),
         content: Text(
-          'Akun berhasil dibuat.',
+          'Pengajuan dispensasi berhasil dikirim.',
           style: GoogleFonts.poppins(fontSize: 16),
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              if (mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const Login()),
-                );
-              }
+              Navigator.pop(
+                  context); // Return to previous screen (e.g., MasterScreen)
             },
             child: Text(
               'OK',
@@ -361,7 +314,7 @@ class _RegisterState extends State<Register> {
                   FadeInLeft(
                     duration: const Duration(milliseconds: 800),
                     child: Text(
-                      'Register',
+                      'Pengajuan Dispensasi',
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -370,21 +323,22 @@ class _RegisterState extends State<Register> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  _buildField('Nama', _namaController, 900),
-                  _buildField('Nomor Karyawan', _nomoridController, 900),
-                  _buildSectionField(1000),
-                  _buildField('Email', _emailController, 1100),
-                  _buildField('Password', _passwordController, 1200,
-                      obscure: true),
-                  _buildField('Nomor Telepon', _telpController, 1300,
-                      keyboardType: TextInputType.phone),
+                  _buildTextField(
+                      'Jenis Dispensasi', _jenisDispensasiController, 900),
+                  _buildTextField('Keterangan', _keteranganController, 1000),
+                  _buildFileField('Surat Keterangan Meninggal',
+                      'SuratKeteranganMeninggal', 1100),
+                  _buildFileField('KTP', 'Ktp', 1200),
+                  _buildFileField('SIM', 'Sim', 1300),
+                  _buildFileField(
+                      'Dokumen Lain (Opsional)', 'DokumenLain', 1400),
                   const SizedBox(height: 30),
                   FadeInUp(
-                    duration: const Duration(milliseconds: 1300),
+                    duration: const Duration(milliseconds: 1500),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleRegister,
+                        onPressed: _isLoading ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           backgroundColor: const Color(0xFF1572E8),
@@ -396,7 +350,7 @@ class _RegisterState extends State<Register> {
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
                             : Text(
-                                'REGISTER',
+                                'KIRIM',
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -423,9 +377,8 @@ class _RegisterState extends State<Register> {
     );
   }
 
-  Widget _buildField(
-      String hint, TextEditingController controller, int duration,
-      {bool obscure = false, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(
+      String hint, TextEditingController controller, int duration) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: FadeInLeft(
@@ -436,8 +389,6 @@ class _RegisterState extends State<Register> {
           ),
           child: TextField(
             controller: controller,
-            obscureText: obscure,
-            keyboardType: keyboardType,
             style: GoogleFonts.poppins(fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
@@ -454,61 +405,68 @@ class _RegisterState extends State<Register> {
     );
   }
 
-  Widget _buildSectionField(int duration) {
+  Widget _buildFileField(String label, String field, int duration) {
+    PlatformFile? file;
+    switch (field) {
+      case 'SuratKeteranganMeninggal':
+        file = _suratKeteranganMeninggal;
+        break;
+      case 'Ktp':
+        file = _ktp;
+        break;
+      case 'Sim':
+        file = _sim;
+        break;
+      case 'DokumenLain':
+        file = _dokumenLain;
+        break;
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: FadeInLeft(
         duration: Duration(milliseconds: duration),
-        child: Flexible(
-          child: Container(
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey),
             ),
-            child: DropdownButtonFormField<String>(
-              isExpanded: true, // Ensures the dropdown takes full width
-              value: _selectedSectionId,
-              hint: Text(
-                'Pilih Section',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.grey,
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => _pickFile(field),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        file != null
+                            ? path.basename(file.path!)
+                            : 'Pilih file (JPG, PNG, PDF)',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: file != null ? Colors.black : Colors.grey,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(Icons.upload_file, color: const Color(0xFF1572E8)),
+                  ],
                 ),
               ),
-              items: _sections.map((section) {
-                return DropdownMenuItem<String>(
-                  value: section['Id'].toString(),
-                  child: Text(
-                    section['NamaSection'],
-                    style: GoogleFonts.poppins(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSectionId = value;
-                });
-              },
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              ),
             ),
-          ),
+          ],
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _namaController.dispose();
-    _nomoridController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _telpController.dispose();
-    super.dispose();
   }
 }
 
@@ -529,13 +487,13 @@ class WavePainter extends CustomPainter {
     path.quadraticBezierTo(size.width * 0.25, size.height * 0.05,
         size.width * 0.5, size.height * 0.1);
     path.quadraticBezierTo(
-        size.width * 0.75, size.height * 0.15, size.width, size.height * 0.15);
+        size.width * 0.75, size.height * 0.15, size.width, size.height * 0.1);
     path.lineTo(size.width, 0);
     path.lineTo(0, 0);
     path.close();
 
     canvas.drawPath(path, gradientPaint);
-}
+  }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;

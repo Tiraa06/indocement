@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:indocement_apk/pages/beasiswa.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/schedule_shift.dart';
+import 'package:indocement_apk/pages/dispensasi_page.dart';
+import 'package:indocement_apk/pages/beasiswa.dart';
 
 class LayananMenuPage extends StatefulWidget {
   const LayananMenuPage({super.key});
@@ -69,7 +72,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.account_balance_wallet,
         'title': 'Dispensasi/Kompensasi',
         'color': Colors.teal,
-        'onTap': () => _navigateToFeature("Dispensasi/Kompensasi"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DispensasiPage()),
+          );
+        } 
       },
       {
         'icon': Icons.folder,
@@ -81,7 +90,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.school,
         'title': 'Bea Siswa',
         'color': Colors.red,
-        'onTap': () => _navigateToFeature("Bea Siswa"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BeasiswaPage()),
+          );
+        } 
       },
       {
         'icon': Icons.star,

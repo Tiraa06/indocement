@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
@@ -9,9 +9,10 @@ import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
 import 'package:indocement_apk/pages/inbox.dart';
+import 'package:indocement_apk/pages/error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -53,7 +54,85 @@ class _MasterScreenState extends State<MasterScreen>
     super.dispose();
   }
 
-  void _onItemTapped(int index) {
+  Future<bool> _checkNetwork() async {
+    try {
+      var connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        print('No network connectivity');
+        return false;
+      }
+
+      // Fallback to API check
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 3));
+      print('Network check response: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Network check failed: $e');
+      return false;
+    }
+  }
+
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Memuat halaman...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Harap tunggu sebentar",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onItemTapped(int index) async {
+    if (_selectedIndex == index) return;
+
+    _showLoading(context);
+    final hasNetwork = await _checkNetwork();
+    Navigator.pop(context); // Close loading dialog
+
+    if (!hasNetwork) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Error404Screen()),
+      );
+      return;
+    }
+
     setState(() {
       _selectedIndex = index;
     });
@@ -174,11 +253,11 @@ class _MasterScreenState extends State<MasterScreen>
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: TextStyle(
+        selectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
-        unselectedLabelStyle: TextStyle(
+        unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w400,
           fontSize: 12,
         ),
@@ -210,6 +289,69 @@ class _MasterContentState extends State<MasterContent> {
     _loadProfileData();
   }
 
+  Future<bool> _checkNetwork() async {
+    try {
+      var connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        print('No network connectivity');
+        return false;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 3));
+      print('Network check response: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Network check failed: $e');
+      return false;
+    }
+  }
+
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Memuat halaman...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Harap tunggu sebentar",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _fetchProfilePhoto() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -217,13 +359,29 @@ class _MasterContentState extends State<MasterContent> {
 
       if (employeeId == null || employeeId <= 0) {
         print('Invalid or missing employeeId: $employeeId');
+        setState(() {
+          _urlFoto = null;
+        });
+        return;
+      }
+
+      _showLoading(context);
+      final hasNetwork = await _checkNetwork();
+      if (!hasNetwork) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Error404Screen()),
+        );
         return;
       }
 
       final response = await http.get(
         Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
-      );
+      ).timeout(const Duration(seconds: 10));
+
+      Navigator.pop(context); // Close loading dialog
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -240,26 +398,52 @@ class _MasterContentState extends State<MasterContent> {
         });
       } else {
         print('Failed to fetch profile photo: ${response.statusCode}');
+        setState(() {
+          _urlFoto = null;
+        });
       }
     } catch (e) {
       print('Error fetching profile photo: $e');
+      Navigator.pop(context); // Close loading dialog
+      setState(() {
+        _urlFoto = null;
+      });
     }
   }
 
   Future<void> _loadProfileData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final employeeId = prefs.getInt('idEmployee');
-
-    if (employeeId == null || employeeId <= 0) {
-      print('Invalid or missing employeeId: $employeeId');
-      return;
-    }
-
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final employeeId = prefs.getInt('idEmployee');
+
+      if (employeeId == null || employeeId <= 0) {
+        print('Invalid or missing employeeId: $employeeId');
+        setState(() {
+          _employeeName = "Nama Tidak Tersedia";
+          _jobTitle = "Departemen Tidak Tersedia";
+          _email = "Email Tidak Tersedia";
+          _telepon = "Telepon Tidak Tersedia";
+        });
+        return;
+      }
+
+      _showLoading(context);
+      final hasNetwork = await _checkNetwork();
+      if (!hasNetwork) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Error404Screen()),
+        );
+        return;
+      }
+
       final response = await http.get(
         Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
+
+      Navigator.pop(context); // Close loading dialog
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -276,9 +460,22 @@ class _MasterContentState extends State<MasterContent> {
         });
       } else {
         print('Failed to fetch profile data: ${response.statusCode}');
+        setState(() {
+          _employeeName = "Nama Tidak Tersedia";
+          _jobTitle = "Departemen Tidak Tersedia";
+          _email = "Email Tidak Tersedia";
+          _telepon = "Telepon Tidak Tersedia";
+        });
       }
     } catch (e) {
       print('Error fetching profile data: $e');
+      Navigator.pop(context); // Close loading dialog
+      setState(() {
+        _employeeName = "Nama Tidak Tersedia";
+        _jobTitle = "Departemen Tidak Tersedia";
+        _email = "Email Tidak Tersedia";
+        _telepon = "Telepon Tidak Tersedia";
+      });
     }
   }
 
@@ -295,9 +492,29 @@ class _MasterContentState extends State<MasterContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HomeHeader(urlFoto: _urlFoto),
+                    HomeHeader(
+                      urlFoto: _urlFoto,
+                      onProfileTap: () async {
+                        _showLoading(context);
+                        final hasNetwork = await _checkNetwork();
+                        Navigator.pop(context); // Close loading dialog
+                        if (!hasNetwork) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const Error404Screen()),
+                          );
+                          return;
+                        }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const ProfilePage()),
+                        );
+                      },
+                    ),
                     const BannerCarousel(),
-                    const Categories(),
+                    Categories(checkNetwork: _checkNetwork),
                     const DailyInfo(),
                     const SizedBox(height: 48),
                   ],
@@ -342,39 +559,38 @@ class _MasterContentState extends State<MasterContent> {
                                   icon: Icons.home,
                                   question: 'Apa fungsi halaman Home?',
                                   answer:
-                                      'Halaman Home adalah tampilan awal aplikasi yang menyediakan akses cepat ke berbagai fitur utama seperti layanan karyawan, HR Chat, dan lainnya. Di halaman ini, pengguna juga dapat melihat informasi harian seperti jadwal shift, ulang tahun karyawan, dan pengingat tugas penting.',
+                                      'Halaman Home adalah tampilan awal aplikasi yang menyediakan akses cepat ke berbagai fitur utama seperti layanan karyawan, HR Chat, dan lainnya.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.category,
                                   question: 'Apa saja menu yang tersedia?',
                                   answer:
-                                      'Menu yang tersedia mencakup BPJS, ID Card, SK Kerja & Medical, Layanan Karyawan, HR Chat, dan fitur lainnya yang menunjang kebutuhan karyawan.',
+                                      'Menu yang tersedia mencakup BPJS, ID Card, SK Kerja & Medical, Layanan Karyawan, HR Chat, dan lainnya.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.info,
                                   question: 'Apa itu Info Harian?',
                                   answer:
-                                      'Info Harian adalah fitur yang menyajikan informasi penting setiap hari, seperti jadwal shift kerja, ulang tahun karyawan, dan daftar pengingat tugas.',
+                                      'Info Harian menyajikan informasi penting seperti jadwal shift, ulang tahun karyawan, dan pengingat tugas.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.mail,
                                   question: 'Apa fungsi halaman Inbox?',
                                   answer:
-                                      'Halaman Inbox menampilkan riwayat aktivitas dari berbagai fitur dalam aplikasi, seperti pengajuan layanan, status permintaan, dan pesan dari HR.',
+                                      'Halaman Inbox menampilkan riwayat aktivitas seperti pengajuan layanan dan pesan dari HR.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.person,
                                   question: 'Apa fungsi halaman Profile?',
                                   answer:
-                                      'Halaman Profile menampilkan informasi akun karyawan seperti nama, jabatan, kontak, dan data lainnya. Pengguna juga dapat mengedit informasi pribadi melalui halaman ini.',
+                                      'Halaman Profile menampilkan informasi akun karyawan seperti nama, jabatan, dan kontak.',
                                 ),
-                                
                                 _buildFAQItem(
                                   icon: Icons.help_outline,
                                   question:
                                       'Di mana saya bisa melihat semua FAQ?',
                                   answer:
-                                      'Seluruh daftar FAQ dapat diakses melalui halaman Profile, pada bagian FAQ.',
+                                      'Seluruh FAQ dapat diakses melalui halaman Profile, pada bagian FAQ.',
                                 ),
                               ],
                             ),
@@ -519,8 +735,9 @@ class _BannerCarouselState extends State<BannerCarousel> {
 
 class HomeHeader extends StatelessWidget {
   final String? urlFoto;
+  final VoidCallback onProfileTap;
 
-  const HomeHeader({super.key, this.urlFoto});
+  const HomeHeader({super.key, this.urlFoto, required this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -535,12 +752,7 @@ class HomeHeader extends StatelessWidget {
             fit: BoxFit.contain,
           ),
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfilePage()),
-              );
-            },
+            onTap: onProfileTap,
             child: CircleAvatar(
               radius: 22,
               backgroundImage: urlFoto != null && urlFoto!.isNotEmpty
@@ -557,7 +769,52 @@ class HomeHeader extends StatelessWidget {
 }
 
 class Categories extends StatelessWidget {
-  const Categories({super.key});
+  final Future<bool> Function() checkNetwork;
+
+  const Categories({super.key, required this.checkNetwork});
+
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Memuat halaman...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Harap tunggu sebentar",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -607,10 +864,19 @@ class Categories extends StatelessWidget {
               return CategoryCard(
                 iconPath: category["icon"]!,
                 text: category["text"]!,
-                press: () {
+                press: () async {
                   _showLoading(context);
-                  Future.delayed(const Duration(seconds: 2), () {
-                    Navigator.pop(context);
+                  final hasNetwork = await checkNetwork();
+                  Navigator.pop(context); // Close loading dialog
+                  if (!hasNetwork) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const Error404Screen()),
+                    );
+                    return;
+                  }
+                  try {
                     if (category["text"] == "BPJS") {
                       Navigator.push(
                         context,
@@ -660,56 +926,20 @@ class Categories extends StatelessWidget {
                         ),
                       );
                     }
-                  });
+                  } catch (e) {
+                    print('Error navigating to ${category["text"]}: $e');
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const Error404Screen()),
+                    );
+                  }
                 },
               );
             },
           ),
         ),
       ),
-    );
-  }
-
-  void _showLoading(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Memuat halaman...",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Harap tunggu sebentar",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -791,7 +1021,7 @@ class DailyInfo extends StatelessWidget {
                 ),
                 SizedBox(width: 12),
                 InfoCard(
-                  title: "Ulang Tahun ðŸŽ‚",
+                  title: "Ulang Tahun 🎂",
                   subtitle: "Andi P. (Dept. QC)",
                   description: "Kirim ucapan via HR Chat",
                 ),
