@@ -30,7 +30,7 @@ class _InboxPageState extends State<InboxPage> {
   ];
   bool _hasUnreadNotifications = false;
   List<String> _roomIds = [];
-  Map<String, Map<String, dynamic>> _roomOpponentCache = {};
+  final Map<String, Map<String, dynamic>> _roomOpponentCache = {};
   DateTime? _lastVerifFetchTime;
 
   @override

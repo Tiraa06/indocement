@@ -655,6 +655,7 @@ class _ChatPageState extends State<ChatPage> {
             : (data is Map ? Map<String, dynamic>.from(data) : null);
       } 
     }
+    return null;
   }
 
   Future<void> _createKonsultasi(int idEmployee) async {

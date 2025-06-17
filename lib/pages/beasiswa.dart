@@ -40,7 +40,7 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
   final TextEditingController tingkatController = TextEditingController();
 
   Map<String, dynamic> _employeeData = {};
-  Map<String, dynamic> _unitData = {};
+  final Map<String, dynamic> _unitData = {};
 
   @override
   void initState() {

@@ -4,7 +4,6 @@ import 'package:indocement_apk/pages/beasiswa.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/schedule_shift.dart';
 import 'package:indocement_apk/pages/dispensasi_page.dart';
-import 'package:indocement_apk/pages/beasiswa.dart';
 
 class LayananMenuPage extends StatefulWidget {
   const LayananMenuPage({super.key});

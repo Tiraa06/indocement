@@ -348,13 +348,13 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
             : [];
         if (children.isNotEmpty) {
           namaAnak1Controller.text =
-              children.length > 0 ? (children[0]['NamaAnak'] ?? '') : '';
+              children.isNotEmpty ? (children[0]['NamaAnak'] ?? '') : '';
           ttlAnak1Controller.text =
-              children.length > 0 ? (children[0]['TglLahirAnak'] ?? '') : '';
+              children.isNotEmpty ? (children[0]['TglLahirAnak'] ?? '') : '';
           tempatLahirAnak1Controller.text =
-              children.length > 0 ? (children[0]['TempatLahirAnak'] ?? '') : '';
+              children.isNotEmpty ? (children[0]['TempatLahirAnak'] ?? '') : '';
           pendidikanAnak1Controller.text =
-              children.length > 0 ? (children[0]['PendidikanAnak'] ?? '') : '';
+              children.isNotEmpty ? (children[0]['PendidikanAnak'] ?? '') : '';
           namaAnak2Controller.text =
               children.length > 1 ? (children[1]['NamaAnak'] ?? '') : '';
           ttlAnak2Controller.text =
@@ -2401,7 +2401,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
 
           final List children = pasangan['Children'] ?? [];
           pendidikanAnak1Controller.text =
-              children.length > 0 ? (children[0]['PendidikanAnak'] ?? '') : '';
+              children.isNotEmpty ? (children[0]['PendidikanAnak'] ?? '') : '';
           pendidikanAnak2Controller.text =
               children.length > 1 ? (children[1]['PendidikanAnak'] ?? '') : '';
           pendidikanAnak3Controller.text =

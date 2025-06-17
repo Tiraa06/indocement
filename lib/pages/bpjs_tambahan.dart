@@ -223,8 +223,9 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
     required String title,
     required String message,
   }) {
-    if (_isPopupVisible)
+    if (_isPopupVisible) {
       return; // Jika popup sedang ditampilkan, jangan tampilkan lagi
+    }
 
     _isPopupVisible = true; // Tandai bahwa popup sedang ditampilkan
     showDialog(
