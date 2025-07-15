@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_selector/file_selector.dart';
+import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'hr_menu.dart';
 
 class KeluhanPage extends StatefulWidget {
   const KeluhanPage({super.key});
@@ -545,6 +547,15 @@ class _KeluhanPageState extends State<KeluhanPage> {
               ),
               backgroundColor: const Color(0xFF1E88E5),
               elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HRCareMenuPage()),
+                  );
+                },
+              ),
               flexibleSpace: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
