@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
 // Ensure this import is present
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:ui'; // Tambahkan di bagian import jika belum
+// Tambahkan di bagian import jika belum
 
 class MedicPasutriPage extends StatefulWidget {
   const MedicPasutriPage({super.key});

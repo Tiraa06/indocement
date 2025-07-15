@@ -7,6 +7,7 @@ import 'package:indocement_apk/pages/register.dart';
 import 'package:indocement_apk/pages/forgot.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:io'; // Added for exit functionality
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -54,6 +55,57 @@ class _LoginState extends State<Login> {
                     color: Colors.grey,
                   ),
                   textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showErrorModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 40,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1572E8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -137,11 +189,11 @@ class _LoginState extends State<Login> {
     final String password = _passwordController.text.trim();
 
     if (email.isEmpty) {
-      _showMessage('Email tidak boleh kosong.');
+      _showErrorModal('Email harus diisi');
       return;
     }
     if (password.isEmpty) {
-      _showMessage('Password tidak boleh kosong.');
+      _showErrorModal('Password harus diisi');
       return;
     }
 
@@ -150,7 +202,7 @@ class _LoginState extends State<Login> {
     try {
       final hasNetwork = await _checkNetwork();
       if (!hasNetwork) {
-        _showMessage('Tidak ada koneksi internet. Silakan cek jaringan Anda.');
+        _showErrorModal('Tidak ada koneksi internet. Silakan cek jaringan Anda.');
         setState(() => _isLoading = false);
         return;
       }
@@ -182,7 +234,7 @@ class _LoginState extends State<Login> {
         if (user is Map<String, dynamic> && user['Id'] != null) {
           final String role = user['Role'] ?? '';
           if (role.toLowerCase() != 'karyawan') {
-            _showMessage(
+            _showErrorModal(
                 'Akses ditolak. Hanya pengguna dengan role Karyawan yang dapat login.');
             setState(() => _isLoading = false);
             return;
@@ -191,7 +243,7 @@ class _LoginState extends State<Login> {
           final employeeData = await _fetchIdEmployee(email) ?? {};
 
           if (employeeData.isEmpty && user['IdEmployee'] == null) {
-            _showMessage('Gagal mengambil data karyawan. Silakan coba lagi.');
+            _showErrorModal('Gagal mengambil data karyawan. Silakan coba lagi.');
             setState(() => _isLoading = false);
             return;
           }
@@ -211,7 +263,7 @@ class _LoginState extends State<Login> {
           final int idEmployee =
               employeeData['idEmployee'] ?? user['IdEmployee'] ?? 0;
           if (idEmployee <= 0) {
-            _showMessage('ID karyawan tidak valid. Silakan hubungi admin.');
+            _showErrorModal('ID karyawan tidak valid. Silakan hubungi admin.');
             setState(() => _isLoading = false);
             return;
           }
@@ -239,7 +291,7 @@ class _LoginState extends State<Login> {
               'Saved to SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
 
           if (savedEmployeeName == null || savedEmployeeName.isEmpty) {
-            _showMessage(
+            _showErrorModal(
                 'Nama karyawan tidak tersedia. Silakan hubungi admin.');
           }
 
@@ -249,10 +301,10 @@ class _LoginState extends State<Login> {
             (route) => false,
           );
         } else {
-          _showMessage('Data pengguna tidak valid: ID tidak ditemukan.');
+          _showErrorModal('Akun tidak valid');
         }
       } else {
-        String errorMessage = 'Gagal login';
+        String errorMessage = 'Akun tidak valid';
         try {
           final responseBody = json.decode(response.body);
           errorMessage = responseBody['message'] ?? errorMessage;
@@ -260,153 +312,155 @@ class _LoginState extends State<Login> {
           errorMessage =
               response.body.isNotEmpty ? response.body : errorMessage;
         }
-        _showMessage(errorMessage);
+        _showErrorModal(errorMessage);
       }
     } catch (e) {
       print('Error: $e');
-      _showMessage('Terjadi kesalahan. Silakan coba lagi.');
+      _showErrorModal('Terjadi kesalahan. Silakan coba lagi.');
       Navigator.pop(context, false); // Close loading dialog if open
     }
 
     setState(() => _isLoading = false);
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 100),
-                  FadeInDown(
-                    duration: const Duration(milliseconds: 800),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/logo2.png',
-                        width: 200,
-                        height: 100,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  FadeInLeft(
-                    duration: const Duration(milliseconds: 800),
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2035),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  _buildField('Email', 900, controller: _emailController),
-                  _buildField('Password', 1100,
-                      obscure: true, controller: _passwordController),
-                  const SizedBox(height: 30),
-                  FadeInLeft(
-                    duration: const Duration(milliseconds: 1200),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const ForgotPasswordScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Forgot your password?',
-                          style: TextStyle(color: Color(0xFF1A2035)),
+    return WillPopScope(
+      onWillPop: () async {
+        // Exit the app when back button is pressed
+        exit(0);
+        return false;
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 100),
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 800),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/logo2.png',
+                          width: 200,
+                          height: 100,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 1300),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          backgroundColor: const Color(0xFF1572E8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                    const SizedBox(height: 30),
+                    FadeInLeft(
+                      duration: const Duration(milliseconds: 800),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A2035),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    _buildField('Email', 900, controller: _emailController),
+                    _buildField('Password', 1100,
+                        obscure: true, controller: _passwordController),
+                    const SizedBox(height: 30),
+                    FadeInLeft(
+                      duration: const Duration(milliseconds: 1200),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Forgot your password?',
+                            style: TextStyle(color: Color(0xFF1A2035)),
                           ),
                         ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : const Text(
-                                'Login',
-                                style: TextStyle(color: Colors.white),
-                              ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 1400),
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const Register(),
+                    const SizedBox(height: 30),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 1300),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            backgroundColor: const Color(0xFF1572E8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
                             ),
-                          );
-                        },
-                        child: RichText(
-                          text: const TextSpan(
-                            style: TextStyle(color: Colors.black, fontSize: 14),
-                            children: [
-                              TextSpan(text: 'Belum punya akun? '),
-                              TextSpan(
-                                text: 'Register',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
+                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
+                              : const Text(
+                                  'Login',
+                                  style: TextStyle(color: Colors.white),
                                 ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 1400),
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const Register(),
                               ),
-                            ],
+                            );
+                          },
+                          child: RichText(
+                            text: const TextSpan(
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 14),
+                              children: [
+                                TextSpan(text: 'Belum punya akun? '),
+                                TextSpan(
+                                  text: 'Register',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 50),
-                ],
+                    const SizedBox(height: 50),
+                  ],
+                ),
               ),
             ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: WavePainter(),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: WavePainter(),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -451,7 +505,11 @@ class WavePainter extends CustomPainter {
     Path path = Path();
     Paint gradientPaint = Paint()
       ..shader = LinearGradient(
-        colors: const [Color(0xFF0E5AB7), Color(0xFF1572E8), Color(0xFF5A9DF3)],
+        colors: const [
+          Color(0xFF0E5AB7),
+          Color(0xFF1572E8),
+          Color(0xFF5A9DF3)
+        ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.15));
