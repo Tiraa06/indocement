@@ -70,7 +70,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Map<String, dynamic> fullData = {};
   int? _userId;
-  Map<String, String> _changedFields = {};
+  final Map<String, String> _changedFields = {};
 
   String? _mapGenderFromApi(String? apiValue) {
     if (apiValue == null) return null;
@@ -711,7 +711,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         style: GoogleFonts.poppins(fontSize: 14),
                       ),
                     );
-                  }).toList(),
+                  }),
                   if (_ktpImage == null) ...[
                     const SizedBox(height: 16),
                     Text(

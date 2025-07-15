@@ -47,6 +47,7 @@ class _RegisterState extends State<Register> {
   String? _selectedSectionId;
   List<Map<String, dynamic>> _sections = [];
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -176,6 +177,7 @@ class _RegisterState extends State<Register> {
         "password": password,
         "telepon": telp,
         "idSection": int.parse(sectionId),
+        "gender": "L", // <-- gender selalu "L" saat dikirim ke API
       };
 
       await registerUser(userData);
@@ -347,7 +349,7 @@ class _RegisterState extends State<Register> {
           ),
           child: TextField(
             controller: controller,
-            obscureText: obscure,
+            obscureText: obscure ? _obscurePassword : false,
             keyboardType: keyboardType,
             style: GoogleFonts.poppins(fontSize: 16),
             decoration: InputDecoration(
@@ -358,6 +360,21 @@ class _RegisterState extends State<Register> {
                 fontSize: 16,
                 color: Colors.grey,
               ),
+              suffixIcon: obscure
+                  ? IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    )
+                  : null,
             ),
           ),
         ),
@@ -370,43 +387,65 @@ class _RegisterState extends State<Register> {
       padding: const EdgeInsets.only(bottom: 20),
       child: FadeInLeft(
         duration: Duration(milliseconds: duration),
-        child: Flexible(
-          child: Container(
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Section',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            child: DropdownButtonFormField<String>(
-              isExpanded: true, // Ensures the dropdown takes full width
-              value: _selectedSectionId,
-              hint: Text(
-                'Pilih Section',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.grey,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade400),
                 ),
               ),
-              items: _sections.map((section) {
-                return DropdownMenuItem<String>(
-                  value: section['Id'].toString(),
-                  child: Text(
-                    section['NamaSection'],
-                    style: GoogleFonts.poppins(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: _sections.any((s) => s['Id'].toString() == _selectedSectionId)
+                    ? _selectedSectionId
+                    : null,
+                hint: Text(
+                  'Pilih Section',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey,
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSectionId = value;
-                });
-              },
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                ),
+                items: _sections.isNotEmpty
+                    ? _sections.map((section) {
+                        return DropdownMenuItem<String>(
+                          value: section['Id'].toString(),
+                          child: Text(
+                            section['NamaSection'],
+                            style: GoogleFonts.poppins(fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList()
+                    : [
+                        const DropdownMenuItem<String>(
+                          value: null,
+                          child: Text('- Tidak ada data section -'),
+                        )
+                      ],
+                onChanged: _sections.isNotEmpty
+                    ? (value) {
+                        setState(() {
+                          _selectedSectionId = value;
+                        });
+                      }
+                    : null,
+                underline: const SizedBox(),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

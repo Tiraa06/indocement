@@ -17,6 +17,7 @@ class _LoginState extends State<Login> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   Future<Map<String, dynamic>?> _fetchIdEmployee(String email) async {
     try {
@@ -347,11 +348,26 @@ class _LoginState extends State<Login> {
           ),
           child: TextField(
             controller: controller,
-            obscureText: obscure,
+            obscureText: obscure ? _obscurePassword : false,
             decoration: InputDecoration(
               hintText: hint,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              suffixIcon: obscure
+                  ? IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    )
+                  : null,
             ),
           ),
         ),

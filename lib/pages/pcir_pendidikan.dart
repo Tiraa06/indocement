@@ -42,24 +42,78 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
   }
 
   void _showPopup({
-    required BuildContext context,
     required String title,
     required String message,
+    String buttonText = 'OK',
+    VoidCallback? onPressed, required BuildContext context,
   }) {
+    final bool isError = title.toLowerCase().contains('gagal') || title.toLowerCase().contains('error');
+    final Color mainColor = isError ? Colors.red : const Color(0xFF1572E8);
+
     showDialog(
-      context: context,
+      context: this.context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                  color: mainColor,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: mainColor,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (onPressed != null) onPressed();
+                    },
+                    child: Text(
+                      buttonText,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -127,11 +181,10 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
         _showPopup(
           context: this.context,
           title: 'Berhasil',
-          message: 'Ijazah berhasil diunggah.',
+          message: 'Dokumen berhasil dikirim.',
         );
       } else {
-        _showPopup(
-          context: this.context,
+        _showGagalKirimModal(
           title: 'Gagal',
           message:
               'Gagal mengunggah Ijazah: ${response.statusCode} - $responseBody',
@@ -139,12 +192,90 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
       }
     } catch (e) {
       Navigator.of(this.context).pop();
-      _showPopup(
-        context: this.context,
+      _showGagalKirimModal(
         title: 'Gagal',
         message: 'Terjadi kesalahan: ${e.toString()}',
       );
     }
+  }
+
+  void _showGagalKirimModal({
+    required String title,
+    required String message,
+    String buttonText = 'OK',
+    VoidCallback? onPressed,
+  }) {
+    showDialog(
+      context: this.context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (onPressed != null) onPressed();
+                    },
+                    child: Text(
+                      buttonText,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

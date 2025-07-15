@@ -655,6 +655,7 @@ class _ChatPageState extends State<ChatPage> {
             : (data is Map ? Map<String, dynamic>.from(data) : null);
       } 
     }
+    return null;
   }
 
   Future<void> _createKonsultasi(int idEmployee) async {
@@ -1037,6 +1038,8 @@ class _ChatPageState extends State<ChatPage> {
                       ? opponent!['Department']?.toString() ?? ''
                       : '',
                   style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  maxLines: 2, // maksimal 2 baris
+                  overflow: TextOverflow.ellipsis, // jika lebih dari 2 baris, tampilkan ...
                 ),
               ],
             ),

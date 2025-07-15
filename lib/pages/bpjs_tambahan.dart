@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +9,7 @@ import 'package:path/path.dart'; // Untuk mendapatkan nama file utama
 import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'bpjs_upload_service.dart';
+import 'package:open_file/open_file.dart';
 
 class BPJSTambahanPage extends StatefulWidget {
   const BPJSTambahanPage({super.key});
@@ -21,7 +24,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       {}; // Menyimpan gambar yang dipilih berdasarkan fieldName
   String? selectedAnggotaBpjs; // Menyimpan pilihan dropdown
   String? selectedRelationship; // Menyimpan pilihan relationship
-  bool _isPopupVisible =
+  final bool _isPopupVisible =
       false; // Menyimpan status apakah popup sedang ditampilkan
   bool isDownloaded = false; // Menyimpan status apakah file sudah didownload
   bool isFormVisible = false; // Status untuk menampilkan form upload
@@ -161,6 +164,15 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       setState(() {
         isFormVisible = true; // Tampilkan form upload
       });
+
+      _showDownloadPopup(
+        title: 'Download Berhasil',
+        message: 'File berhasil diunduh.',
+        onOpenFile: () {
+          // Buka file/folder, misal pakai open_file/open_filex
+          OpenFile.open(filePath);
+        },
+      );
     } catch (e) {
       // Tutup dialog loading
       Navigator.of(this.context).pop();
@@ -223,25 +235,72 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
     required String title,
     required String message,
   }) {
-    if (_isPopupVisible)
-      return; // Jika popup sedang ditampilkan, jangan tampilkan lagi
+    final bool isError = title.toLowerCase().contains('gagal') || title.toLowerCase().contains('error');
+    final Color mainColor = isError ? Colors.red : const Color(0xFF1572E8);
 
-    _isPopupVisible = true; // Tandai bahwa popup sedang ditampilkan
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _isPopupVisible = false; // Reset status popup
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                  color: mainColor,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: mainColor,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -437,6 +496,114 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showDownloadPopup({
+    required String title,
+    required String message,
+    required VoidCallback onOpenFile,
+    String okText = 'OK',
+    String openText = 'Open File',
+  }) {
+    showDialog(
+      context: this.context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1572E8).withOpacity(0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(18),
+                  child: const Icon(
+                    Icons.file_download_done_rounded,
+                    color: Color(0xFF1572E8),
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.folder_open_rounded, size: 20, color: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1572E8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onOpenFile();
+                        },
+                        label: Text(
+                          openText,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 15.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF1572E8), width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          okText,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1572E8),
+                            fontSize: 15.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -912,14 +1079,33 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                           'Gagal mengirim data anak. (${response.statusCode})\n${response.data}',
                                     );
                                   }
-                                } catch (e) {
+                                } on DioException {
                                   Navigator.of(context).pop();
-                                  print('❌ Error kirim data anak: $e');
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message:
-                                        'Terjadi kesalahan saat mengirim data anak.\n$e',
+                                    message: 'Server sedang dalam gangguan.',
+                                  );
+                                } on SocketException catch (_) {
+                                  Navigator.of(context).pop();
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Server sedang dalam gangguan.',
+                                  );
+                                } on TimeoutException catch (_) {
+                                  Navigator.of(context).pop();
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Server sedang dalam gangguan.',
+                                  );
+                                } catch (e) {
+                                  Navigator.of(context).pop();
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Terjadi kesalahan saat mengirim data.\n$e',
                                   );
                                 }
                               },
@@ -1083,8 +1269,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                     _showPopup(
                                       context: context,
                                       title: 'Berhasil',
-                                      message:
-                                          'Surat Registrasi BPJS Tambahan berhasil dikirim.',
+                                      message: 'Surat Registrasi BPJS Tambahan berhasil dikirim.',
                                     );
                                   } else {
                                     _showPopup(

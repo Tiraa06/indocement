@@ -222,7 +222,7 @@ class _BPJSPageState extends State<BPJSPage>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Frequently Asked Questions (FAQ)',
+                                  'FAQ BPJS Kesehatan',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -231,35 +231,105 @@ class _BPJSPageState extends State<BPJSPage>
                                 ),
                                 const SizedBox(height: 16),
                                 _buildFAQItem(
-                                  icon: Icons.home,
-                                  question: 'Apa fungsi halaman Home?',
+                                  icon: Icons.health_and_safety,
+                                  question: 'Apa tujuan dari menu BPJS Kesehatan?',
                                   answer:
-                                      'Halaman Home memberikan ringkasan informasi harian, seperti shift kerja, ulang tahun, dan pengingat penting.',
+                                      'Menu ini disediakan untuk mengelola data kepesertaan BPJS Kesehatan karyawan dan keluarga, termasuk pengunggahan dokumen dan penambahan anggota keluarga yang ditanggung.',
                                 ),
                                 _buildFAQItem(
-                                  icon: Icons.category,
-                                  question: 'Apa saja menu yang tersedia?',
+                                  icon: Icons.upload_file,
+                                  question: 'Dokumen apa yang perlu saya unggah?',
                                   answer:
-                                      'Menu yang tersedia meliputi BPJS, ID & Slip Gaji, SK Kerja & Medical, Layanan Karyawan, HR Care, dan lainnya.',
+                                      'Anda perlu mengunggah dokumen berikut:\n\n• Kartu Keluarga (KK)\n• Surat Nikah (jika ingin menambahkan pasangan)',
                                 ),
+                                _buildFAQItem(
+                                  icon: Icons.group_add,
+                                  question: 'Siapa saja anggota keluarga yang bisa saya tambahkan?',
+                                  answer:
+                                      '• Pasangan (Suami/Istri) – Wajib melampirkan surat nikah.\n'
+                                      '• Anak – Maksimal 3 anak ditanggung langsung.\n'
+                                      '• Tambahan Keluarga (BPJS Keluarga Tambahan):\n'
+                                      '   - Ayah\n   - Ibu\n   - Ayah Mertua\n   - Ibu Mertua\n   - Anak ke-4 sampai Anak ke-7',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.add_box,
+                                  question: 'Bagaimana cara menambahkan data anggota keluarga?',
+                                  answer:
+                                      'Klik tombol “Tambah Data” di bagian yang sesuai.\n'
+                                      'Lengkapi form biodata anggota keluarga.\n'
+                                      'Unggah dokumen pendukung jika diminta (KK, akta kelahiran, surat nikah, dll).\n'
+                                      'Simpan dan tunggu proses verifikasi oleh HR.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.info_outline,
+                                  question: 'Apakah semua anggota keluarga tambahan akan otomatis ditanggung perusahaan?',
+                                  answer:
+                                      'Tidak. Penambahan anggota keluarga di luar ketentuan (anak ke-4 dst, orang tua/mertua) mungkin dikenakan iuran tambahan, sesuai kebijakan perusahaan.',
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'FAQ - BPJS Ketenagakerjaan',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1572E8),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFAQItem(
+                                  icon: Icons.work,
+                                  question: 'Apa fungsi dari menu BPJS Ketenagakerjaan?',
+                                  answer:
+                                      'Menu ini digunakan untuk informasi dan pertanyaan seputar BPJS Ketenagakerjaan, termasuk proses klaim, status kepesertaan, dan bantuan administrasi.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.contact_phone,
+                                  question: 'Siapa yang bisa saya hubungi jika saya memiliki pertanyaan tentang BPJS Ketenagakerjaan?',
+                                  answer:
+                                      'Anda dapat menghubungi atasan/PIC'
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.account_balance_wallet,
+                                  question: 'Apakah saya bisa melihat data iuran atau saldo BPJS Ketenagakerjaan di sini?',
+                                  answer:
+                                      'Tidak. Untuk melihat data saldo BPJS TK, silakan login ke aplikasi resmi BPJSTKU atau kunjungi situs web BPJS Ketenagakerjaan.',
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'FAQ - PCIR (Pusat Control Informasi Relasi)',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1572E8),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
                                 _buildFAQItem(
                                   icon: Icons.info,
-                                  question: 'Apa itu Info Harian?',
+                                  question: 'Apa itu menu PCIR?',
                                   answer:
-                                      'Info Harian menampilkan informasi penting seperti shift kerja, ulang tahun karyawan, dan pengingat tugas.',
+                                      'PCIR adalah pusat kendali informasi pribadi dan keluarga karyawan. Di sini Anda bisa mengelola dan memperbarui data pribadi Anda secara mandiri.',
                                 ),
                                 _buildFAQItem(
-                                  icon: Icons.help_outline,
-                                  question:
-                                      'Bagaimana cara mengakses menu BPJS?',
+                                  icon: Icons.featured_play_list,
+                                  question: 'Fitur apa saja yang tersedia di menu PCIR?',
                                   answer:
-                                      'Klik menu BPJS. Jika akses belum diberikan, Anda dapat meminta izin melalui tombol yang tersedia.',
+                                      'Menu PCIR memiliki 3 fitur utama:\n'
+                                      '• Update BPJS – Untuk memperbarui data kepesertaan BPJS Anda dan keluarga.\n'
+                                      '• Update Pendidikan – Untuk memperbarui riwayat dan tingkat pendidikan terakhir Anda.\n'
+                                      '• Lihat Seluruh Data Keluarga – Untuk melihat semua data anggota keluarga yang terdaftar dalam sistem.',
                                 ),
                                 _buildFAQItem(
-                                  icon: Icons.notifications,
-                                  question: 'Apa itu pengingat di Info Harian?',
+                                  icon: Icons.verified,
+                                  question: 'Apakah perubahan data melalui PCIR langsung berlaku?',
                                   answer:
-                                      'Pengingat adalah notifikasi untuk tugas penting, seperti pengajuan lembur atau dokumen yang harus diselesaikan.',
+                                      'Setelah Anda mengajukan perubahan, data akan diverifikasi oleh HR terlebih dahulu sebelum di-update secara resmi di sistem.',
+                                ),
+                                _buildFAQItem(
+                                  icon: Icons.download,
+                                  question: 'Apakah saya bisa mencetak data keluarga dari PCIR?',
+                                  answer:
+                                      'Ya, terdapat fitur "Download Data" yang memungkinkan Anda mencetak atau menyimpan data keluarga dalam format PDF untuk keperluan pribadi atau administrasi.',
                                 ),
                               ],
                             ),

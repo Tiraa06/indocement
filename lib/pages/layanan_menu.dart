@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/schedule_shift.dart';
+import 'package:indocement_apk/pages/absensi_page.dart';
+import 'package:indocement_apk/pages/uang_duka_page.dart';
 
 class LayananMenuPage extends StatefulWidget {
   const LayananMenuPage({super.key});
@@ -39,13 +41,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.monetization_on,
         'title': 'Uang Duka',
         'color': Colors.blue,
-        'onTap': () => _navigateToFeature("Uang Duka"),
-      },
-      {
-        'icon': Icons.calendar_today,
-        'title': 'Cuti',
-        'color': Colors.green,
-        'onTap': () => _navigateToFeature("Cuti"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const UangDukaPage()),
+          );
+        },
       },
       {
         'icon': Icons.schedule,
@@ -63,13 +65,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.fingerprint,
         'title': 'Absensi',
         'color': Colors.purple,
-        'onTap': () => _navigateToFeature("Absensi"),
-      },
-      {
-        'icon': Icons.account_balance_wallet,
-        'title': 'Dispensasi/Kompensasi',
-        'color': Colors.teal,
-        'onTap': () => _navigateToFeature("Dispensasi/Kompensasi"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EventMenuPage()),
+          );
+        },
       },
       {
         'icon': Icons.folder,
@@ -97,7 +99,6 @@ class _LayananMenuPageState extends State<LayananMenuPage>
       },
     ];
   }
-
 
   @override
   void dispose() {
@@ -244,12 +245,6 @@ class _LayananMenuPageState extends State<LayananMenuPage>
                                 question: 'Apa itu menu Uang Duka?',
                                 answer:
                                     'Menu Uang Duka disediakan untuk mengajukan bantuan atau klaim terkait musibah duka. Fitur ini akan tersedia pada pembaruan selanjutnya.',
-                              ),
-                              _buildFAQItem(
-                                icon: Icons.calendar_today,
-                                question: 'Apa itu menu Cuti?',
-                                answer:
-                                    'Menu Cuti akan digunakan untuk mengajukan dan memantau permohonan cuti karyawan secara online. Fitur ini sedang dalam tahap pengembangan.',
                               ),
                               _buildFAQItem(
                                 icon: Icons.schedule,

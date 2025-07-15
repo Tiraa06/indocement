@@ -67,13 +67,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
     super.dispose();
   }
 
-  void _toggleMenu() {
-    if (_animationController.isCompleted) {
-      _animationController.reverse();
-    } else {
-      _animationController.forward();
-    }
-  }
+
 
   Future<void> _loadEmployeeData() async {
     try {
@@ -332,12 +326,6 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
             ),
             backgroundColor: const Color(0xFF1572E8),
             iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: _toggleMenu,
-              ),
-            ],
           ),
           body: Stack(
             children: [

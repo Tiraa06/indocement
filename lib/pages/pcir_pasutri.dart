@@ -164,16 +164,24 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
       );
 
       if (uploadResponse.statusCode == 200) {
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('File berhasil diunggah.')),
+        _showPopup(
+          title: 'Berhasil',
+          message: 'File berhasil diunggah.',
+          onPressed: () {
+            Navigator.pushReplacementNamed(this.context, '/master');
+          },
         );
-        await _fetchUploadedData(); // Refresh data setelah upload
+        // Tidak perlu await _fetchUploadedData(); karena langsung ke master
       } else {
-        throw Exception('Upload gagal: ${uploadResponse.statusCode}');
+        _showPopup(
+          title: 'Gagal',
+          message: 'Upload gagal: ${uploadResponse.statusCode}',
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(this.context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      _showPopup(
+        title: 'Gagal',
+        message: 'Terjadi kesalahan: $e',
       );
     } finally {
       setState(() => isLoading = false);
@@ -366,6 +374,84 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
     );
   }
 
+  void _showPopup({
+    required String title,
+    required String message,
+    String buttonText = 'OK',
+    VoidCallback? onPressed,
+  }) {
+    final bool isError = title.toLowerCase().contains('gagal') || title.toLowerCase().contains('error');
+    final Color mainColor = isError ? Colors.red : const Color(0xFF1572E8);
+
+    showDialog(
+      context: this.context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                  color: mainColor,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: mainColor,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (onPressed != null) onPressed();
+                    },
+                    child: Text(
+                      buttonText,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -438,6 +524,13 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
                             const SizedBox(height: 24),
                             ElevatedButton(
                               onPressed: () async {
+                                if (selectedImages['UrlKk'] == null || selectedImages['UrlSuratNikah'] == null) {
+                                  _showPopup(
+                                    title: 'Gagal',
+                                    message: 'Silakan upload Kartu Keluarga dan Surat Nikah terlebih dahulu!',
+                                  );
+                                  return;
+                                }
                                 await uploadDokumenPasutriGanda();
                               },
                               style: ElevatedButton.styleFrom(

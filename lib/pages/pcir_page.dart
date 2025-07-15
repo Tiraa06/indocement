@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:indocement_apk/pages/pcir_anak.dart';
 import 'package:indocement_apk/pages/pcir_pasutri.dart';
 import 'package:indocement_apk/pages/pcir_pendidikan.dart';
 import 'package:indocement_apk/pages/family_data_page.dart';

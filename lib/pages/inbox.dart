@@ -30,8 +30,9 @@ class _InboxPageState extends State<InboxPage> {
   ];
   bool _hasUnreadNotifications = false;
   List<String> _roomIds = [];
-  Map<String, Map<String, dynamic>> _roomOpponentCache = {};
+  final Map<String, Map<String, dynamic>> _roomOpponentCache = {};
   DateTime? _lastVerifFetchTime;
+  List<Map<String, dynamic>> _bpjsNotifList = [];
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _InboxPageState extends State<InboxPage> {
       await _fetchBpjsData();
       await _fetchVerifData();
       await _fetchMessages();
+      await _fetchBpjsNotifList();
     } else {
       if (mounted) {
         setState(() {
@@ -370,6 +372,30 @@ class _InboxPageState extends State<InboxPage> {
       ).then((_) async {
         await _fetchMessages();
       });
+    }
+  }
+
+  Future<void> _fetchBpjsNotifList() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/Notifications'),
+        headers: {'accept': 'text/plain'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          setState(() {
+            _bpjsNotifList = data
+                .where((notif) =>
+                    notif['Source'] == 'BPJS' &&
+                    notif['IdEmployee']?.toString() == _employeeId?.toString())
+                .toList()
+                .cast<Map<String, dynamic>>();
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching BPJS notifications: $e');
     }
   }
 
@@ -753,30 +779,27 @@ class _InboxPageState extends State<InboxPage> {
                                   },
                                 )
                           : _selectedTab == 'BPJS'
-                              ? _bpjsData.isEmpty
+                              ? _bpjsNotifList.isEmpty
                                   ? Center(
                                       child: Text(
-                                        "No BPJS data found.",
+                                        "Tidak ada notifikasi BPJS.",
                                         style: GoogleFonts.poppins(
                                             fontSize: fontSizeLabel,
                                             color: Colors.black87),
                                       ),
                                     )
                                   : ListView.builder(
-                                      itemCount: _bpjsData.length,
+                                      itemCount: _bpjsNotifList.length,
                                       itemBuilder: (context, index) {
-                                        final bpjs = _bpjsData[index];
-                                        final timestamp =
-                                            bpjs['CreatedAt'] != null
-                                                ? _formatTimestamp(
-                                                    bpjs['CreatedAt'])
-                                                : 'Unknown Date';
-                                        final description =
-                                            bpjs['Description']?.toString() ??
-                                                'No description';
-                                        final status =
-                                            bpjs['Status']?.toString() ??
-                                                'Unknown';
+                                        final notif = _bpjsNotifList[index];
+                                        final updatedAt = notif['UpdatedAt'] !=
+                                                null
+                                            ? _formatTimestamp(notif['UpdatedAt'])
+                                            : 'Unknown Date';
+                                        final status = notif['Status']?.toString() ??
+                                            'Unknown';
+                                        final idSource = notif['IdSource']?.toString() ??
+                                            'N/A';
 
                                         return Card(
                                           margin: const EdgeInsets.symmetric(
@@ -792,35 +815,30 @@ class _InboxPageState extends State<InboxPage> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  "Nomor BPJS: ${bpjs['NoBpjs'] ?? 'N/A'}",
+                                                  "Notifikasi BPJS",
                                                   style: GoogleFonts.poppins(
                                                     fontSize: fontSizeLabel,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.black87,
+                                                    color: const Color(0xFF1E88E5),
                                                   ),
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
-                                                  "Description: $description",
+                                                  "Nomor BPJS: $idSource",
                                                   style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
+                                                      fontSize: fontSizeLabel - 2,
                                                       color: Colors.black87),
                                                 ),
-                                                const SizedBox(height: 8),
                                                 Text(
                                                   "Status: $status",
                                                   style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
+                                                      fontSize: fontSizeLabel - 2,
                                                       color: Colors.green),
                                                 ),
-                                                const SizedBox(height: 8),
                                                 Text(
-                                                  "Date: $timestamp",
+                                                  "Tanggal: $updatedAt",
                                                   style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          fontSizeLabel - 2,
+                                                      fontSize: fontSizeLabel - 2,
                                                       color: Colors.grey),
                                                 ),
                                               ],

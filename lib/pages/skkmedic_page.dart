@@ -227,10 +227,62 @@ class _SKKMedicPageState extends State<SKKMedicPage>
                                     icon: Icons.info,
                                     question: 'Bagaimana Sistem Pengajuan Surat Keterangan Kerja?',
                                     answer:
-                                        'Anda perlu mengisi form kecil untuk menyebutkan keperluan surat tersebut. Setelah diajukan, pengajuan akan masuk ke riwayat pengajuan SKK silahkan refresh dengan cara scroll down, di mana Anda bisa melihat statusnya:\n\n'
+                                        'Anda perlu mengisi form kecil untuk menyebutkan keperluan surat tersebut. Setelah diajukan, pengajuan akan masuk ke riwayat pengajuan SKK, di mana Anda bisa melihat statusnya:\n\n'
                                         '-Diajukan: Masih diproses oleh HR\n'
                                         '-Approved: Telah disetujui, dan tombol download akan muncul di bagian keperluan\n'
                                         '-Return: Pengajuan dikembalikan, Anda perlu mengajukan ulang',
+                                  ),
+                                  // Tambahan FAQ Medical
+                                  _buildFAQItem(
+                                    icon: Icons.medical_information,
+                                    question: 'Apa itu Halaman Medical?',
+                                    answer:
+                                        'Halaman Medical adalah halaman yang disediakan untuk karyawan mengisi dan mengunggah dokumen medis, seperti Surat Keterangan Medic dan Surat Pernyataan Medic, untuk keperluan administrasi internal.',
+                                  ),
+                                  _buildFAQItem(
+                                    icon: Icons.description,
+                                    question: 'Dokumen apa saja yang perlu saya isi?',
+                                    answer:
+                                        'Anda perlu mengisi:\n\n'
+                                        'Surat Keterangan Medic – Formulir ini berisi informasi medis dari instansi atau fasilitas kesehatan.\n\n'
+                                        'Surat Pernyataan Medic – Formulir ini berisi pernyataan pribadi Anda terkait kondisi medis dan persetujuan terhadap kebijakan perusahaan.',
+                                  ),
+                                  _buildFAQItem(
+                                     icon: Icons.edit_document,
+                                    question: 'Apakah saya harus mencetak dan menandatangani dokumen terlebih dahulu?',
+                                    answer:
+                                        'Ya. Anda perlu mencetak, mengisi, dan menandatangani kedua dokumen tersebut sebelum mengunggahnya melalui tombol Upload yang tersedia di halaman.',
+                                  ),
+                                  _buildFAQItem(
+                                    icon: Icons.upload_file,
+                                    question: 'Bagaimana cara mengunggah dokumen?',
+                                    answer:
+                                        'Setelah Anda mengisi dan menandatangani dokumen:\n\n'
+                                        '• Pindai atau foto dokumen dengan jelas.\n'
+                                        '• Klik tombol Upload pada halaman Medical.\n'
+                                        '• Pilih file yang akan diunggah (format PDF/JPG/PNG disarankan).\n'
+                                        '• Konfirmasi pengunggahan dan pastikan status file berhasil dikirim.',
+                                  ),
+                                  _buildFAQItem(
+                                    icon: Icons.group,
+                                    question: 'Siapa yang menerima dokumen yang saya unggah?',
+                                    answer:
+                                        'Dokumen yang diunggah akan dikirim secara otomatis ke atasan langsung atau pihak HR yang berwenang untuk verifikasi dan tindak lanjut.',
+                                  ),
+                                  _buildFAQItem(
+                                    icon: Icons.notifications_active,
+                                    question: 'Apakah saya akan mendapat notifikasi setelah mengunggah dokumen?',
+                                    answer:
+                                        'Ya, Anda akan menerima notifikasi bahwa dokumen telah berhasil dikirim. Pastikan untuk menyimpan bukti pengunggahan jika diperlukan.',
+                                  ),
+                                  _buildFAQItem(
+                                    icon: Icons.help,
+                                    question: 'Apa yang harus saya lakukan jika mengalami kendala saat mengunggah?',
+                                    answer:
+                                        'Silakan hubungi tim IT support atau HRD melalui email internal atau kontak yang tersedia jika:\n\n'
+                                        '• Tombol upload tidak berfungsi.\n'
+                                        '• Dokumen gagal terkirim.\n'
+                                        '• Ada kesalahan dalam file yang sudah diunggah.',
                                   ),
                                 ],
                               ),

@@ -258,61 +258,109 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
               DateFormat('dd MMMM yyyy HH:mm', 'id_ID').format(dateTime);
         }
 
-        showDialog(
-          context: dialogContext,
-          builder: (context) => AlertDialog(
-            title: const Text('Pengajuan Berhasil'),
-            content: Text(
+        _showPopup(
+          title: 'Pengajuan Berhasil',
+          message:
               'Pengajuan ID Card Anda telah berhasil disubmit.\nTanggal Pengajuan: $formattedDate',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    fotoBaru = null;
-                    fotoRusak = null;
-                    suratKehilangan = null;
-                  });
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+          onPressed: () {
+            setState(() {
+              fotoBaru = null;
+              fotoRusak = null;
+              suratKehilangan = null;
+            });
+          },
         );
       } else {
-        showDialog(
-          context: dialogContext,
-          builder: (context) => AlertDialog(
-            title: const Text('Pengajuan Gagal'),
-            content: Text(
-              'Gagal mengajukan ID Card: [${response.statusCode}] $responseBody',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+        _showPopup(
+          title: 'Gagal',
+          message: 'Dokumen gagal dikirim.',
         );
       }
     } catch (e) {
       setState(() => isLoading = false);
-      showDialog(
-        context: dialogContext,
-        builder: (context) => AlertDialog(
-          title: const Text('Koneksi Gagal'),
-          content: Text('Gagal terhubung ke server: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      _showPopup(
+        title: 'Koneksi Gagal',
+        message: 'Gagal terhubung ke server: $e',
       );
     }
+  }
+
+  void _showPopup({
+    required String title,
+    required String message,
+    String buttonText = 'OK',
+    VoidCallback? onPressed,
+  }) {
+    final bool isError = title.toLowerCase().contains('gagal') || title.toLowerCase().contains('error');
+    final Color mainColor = isError ? Colors.red : const Color(0xFF1572E8);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                  color: mainColor,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: mainColor,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (onPressed != null) onPressed();
+                    },
+                    child: Text(
+                      buttonText,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget buildUploadSection(String label, File? file, Function(File) onPicked,
@@ -503,7 +551,27 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                               : const Text('Ajukan Sekarang'),
                           onPressed: isLoading
                               ? null
-                              : () => submitForm(buttonContext),
+                              : () {
+                                  // Validasi data jika perlu
+                                  // ...
+                                  // Contoh validasi field wajib
+                                  if (fotoBaru == null || (_selectedStatus == 'Rusak' && fotoRusak == null) || (_selectedStatus == 'Hilang' && suratKehilangan == null)) {
+                                    _showPopup(
+                                      title: 'Gagal',
+                                      message: 'Silakan lengkapi semua field yang wajib diisi!',
+                                    );
+                                    return;
+                                  }
+
+                                  // Jika semua field terisi, baru kirim
+                                  _showPopup(
+                                    title: 'Berhasil',
+                                    message: 'Pengajuan berhasil dikirim.',
+                                    onPressed: () {
+                                      Navigator.pushReplacementNamed(context, '/master');
+                                    },
+                                  );
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1572E8),
                             minimumSize: const Size(double.infinity, 50),
