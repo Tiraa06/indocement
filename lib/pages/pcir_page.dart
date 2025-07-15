@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/pcir_pasutri.dart';
 import 'package:indocement_apk/pages/pcir_pendidikan.dart';
 import 'package:indocement_apk/pages/family_data_page.dart';
+import 'package:indocement_apk/utils/network_helper.dart'; // Tambahkan import ini
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class PCIRPage extends StatefulWidget {
   const PCIRPage({super.key});
@@ -15,6 +18,8 @@ class _PCIRPageState extends State<PCIRPage>
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   bool _isMenuVisible = false;
+  List<dynamic> _familyData = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -31,6 +36,32 @@ class _PCIRPageState extends State<PCIRPage>
       parent: _controller,
       curve: Curves.easeInOutCubic,
     ));
+
+    _fetchFamilyData(); // Panggil saat init
+  }
+
+  Future<void> _fetchFamilyData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final response = await safeRequest(
+      context,
+      () => http.get(
+        Uri.parse('http://103.31.235.237:5555/api/FamilyData'),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+    if (response == null) return; // Sudah redirect ke error
+    if (response.statusCode == 200) {
+      setState(() {
+        _familyData = jsonDecode(response.body);
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _toggleMenu() {

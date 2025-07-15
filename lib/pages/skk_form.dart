@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
+import 'package:indocement_apk/utils/network_helper.dart'; // Tambahkan import ini
 
 class SkkFormPage extends StatefulWidget {
   const SkkFormPage({super.key});
@@ -82,13 +83,17 @@ class _SkkFormPageState extends State<SkkFormPage> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/Employees/$employeeId'),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await safeRequest(
+        context,
+        () => http.get(
+          Uri.parse('$baseUrl/api/Employees/$employeeId'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      if (response == null) return; // Sudah redirect ke error
 
       if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);

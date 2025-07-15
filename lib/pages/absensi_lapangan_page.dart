@@ -311,9 +311,124 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
     } catch (e) {}
   }
 
+  Future<bool> _sudahAbsenHariIni() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/Absensi'),
+        headers: {'accept': 'text/plain'},
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final now = DateTime.now();
+        for (var absen in data) {
+          if (absen['IdEmployee'] == _idEmployee) {
+            // Cek CreatedAt
+            final createdAtStr = absen['CreatedAt'];
+            if (createdAtStr != null) {
+              final createdAt = DateTime.tryParse(createdAtStr);
+              if (createdAt != null &&
+                  createdAt.year == now.year &&
+                  createdAt.month == now.month &&
+                  createdAt.day == now.day) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Bisa tambahkan log jika perlu
+    }
+    return false;
+  }
+
   Future<void> _uploadAbsensi() async {
     if (_imageFile == null || _idEmployee == null || _jarak == null) {
       Fluttertoast.showToast(msg: 'Data absensi tidak lengkap!');
+      return;
+    }
+
+    // CEK SUDAH ABSEN HARI INI
+    bool sudahAbsen = await _sudahAbsenHariIni();
+    if (sudahAbsen) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: const Color(0xFFF6F8FC),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDECEA),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: const Icon(
+                      Icons.event_busy,
+                      color: Color(0xFFD32F2F),
+                      size: 38,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const Text(
+                    'Sudah Absen Hari Ini',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Anda sudah melakukan absensi untuk hari ini. Silakan kembali besok.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF333333),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFD32F2F),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const EventMenuPage()),
+                        );
+                      },
+                      child: const Text('Kembali'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
       return;
     }
 
@@ -778,6 +893,26 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
                               ],
                             ),
                             const SizedBox(height: 20),
+                            if (_jarak != null && _jarak! > radiusZona)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline, color: Colors.red, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Anda harus berada di lingkungan Event untuk dapat melakukan absensi.',
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
@@ -807,7 +942,7 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
                                   ),
                                   elevation: 4,
                                 ),
-                                onPressed: (_imageFile != null && !_isUploading)
+                                onPressed: (_imageFile != null && !_isUploading && _jarak != null && _jarak! <= radiusZona)
                                     ? () async {
                                         print('IdEmployee: $_idEmployee');
                                         print('Jarak: $_jarak');

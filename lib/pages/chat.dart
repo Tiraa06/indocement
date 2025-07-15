@@ -1024,24 +1024,28 @@ class _ChatPageState extends State<ChatPage> {
                   : const Icon(Icons.person, color: Colors.grey),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  opponent != null
-                      ? opponent!['Name']?.toString() ?? 'N/A'
-                      : 'Chat',
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
-                ),
-                Text(
-                  opponent != null
-                      ? opponent!['Department']?.toString() ?? ''
-                      : '',
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                  maxLines: 2, // maksimal 2 baris
-                  overflow: TextOverflow.ellipsis, // jika lebih dari 2 baris, tampilkan ...
-                ),
-              ],
+            // Ganti Column dengan Flexible agar tidak overflow
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    opponent != null
+                        ? opponent!['Name']?.toString() ?? 'N/A'
+                        : 'Chat',
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    opponent != null
+                        ? opponent!['Department']?.toString() ?? ''
+                        : '',
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

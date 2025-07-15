@@ -76,6 +76,7 @@ dependencies:
   http_parser: ^4.1.2
   retry: ^3.1.2
   debounce_throttle: ^2.0.0
+  connectivity_plus: ^6.0.5
 dev_dependencies:
   flutter_test:
     sdk: flutter

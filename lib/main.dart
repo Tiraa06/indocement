@@ -6,6 +6,7 @@ import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/login.dart';
 import 'package:indocement_apk/pages/register.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:indocement_apk/pages/error.dart';
 
 void main() {
   runApp(const MyApp());
@@ -46,6 +47,10 @@ class MyApp extends StatelessWidget {
         ),
         home: const SplashScreen(),
         onGenerateRoute: _onGenerateRoute,
+        routes: {
+          '/error404': (context) => Error404Screen(),
+          // ...route lain...
+        },
       ),
     );
   }
