@@ -834,103 +834,12 @@ class Categories extends StatelessWidget {
     final crossAxisCount = (screenWidth - padding) ~/ (cardWidth + spacing);
     final columnCount = crossAxisCount.clamp(2, 5);
 
-return Padding(
-  padding: const EdgeInsets.all(16),
-  child: Container(
-    width: double.infinity,
-    // Tambahkan height agar container lebih tinggi
-    height: 250, // Ubah sesuai kebutuhan tampilan
-    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: const [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 8,
-          offset: Offset(0, 4),
-        ),
-      ],
-    ),
-    child: GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: columnCount,
-      crossAxisSpacing: spacing,
-      mainAxisSpacing: 12.0,
-      childAspectRatio: cardWidth / (cardWidth + 30),
-      children: List.generate(
-        categories.length,
-        (index) {
-          final category = categories[index];
-          return CategoryCard(
-            iconPath: category["icon"]!,
-            text: category["text"]!,
-            press: () {
-              _showLoading(context);
-              Future.delayed(const Duration(seconds: 2), () {
-                Navigator.pop(context);
-                if (category["text"] == "BPJS") {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BPJSPage(),
-                    ),
-                  );
-                } else if (category["text"] == "HR Chat") {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HRCareMenuPage(),
-                    ),
-                  );
-                } else if (category["text"] == "ID Card") {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const IdCardUploadPage(),
-                    ),
-                  );
-                } else if (category["text"] == "SK Kerja & Medical") {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SKKMedicPage(),
-                    ),
-                  );
-                } else if (category["text"] == "Layanan Karyawan") {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LayananMenuPage(),
-                    ),
-                  );
-                } else if (category["text"] == "Lainnya") {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Menu Lainnya belum tersedia'),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('Menu ${category["text"]} belum tersedia'),
-                    ),
-                  );
-                }
-              });
-            },
-          );
-        },
-      ),
-    ),
-  ),
-);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
         width: double.infinity,
+        // Tambahkan height agar container lebih tinggi
+        height: 250, // Ubah sesuai kebutuhan tampilan
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -943,93 +852,79 @@ return Padding(
             ),
           ],
         ),
-        child: GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: columnCount,
-          crossAxisSpacing: spacing,
-          mainAxisSpacing: 12.0,
-          childAspectRatio: cardWidth / (cardWidth + 30),
-          children: List.generate(
-            categories.length,
-            (index) {
-              final category = categories[index];
-              return CategoryCard(
-                iconPath: category["icon"]!,
-                text: category["text"]!,
-                press: () async {
-                  _showLoading(context);
-                  final hasNetwork = await checkNetwork();
-                  Navigator.pop(context); // Close loading dialog
-                  if (!hasNetwork) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const Error404Screen()),
-                    );
-                    return;
-                  }
-                  try {
-                    if (category["text"] == "BPJS") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BPJSPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "HR Chat") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const HRCareMenuPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "ID Card") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const IdCardUploadPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "SK Kerja & Medical") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SKKMedicPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "Layanan Karyawan") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LayananMenuPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "Lainnya") {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Menu Lainnya belum tersedia'),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              Text('Menu ${category["text"]} belum tersedia'),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    print('Error navigating to ${category["text"]}: $e');
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const Error404Screen()),
-                    );
-                  }
-                },
-              );
-            },
+        child: Expanded(
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: columnCount,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: 12.0,
+            childAspectRatio: cardWidth / (cardWidth + 30),
+            children: List.generate(
+              categories.length,
+              (index) {
+                final category = categories[index];
+                return CategoryCard(
+                  iconPath: category["icon"]!,
+                  text: category["text"]!,
+                  press: () {
+                    _showLoading(context);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      Navigator.pop(context);
+                      if (category["text"] == "BPJS") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BPJSPage(),
+                          ),
+                        );
+                      } else if (category["text"] == "HR Chat") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const HRCareMenuPage(),
+                          ),
+                        );
+                      } else if (category["text"] == "ID Card") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const IdCardUploadPage(),
+                          ),
+                        );
+                      } else if (category["text"] == "SK Kerja & Medical") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SKKMedicPage(),
+                          ),
+                        );
+                      } else if (category["text"] == "Layanan Karyawan") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LayananMenuPage(),
+                          ),
+                        );
+                      } else if (category["text"] == "Lainnya") {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Menu Lainnya belum tersedia'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('Menu ${category["text"]} belum tersedia'),
+                          ),
+                        );
+                      }
+                    });
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),
