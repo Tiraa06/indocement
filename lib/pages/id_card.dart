@@ -551,11 +551,11 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                               : const Text('Ajukan Sekarang'),
                           onPressed: isLoading
                               ? null
-                              : () {
+                              : () async {
                                   // Validasi data jika perlu
-                                  // ...
-                                  // Contoh validasi field wajib
-                                  if (fotoBaru == null || (_selectedStatus == 'Rusak' && fotoRusak == null) || (_selectedStatus == 'Hilang' && suratKehilangan == null)) {
+                                  if (fotoBaru == null ||
+                                      (_selectedStatus == 'Rusak' && fotoRusak == null) ||
+                                      (_selectedStatus == 'Hilang' && suratKehilangan == null)) {
                                     _showPopup(
                                       title: 'Gagal',
                                       message: 'Silakan lengkapi semua field yang wajib diisi!',
@@ -563,14 +563,8 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                                     return;
                                   }
 
-                                  // Jika semua field terisi, baru kirim
-                                  _showPopup(
-                                    title: 'Berhasil',
-                                    message: 'Pengajuan berhasil dikirim.',
-                                    onPressed: () {
-                                      Navigator.pushReplacementNamed(context, '/master');
-                                    },
-                                  );
+                                  // Panggil submitForm agar data benar-benar dikirim ke API
+                                  await submitForm(context);
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1572E8),

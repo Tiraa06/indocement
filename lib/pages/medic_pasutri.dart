@@ -38,6 +38,9 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     tanggalSuratController.text =
         "${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}";
     tahunController.text = now.year.toString();
+
+    // Panggil fungsi untuk menyimpan IdSection dan IdEsl ke SharedPreferences
+    simpanIdSectionIdEslKePrefs();
   }
 
   Future<void> downloadFile() async {
@@ -599,14 +602,14 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                   child: Text('Surat Pernyataan'),
                                 ),
                               ],
-
-
-onChanged: (value) async {
-
-  setState(() {
-    selectedJenisSurat = value;
-  });
-},
+                              onChanged: (value) async {
+                                setState(() {
+                                  selectedJenisSurat = value;
+                                });
+                                if (value == 'keterangan') {
+                                  await isiOtomatisAtasan();
+                                }
+                              },
                             ),
                           ),
                         ],
@@ -763,12 +766,17 @@ onChanged: (value) async {
                                           Icon(Icons.account_circle,
                                               color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
-                                          Text(
-                                            'Data Karyawan',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 17,
-                                              color: Color(0xFF1572E8),
+                                          Flexible(
+                                            child: Text(
+                                              'Data Karyawan',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 17,
+                                                color: Color(0xFF1572E8),
+                                              ),
+                                              maxLines: 2, // Maksimal 2 baris
+                                              overflow: TextOverflow.ellipsis,
+                                              // Jika lebih dari 2 baris, tampilkan ...
                                             ),
                                           ),
                                         ],
@@ -1020,12 +1028,17 @@ onChanged: (value) async {
                                           Icon(Icons.child_care,
                                               color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
-                                          Text(
-                                            'Data Anak Pertama (Opsional)',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 17,
-                                              color: Color(0xFF1572E8),
+                                          Expanded(
+                                            child: Text(
+                                              'Data Anak Pertama (Opsional)',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 17,
+                                                color: Color(0xFF1572E8),
+                                              ),
+                                              maxLines: 2, // Maksimal 2 baris
+                                              overflow: TextOverflow.ellipsis,
+                                              // Jika lebih dari 2 baris, tampilkan ...
                                             ),
                                           ),
                                         ],
@@ -1550,12 +1563,17 @@ onChanged: (value) async {
                                           Icon(Icons.account_circle,
                                               color: Color(0xFF1572E8)),
                                           SizedBox(width: 8),
-                                          Text(
-                                            'Data Pegawai',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 17,
-                                              color: Color(0xFF1572E8),
+                                          Flexible(
+                                            child: Text(
+                                              'Data Pegawai',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 17,
+                                                color: Color(0xFF1572E8),
+                                              ),
+                                              maxLines: 2, // Maksimal 2 baris
+                                              overflow: TextOverflow.ellipsis,
+                                              // Jika lebih dari 2 baris, tampilkan ...
                                             ),
                                           ),
                                         ],
@@ -2576,7 +2594,6 @@ onChanged: (value) async {
                                   ),
                                 ),
                               ),
-
                               if (isUploading)
                                 const Padding(
                                   padding: EdgeInsets.only(top: 12.0),
@@ -2597,4 +2614,67 @@ onChanged: (value) async {
       ),
     );
   }
+
+  Future<void> isiOtomatisAtasan() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idEmployee = prefs.getInt('idEmployee');
+      final idSection = prefs.getInt('idSection');
+      // Pastikan idSection sudah disimpan di SharedPreferences saat login
+
+      if (idSection == null) return;
+
+      final response = await Dio().get(
+        'http://103.31.235.237:5555/api/Employees',
+        options: Options(headers: {'accept': 'text/plain'}),
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        final List employees = response.data;
+
+        // Cari atasan dengan idSection sama dan idEsl == 3
+        final atasan = employees.firstWhere(
+          (e) => e['IdSection'] == idSection && e['IdEsl'] == 3,
+          orElse: () => null,
+        );
+
+        if (atasan != null) {
+          setState(() {
+            namaAtasanController.text = atasan['EmployeeName'] ?? '';
+            jabatanAtasanController.text = atasan['JobTitle'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      print('Gagal isi otomatis atasan: $e');
+    }
+  }
+
+  Future<void> simpanIdSectionIdEslKePrefs() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final idEmployee = prefs.getInt('idEmployee');
+    if (idEmployee == null) return;
+
+    final response = await Dio().get(
+      'http://103.31.237.5555/api/Employees',
+      options: Options(headers: {'accept': 'text/plain'}),
+    );
+
+    if (response.statusCode == 200 && response.data is List) {
+      final List employees = response.data;
+      final user = employees.firstWhere(
+        (e) => e['Id'] == idEmployee,
+        orElse: () => null,
+      );
+      if (user != null) {
+        await prefs.setInt('idSection', user['IdSection'] ?? 0);
+        await prefs.setInt('idEsl', user['IdEsl'] ?? 0);
+        print('IdSection dan IdEsl berhasil disimpan ke SharedPreferences');
+      }
+    }
+  } catch (e) {
+    print('Gagal simpan IdSection/IdEsl: $e');
+  }
+}
 }

@@ -268,7 +268,7 @@ void _showLoading(BuildContext context) {
         _showLoading(context);
 
         final response = await http.post(
-          Uri.parse('http://192.168.100.140:5555/api/Beasiswa'),
+          Uri.parse('http://103.31.235.237:5555/api/Beasiswa'),
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
