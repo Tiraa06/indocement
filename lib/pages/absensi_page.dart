@@ -5,7 +5,6 @@ import 'package:indocement_apk/pages/absensi_lapangan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';
 import 'absensi_lapangan_page.dart'; // Import halaman AbsensiLapanganScreen
-import 'package:indocement_apk/pages/master.dart';
 
 class EventMenuPage extends StatefulWidget {
   const EventMenuPage({super.key});
@@ -297,10 +296,14 @@ class _EventMenuPageState extends State<EventMenuPage> {
                                                 }
                                               }
 
-                                              Navigator.pushReplacement(
+                                              Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (context) => const MasterScreen(),
+                                                  builder: (context) => AbsensiLapanganScreen(
+                                                    kantorLat: lat,
+                                                    kantorLng: long,
+                                                    eventId: eventId, // kirim event id ke halaman selanjutnya
+                                                  ),
                                                 ),
                                               );
                                             },

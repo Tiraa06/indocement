@@ -316,7 +316,8 @@ class _RegisterState extends State<Register> {
         "password": password,
         "telepon": telp,
         "idSection": int.parse(sectionId),
-        "gender": "L", // <-- gender selalu "L" saat dikirim ke API
+        "gender": "L",
+        "IdEsl": 6, // IdEsl dipastikan terkirim ke API
       };
 
       await registerUser(userData);

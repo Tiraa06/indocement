@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:indocement_apk/pages/absensi_page.dart';
 import 'package:indocement_apk/pages/beasiswa.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/schedule_shift.dart';
 import 'package:indocement_apk/pages/dispensasi_page.dart';
 import 'package:indocement_apk/pages/uang_duka_page.dart';
+import 'package:indocement_apk/pages/internal_recruitment.dart';
 
 class LayananMenuPage extends StatefulWidget {
   const LayananMenuPage({super.key});
@@ -66,7 +68,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.fingerprint,
         'title': 'Absensi',
         'color': Colors.purple,
-        'onTap': () => _navigateToFeature("Absensi"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EventMenuPage()),
+          );
+        },
       },
       {
         'icon': Icons.account_balance_wallet,
@@ -108,7 +116,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.group,
         'title': 'Internal Recruitment',
         'color': Colors.indigo,
-        'onTap': () => _navigateToFeature("Internal Recruitment"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const InternalRecruitmentPage()),
+          );
+        },
       },
     ];
   }

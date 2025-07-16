@@ -1,3 +1,14 @@
+// ⬅️ Tambahkan ini
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.4.0' // pastikan cocok dengan yang di wrapper
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -15,4 +26,11 @@ subprojects {
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
+}
+
+// Opsional: Hindari versi BouncyCastle yang pakai Java 21
+configurations.all {
+    resolutionStrategy {
+        force 'org.bouncycastle:bcprov-jdk18on:1.77'
+    }
 }
