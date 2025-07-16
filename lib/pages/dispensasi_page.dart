@@ -40,7 +40,7 @@ class _DispensasiPageState extends State<DispensasiPage> {
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.100.140:5555/api/Employees'),
+        Uri.parse('http://103.31.235.237:5555/api/Employees'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 3));
       print('Network check response: ${response.statusCode}');
@@ -168,7 +168,7 @@ class _DispensasiPageState extends State<DispensasiPage> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.100.140:5555/api/Dispensasi'),
+        Uri.parse('http://103.31.235.237:5555/api/Dispensasi'),
       );
 
       request.headers['accept'] = 'text/plain';

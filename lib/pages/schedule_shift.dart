@@ -125,23 +125,23 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         final Map<int, Map<String, dynamic>> uniqueEmployees = {};
         for (var e in data) {
           final idEsl = e['IdEsl'] ?? e['idEsl'] ?? e['IDESL'];
-          print(
-              'Employee: Id=${e['Id']}, Name=${e['EmployeeName']}, IdSection=${e['IdSection']}, IdEsl=$idEsl');
-          if (e['IdSection']?.toString() == _userSection && idEsl == 6) {
+          if (e['IdSection']?.toString() == _userSection &&
+              (idEsl == 4 || idEsl == 5 || idEsl == 6)) {
             final int id = e['Id'];
             if (!uniqueEmployees.containsKey(id)) {
               uniqueEmployees[id] = {
                 'IdEmployee': id,
                 'EmployeeName': e['EmployeeName'] ?? 'Unknown',
                 'IdSection': e['IdSection']?.toString() ?? '',
+                'IdEsl': idEsl,
               };
-              print('Included Employee: Id=$id, Name=${e['EmployeeName']}');
+              print('Included Employee: Id=$id, Name=${e['EmployeeName']}, Section=${e['IdSection']}, IdEsl=$idEsl');
             } else {
               print('Skipped Duplicate Employee: Id=$id');
             }
           } else {
             print(
-                'Excluded Employee: Id=${e['Id']}, Reason: IdSection=${e['IdSection']} != $_userSection or IdEsl=$idEsl != 6');
+      'Excluded Employee: Id=${e['Id']}, Section=${e['IdSection']}, IdEsl=$idEsl (Filter: Section=$_userSection, IdEsl in [4,5,6])');
           }
         }
         setState(() {
@@ -404,7 +404,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                 horizontal: 12, vertical: 8),
                                             child: availableEmployees.isEmpty
                                                 ? Text(
-                                                    "Tidak ada karyawan yang tersedia. Pastikan ada karyawan di seksi $_userSection dengan IdEsl=6.",
+                                                    "Tidak ada karyawan yang tersedia. Pastikan ada karyawan di seksi $_userSection dengan Id Esl= 4 - 6.",
                                                     style: const TextStyle(
                                                         color: Colors.red,
                                                         fontSize: 14),

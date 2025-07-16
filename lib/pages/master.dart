@@ -828,7 +828,7 @@ class Categories extends StatelessWidget {
     ];
 
     final screenWidth = MediaQuery.of(context).size.width;
-    const cardWidth = 60.0;
+    const cardWidth = 56.0;
     const spacing = 20.0;
     const padding = 16.0 * 2;
     final crossAxisCount = (screenWidth - padding) ~/ (cardWidth + spacing);
@@ -1075,7 +1075,7 @@ class CategoryCard extends StatelessWidget {
         Text(
           text,
           textAlign: TextAlign.center,
-          maxLines: 2,
+          maxLines: 4, // Ubah dari 2 ke 4 baris maksimal
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 12),
         ),
