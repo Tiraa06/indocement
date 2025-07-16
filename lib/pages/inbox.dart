@@ -26,7 +26,8 @@ class _InboxPageState extends State<InboxPage> {
     'Permintaan Karyawan',
     'Konsultasi',
     'BPJS',
-    'Verifikasi Data'
+    'Verifikasi Data',
+    'Lihat Semua'
   ];
   bool _hasUnreadNotifications = false;
   List<String> _roomIds = [];
@@ -146,6 +147,8 @@ class _InboxPageState extends State<InboxPage> {
               'createdAt': msg['CreatedAt']?.toString() ?? '',
               'roomId': roomId,
               'isRead': false,
+              'source': 'Konsultasi',
+              'Status': 'Belum Dibaca'
             };
           }).toList();
           _hasUnreadNotifications = _notifications.isNotEmpty;
@@ -180,8 +183,15 @@ class _InboxPageState extends State<InboxPage> {
               final isMatch =
                   complaint['IdEmployee']?.toString() == _employeeId.toString();
               print(
-                  'Complaint Id=${complaint['Id']}, IdEmployee=${complaint['IdEmployee']}, MatchesEmployeeId=$isMatch');
+                  'Complaint Id=${complaint['Id']}, IdEmployee=${complaint['IdEmployee']}, MatchesEmployeeId=$isMatch, Status=${complaint['Status']}');
               return isMatch;
+            }).map((complaint) {
+              return {
+                ...complaint,
+                'source': 'Permintaan Karyawan',
+                'timestamp': complaint['TglKeluhan']?.toString() ?? '',
+                'Status': complaint['Status']?.toString() ?? 'Pending'
+              };
             }).toList();
             print('Filtered Complaints: $_complaints');
             _isLoading = false;
@@ -232,9 +242,9 @@ class _InboxPageState extends State<InboxPage> {
         }
       } else {
         if (mounted) {
-          setState(() {
+          setState() {
             _isLoading = false;
-          });
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content:
@@ -272,7 +282,6 @@ class _InboxPageState extends State<InboxPage> {
   Future<void> _fetchVerifData({bool forceFetch = false}) async {
     if (!mounted || _employeeId == null) return;
 
-    // Skip fetch if recent fetch was done (within 1 minute), unless forced
     if (!forceFetch &&
         _lastVerifFetchTime != null &&
         DateTime.now().difference(_lastVerifFetchTime!).inMinutes < 1) {
@@ -296,16 +305,24 @@ class _InboxPageState extends State<InboxPage> {
               verif['EmployeeId']?.toString() == _employeeId.toString();
           final validStatus =
               verif['Status'] == 'Diajukan' || verif['Status'] == 'Approved';
+          print(
+              'VerifData Id=${verif['Id']}, EmployeeId=${verif['EmployeeId']}, Status=${verif['Status']}, Matches=$matches, ValidStatus=$validStatus');
           return matches && validStatus;
         }).map((verif) {
+          final status = verif['Status']?.toString() == 'Diajukan'
+              ? 'Diajukan'
+              : verif['Status']?.toString() == 'Approved'
+                  ? 'Disetujui'
+                  : 'Pending';
           return {
             'Id': verif['Id'],
-            'Status': verif['Status'] == 'Diajukan' ? 'Diajukan' : 'Disetujui',
-            'Source': 'VerifData',
+            'Status': status,
+            'source': 'Verifikasi Data',
             'FieldName': verif['FieldName']?.toString() ?? 'N/A',
             'OldValue': verif['OldValue']?.toString() ?? 'N/A',
             'NewValue': verif['NewValue']?.toString() ?? 'N/A',
             'RequestedAt': verif['RequestedAt']?.toString(),
+            'timestamp': verif['RequestedAt']?.toString() ?? ''
           };
         }).toList();
 
@@ -389,8 +406,15 @@ class _InboxPageState extends State<InboxPage> {
                 .where((notif) =>
                     notif['Source'] == 'BPJS' &&
                     notif['IdEmployee']?.toString() == _employeeId?.toString())
-                .toList()
-                .cast<Map<String, dynamic>>();
+                .map((notif) {
+              print('BPJS Notif: IdSource=${notif['IdSource']}, Status=${notif['Status']}');
+              return {
+                ...notif,
+                'source': 'BPJS',
+                'timestamp': notif['UpdatedAt']?.toString() ?? '',
+                'Status': notif['Status']?.toString() ?? 'Pending'
+              };
+            }).toList().cast<Map<String, dynamic>>();
           });
         }
       }
@@ -421,6 +445,37 @@ class _InboxPageState extends State<InboxPage> {
     await _fetchComplaints();
     await _fetchBpjsData();
     await _fetchVerifData(forceFetch: true);
+  }
+
+  List<Map<String, dynamic>> _getAllNotifications() {
+    List<Map<String, dynamic>> allNotifications = [];
+
+    // Add complaints
+    allNotifications.addAll(_complaints);
+
+    // Add consultations (notifications)
+    allNotifications.addAll(_notifications);
+
+    // Add BPJS notifications
+    allNotifications.addAll(_bpjsNotifList);
+
+    // Add verification data
+    allNotifications.addAll(_verifData);
+
+    // Sort by timestamp (newest first)
+    allNotifications.sort((a, b) {
+      final aTime = DateTime.tryParse(a['timestamp'] ?? '') ?? DateTime(1970);
+      final bTime = DateTime.tryParse(b['timestamp'] ?? '') ?? DateTime(1970);
+      return bTime.compareTo(aTime);
+    });
+
+    // Log notifications for debugging
+    print('All Notifications in Lihat Semua:');
+    for (var notif in allNotifications) {
+      print('Source: ${notif['source']}, Status: ${notif['Status']}');
+    }
+
+    return allNotifications;
   }
 
   @override
@@ -531,7 +586,7 @@ class _InboxPageState extends State<InboxPage> {
                         _selectedTab = value;
                         if (value == 'Konsultasi') {
                           _notifications = _notifications.map((notif) {
-                            return {...notif, 'isRead': true};
+                            return {...notif, 'isRead': true, 'Status': 'Dibaca'};
                           }).toList();
                           _hasUnreadNotifications = false;
                         }
@@ -624,7 +679,7 @@ class _InboxPageState extends State<InboxPage> {
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
-                                                "Status: ${complaint['Status'] ?? 'Unknown'}",
+                                                "Status: ${complaint['Status'] ?? 'Pending'}",
                                                 style: GoogleFonts.poppins(
                                                     fontSize: fontSizeLabel - 2,
                                                     color: Colors.green),
@@ -754,11 +809,13 @@ class _InboxPageState extends State<InboxPage> {
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
-                                                      "Status: Belum Dibaca",
+                                                      "Status: ${isRead ? 'Dibaca' : 'Belum Dibaca'}",
                                                       style: GoogleFonts.poppins(
                                                           fontSize:
                                                               fontSizeLabel - 2,
-                                                          color: Colors.red),
+                                                          color: isRead
+                                                              ? Colors.green
+                                                              : Colors.red),
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
@@ -794,12 +851,13 @@ class _InboxPageState extends State<InboxPage> {
                                         final notif = _bpjsNotifList[index];
                                         final updatedAt = notif['UpdatedAt'] !=
                                                 null
-                                            ? _formatTimestamp(notif['UpdatedAt'])
+                                            ? _formatTimestamp(
+                                                notif['UpdatedAt'])
                                             : 'Unknown Date';
                                         final status = notif['Status']?.toString() ??
-                                            'Unknown';
-                                        final idSource = notif['IdSource']?.toString() ??
-                                            'N/A';
+                                            'Pending';
+                                        final idSource =
+                                            notif['IdSource']?.toString() ?? 'N/A';
 
                                         return Card(
                                           margin: const EdgeInsets.symmetric(
@@ -876,11 +934,11 @@ class _InboxPageState extends State<InboxPage> {
                                                 verif['NewValue']?.toString() ??
                                                     'N/A';
                                             final source =
-                                                verif['Source']?.toString() ??
-                                                    'N/A';
+                                                verif['source']?.toString() ??
+                                                    'Verifikasi Data';
                                             final displayStatus =
                                                 verif['Status']?.toString() ??
-                                                    'Unknown';
+                                                    'Pending';
 
                                             return Card(
                                               margin:
@@ -968,7 +1026,259 @@ class _InboxPageState extends State<InboxPage> {
                                             );
                                           },
                                         )
-                                  : Container(),
+                                  : _selectedTab == 'Lihat Semua'
+                                      ? _getAllNotifications().isEmpty
+                                          ? Center(
+                                              child: Text(
+                                                "Tidak ada notifikasi.",
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: fontSizeLabel,
+                                                    color: Colors.black87),
+                                              ),
+                                            )
+                                      : ListView.builder(
+                                          itemCount:
+                                              _getAllNotifications().length,
+                                          itemBuilder: (context, index) {
+                                            final notif =
+                                                _getAllNotifications()[index];
+                                            final source =
+                                                notif['source']?.toString() ??
+                                                    'Unknown';
+                                            final timestamp = _formatTimestamp(
+                                                notif['timestamp'] ?? '');
+                                            final isKonsultasi =
+                                                source == 'Konsultasi';
+                                            final isVerifData =
+                                                source == 'Verifikasi Data';
+                                            final isComplaint =
+                                                source == 'Permintaan Karyawan';
+                                            final isBPJS = source == 'BPJS';
+                                            final status = notif['Status']?.toString() ??
+                                                'Pending';
+
+                                            return GestureDetector(
+                                              onTap: isKonsultasi
+                                                  ? () => _navigateToChat(
+                                                      notif['roomId'],
+                                                      notif['id'])
+                                                  : null,
+                                              child: Card(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8),
+                                                elevation: 3,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12)),
+                                                color: isKonsultasi &&
+                                                        !(notif['isRead'] ??
+                                                            true)
+                                                    ? Colors.red[50]
+                                                    : null,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(16.0),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        source,
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontSize:
+                                                              fontSizeLabel,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: const Color(
+                                                              0xFF1E88E5),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      if (isComplaint) ...[
+                                                        Text(
+                                                          "Nomor Tiket: ${notif['Id']}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Message: ${notif['Keluhan']?.toString() ?? notif['Keluhan1']?.toString() ?? notif['Message']?.toString() ?? notif['Description']?.toString() ?? 'No message available'}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Status: $status",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .green),
+                                                        ),
+                                                        if (notif['NamaFile'] !=
+                                                                null &&
+                                                            notif['NamaFile']
+                                                                .toString()
+                                                                .isNotEmpty)
+                                                          Text(
+                                                            "Attachment: ${notif['NamaFile']}",
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                                    fontSize:
+                                                                        fontSizeLabel -
+                                                                            2,
+                                                                    color: Colors
+                                                                        .blue),
+                                                          ),
+                                                      ],
+                                                      if (isKonsultasi) ...[
+                                                        Text(
+                                                          "Pesan dari ${notif['senderName']}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Message: ${notif['message']}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Status: $status",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: notif['isRead'] ==
+                                                                          true
+                                                                      ? Colors
+                                                                          .green
+                                                                      : Colors
+                                                                          .red),
+                                                        ),
+                                                      ],
+                                                      if (isBPJS) ...[
+                                                        Text(
+                                                          "Nomor BPJS: ${notif['IdSource']?.toString() ?? 'N/A'}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Status: $status",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .green),
+                                                        ),
+                                                      ],
+                                                      if (isVerifData) ...[
+                                                        Text(
+                                                          "Field: ${notif['FieldName']?.toString() ?? 'N/A'}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Dari: ${notif['OldValue']?.toString() ?? 'N/A'}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Menjadi: ${notif['NewValue']?.toString() ?? 'N/A'}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                        Text(
+                                                          "Status: $status",
+                                                          style:
+                                                              GoogleFonts.poppins(
+                                                            fontSize:
+                                                                fontSizeLabel -
+                                                                    2,
+                                                            color: status ==
+                                                                    'Diajukan'
+                                                                ? Colors.orange
+                                                                : Colors.green,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          "Sumber: ${notif['source']?.toString() ?? 'Verifikasi Data'}",
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  fontSize:
+                                                                      fontSizeLabel -
+                                                                          2,
+                                                                  color: Colors
+                                                                      .black87),
+                                                        ),
+                                                      ],
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        "Tanggal: $timestamp",
+                                                        style: GoogleFonts
+                                                            .poppins(
+                                                                fontSize:
+                                                                    fontSizeLabel -
+                                                                        2,
+                                                                color:
+                                                                    Colors.grey),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(),
             ),
           ],
         ),

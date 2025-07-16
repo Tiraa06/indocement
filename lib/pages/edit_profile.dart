@@ -96,14 +96,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return null;
   }
 
-  // Utility function to ensure date-only format (yyyy-MM-dd)
   String? _formatDateOnly(String? dateString) {
     if (dateString == null || dateString.isEmpty) return null;
     try {
       final dateTime = DateTime.parse(dateString);
       return DateFormat('yyyy-MM-dd').format(dateTime);
     } catch (e) {
-      return dateString; // Fallback to original string if parsing fails
+      return dateString;
     }
   }
 
@@ -160,7 +159,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
           final newValueRaw = verif['NewValue']?.toString();
           final status = verif['Status']?.toString();
           if (fieldName != null && newValueRaw != null && status != null) {
-            // Ensure date fields are in date-only format
             String? newValue = newValueRaw;
             if (fieldName == 'BirthDate' || fieldName == 'ServiceDate') {
               newValue = _formatDateOnly(newValueRaw);
@@ -186,7 +184,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     fullData['Education'] = newValue;
                     break;
                   case 'EmployeeNo':
-                    _employeeNoController.text = newValue  ?? '';
+                    _employeeNoController.text = newValue ?? '';
                     fullData['EmployeeNo'] = newValue;
                     break;
                   case 'JobTitle':
@@ -210,7 +208,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     fullData['Section'] = newValue;
                     break;
                   case 'Telepon':
-                    _phoneController.text = newValue  ?? '';
+                    _phoneController.text = newValue ?? '';
                     fullData['Telepon'] = newValue;
                     break;
                   case 'Email':
@@ -223,8 +221,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     break;
                 }
                 final prefs = SharedPreferences.getInstance();
-                prefs.then(
-                    (p) => p.setString(fieldName.toLowerCase(), newValue ?? ''));
+                prefs.then((p) =>
+                    p.setString(fieldName.toLowerCase(), newValue ?? ''));
               }
             });
           }
@@ -274,7 +272,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
             : null;
         final sectionName = await _fetchSectionName(idSection);
 
-        // Ensure date-only format for BirthDate and ServiceDate
         String? validatedBirthDate = _formatDateOnly(employee['BirthDate']);
         if (validatedBirthDate != null && validatedBirthDate.isNotEmpty) {
           try {
@@ -360,6 +357,58 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
   }
 
+  void _showSuccessModal() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: const EdgeInsets.all(16.0),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  "Permintaan berhasil dikirim, silakan menunggu verifikasi dari PIC Anda",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1572E8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 24),
+                  ),
+                  child: Text(
+                    'OK',
+                    style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _submitChangeRequests() async {
     final employeeId = widget.employeeId;
     if (employeeId == null || _ktpImage == null) {
@@ -408,11 +457,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         print('Response status for $fieldName: ${response.statusCode}');
         print('Response body for $fieldName: $responseBody');
 
-        // Accept 200, 201, or 204 as success (204 is common for no-content success)
         if (response.statusCode >= 200 && response.statusCode <= 204) {
           atLeastOneSuccess = true;
-          await _fetchVerifData(); // Refresh verification data
-          await _fetchInitialData(); // Refresh profile data
+          await _fetchVerifData();
+          await _fetchInitialData();
         } else {
           failedFields.add(fieldName);
           print(
@@ -424,18 +472,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     }
 
-    // Reset UI state regardless of success/failure
     setState(() {
       isEditing = false;
       _ktpImage = null;
       _changedFields.clear();
     });
 
-    // Show appropriate message based on submission outcome
     if (atLeastOneSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permintaan perubahan berhasil dikirim')),
-      );
+      _showSuccessModal();
     }
     if (failedFields.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -759,15 +803,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _showMultipleEditWarning() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Hanya satu field yang dapat diedit per permintaan.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
   Future<void> _selectDate(
       BuildContext context,
       TextEditingController controller,
@@ -801,11 +836,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (picked != null) {
       setState(() {
         controller.text = DateFormat('yyyy-MM-dd').format(picked);
-        if (_changedFields.isNotEmpty &&
-            !_changedFields.containsKey(fieldName)) {
-          _showMultipleEditWarning();
-          controller.text = oldValue;
-        } else if (controller.text != oldValue && controller.text.isNotEmpty) {
+        if (controller.text != oldValue && controller.text.isNotEmpty) {
           _changedFields[fieldName] = controller.text;
         } else {
           _changedFields.remove(fieldName);
@@ -834,11 +865,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         onChanged: isEditing && fieldName != null && oldValue != null
             ? (value) {
                 setState(() {
-                  if (_changedFields.isNotEmpty &&
-                      !_changedFields.containsKey(fieldName)) {
-                    _showMultipleEditWarning();
-                    controller.text = oldValue;
-                  } else if (value != oldValue && value.isNotEmpty) {
+                  if (value != oldValue && value.isNotEmpty) {
                     _changedFields[fieldName] = value;
                   } else {
                     _changedFields.remove(fieldName);
@@ -880,11 +907,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ? (newValue) {
                 onChanged(newValue);
                 setState(() {
-                  if (_changedFields.isNotEmpty &&
-                      !_changedFields.containsKey(fieldName)) {
-                    _showMultipleEditWarning();
-                    return;
-                  }
                   if (newValue != null && newValue != oldValue) {
                     _changedFields[fieldName] = newValue;
                   } else {

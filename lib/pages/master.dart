@@ -7,6 +7,7 @@ import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:indocement_apk/pages/profile.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
+import 'package:indocement_apk/pages/edit_profile.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
 import 'package:indocement_apk/pages/inbox.dart';
 import 'package:indocement_apk/pages/error.dart';
@@ -26,12 +27,42 @@ class _MasterScreenState extends State<MasterScreen>
   int _selectedIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  int? _employeeId;
+  final Set<String> _processedVerifIds = {};
+  Timer? _pollingTimer;
+  bool _isFetchingVerifData = false;
+  bool _isLoadingDialogVisible = false;
+  bool _isInitialLoadComplete = false;
 
   final List<Widget> _pages = [
     const MasterContent(),
     const InboxPage(),
     const ProfilePage(),
   ];
+
+  Future<bool> _isProfileIncomplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    final requiredFields = [
+      'employeeName',
+      'jobTitle',
+      'employeeNo',
+      'birthDate',
+      'gender',
+      'education',
+      'serviceDate',
+      'workLocation',
+      'section',
+      'telepon',
+      'email',
+      'livingArea',
+    ];
+    for (final field in requiredFields) {
+      final value = prefs.getString(field);
+      print('$field: "$value"');
+      if (value == null || value.trim().isEmpty) return true;
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -46,12 +77,281 @@ class _MasterScreenState extends State<MasterScreen>
       curve: Curves.easeOut,
       reverseCurve: Curves.easeIn,
     );
+    _loadEmployeeId();
+    // Hapus: _checkProfileAndShowModal();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  Future<void> _checkProfileAndShowModal() async {
+    final incomplete = await _isProfileIncomplete();
+    if (incomplete && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            contentPadding: const EdgeInsets.all(16.0),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info_outline,
+                      color: Colors.orange, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Profil Anda belum lengkap.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Silakan lengkapi data profil Anda agar dapat menggunakan semua fitur aplikasi.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const EditProfilePage(
+                                  employeeName: '',
+                                  jobTitle: '',
+                                  employeeId: null,
+                                  urlFoto: null,
+                                )),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 24),
+                    ),
+                    child: const Text(
+                      'Lengkapi Profil',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 24),
+                    ),
+                    child: const Text(
+                      'Tutup',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      });
+    }
+  }
+
+  Future<void> _loadEmployeeId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _employeeId = prefs.getInt('idEmployee');
+    });
+    if (_employeeId != null) {
+      await _loadProcessedVerifIds(); // Load persisted verification IDs
+      _startPolling();
+    }
+  }
+
+  Future<void> _loadProcessedVerifIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedIds =
+        prefs.getStringList('processedVerifIds_$_employeeId') ?? [];
+    setState(() {
+      _processedVerifIds.addAll(storedIds);
+    });
+  }
+
+  Future<void> _saveProcessedVerifIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+        'processedVerifIds_$_employeeId', _processedVerifIds.toList());
+  }
+
+  Future<void> _fetchVerifData() async {
+    if (!mounted ||
+        _employeeId == null ||
+        _isFetchingVerifData ||
+        !_isInitialLoadComplete) {
+      return;
+    }
+
+    setState(() {
+      _isFetchingVerifData = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://103.31.235.237:5555/api/VerifData/requests?employeeId=$_employeeId'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        final approvedRequests =
+            data.cast<Map<String, dynamic>>().where((verif) {
+          final matches =
+              verif['EmployeeId']?.toString() == _employeeId.toString();
+          final isApproved = verif['Status']?.toString() == 'Approved';
+          final verifId = verif['Id']?.toString();
+          return matches &&
+              isApproved &&
+              verifId != null &&
+              !_processedVerifIds.contains(verifId);
+        }).toList();
+
+        for (var verif in approvedRequests) {
+          final verifId = verif['Id']?.toString();
+          final fieldName = verif['FieldName']?.toString();
+          if (verifId != null && fieldName != null && mounted) {
+            await _showVerificationApprovedModal(fieldName, verifId);
+            setState(() {
+              _processedVerifIds.add(verifId);
+            });
+            await _saveProcessedVerifIds();
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching verification data: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetchingVerifData = false;
+        });
+      }
+    }
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (mounted && !_isLoadingDialogVisible && _isInitialLoadComplete) {
+        await _fetchVerifData();
+      }
+    });
+  }
+
+  void _closeLoadingDialog() {
+    if (_isLoadingDialogVisible && mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+      setState(() {
+        _isLoadingDialogVisible = false;
+      });
+    }
+  }
+
+  Future<void> _showVerificationApprovedModal(
+      String fieldName, String verifId) async {
+    _closeLoadingDialog();
+
+    // Simpan ke SharedPreferences bahwa modal untuk verifId sudah pernah ditampilkan
+    final prefs = await SharedPreferences.getInstance();
+    final shownIds =
+        prefs.getStringList('shownVerifModalIds_$_employeeId') ?? [];
+    if (shownIds.contains(verifId)) {
+      return; // Sudah pernah, jangan tampilkan lagi
+    }
+
+    // Tampilkan modal
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: const EdgeInsets.all(16.0),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  "Perubahan data Anda untuk $fieldName telah disetujui. Silakan cek kembali di halaman Profil.",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    // Setelah modal ditutup, simpan verifId ke SharedPreferences
+                    final prefs = await SharedPreferences.getInstance();
+                    final updatedIds = prefs
+                            .getStringList('shownVerifModalIds_$_employeeId') ??
+                        [];
+                    if (!updatedIds.contains(verifId)) {
+                      updatedIds.add(verifId);
+                      await prefs.setStringList(
+                          'shownVerifModalIds_$_employeeId', updatedIds);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1572E8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 24),
+                  ),
+                  child: const Text(
+                    'Tutup',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> _checkNetwork() async {
@@ -62,7 +362,6 @@ class _MasterScreenState extends State<MasterScreen>
         return false;
       }
 
-      // Fallback to API check
       final response = await http.get(
         Uri.parse('http://103.31.235.237:5555/api/Employees'),
         headers: {'Content-Type': 'application/json'},
@@ -76,6 +375,12 @@ class _MasterScreenState extends State<MasterScreen>
   }
 
   void _showLoading(BuildContext context) {
+    if (_isLoadingDialogVisible) return;
+
+    setState(() {
+      _isLoadingDialogVisible = true;
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -115,7 +420,13 @@ class _MasterScreenState extends State<MasterScreen>
           ),
         );
       },
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingDialogVisible = false;
+        });
+      }
+    });
   }
 
   void _onItemTapped(int index) async {
@@ -123,7 +434,7 @@ class _MasterScreenState extends State<MasterScreen>
 
     _showLoading(context);
     final hasNetwork = await _checkNetwork();
-    Navigator.pop(context); // Close loading dialog
+    _closeLoadingDialog();
 
     if (!hasNetwork) {
       Navigator.pushReplacement(
@@ -137,6 +448,14 @@ class _MasterScreenState extends State<MasterScreen>
       _selectedIndex = index;
     });
     _animationController.forward().then((_) => _animationController.reverse());
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _pollingTimer?.cancel();
+    _closeLoadingDialog();
+    super.dispose();
   }
 
   @override
@@ -285,7 +604,6 @@ class _MasterContentState extends State<MasterContent> {
   @override
   void initState() {
     super.initState();
-    _fetchProfilePhoto();
     _loadProfileData();
   }
 
@@ -310,6 +628,14 @@ class _MasterContentState extends State<MasterContent> {
   }
 
   void _showLoading(BuildContext context) {
+    final masterScreenState =
+        context.findAncestorStateOfType<_MasterScreenState>();
+    if (masterScreenState?._isLoadingDialogVisible ?? false) return;
+
+    masterScreenState?.setState(() {
+      masterScreenState._isLoadingDialogVisible = true;
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -349,7 +675,25 @@ class _MasterContentState extends State<MasterContent> {
           ),
         );
       },
-    );
+    ).then((_) {
+      if (mounted) {
+        masterScreenState?.setState(() {
+          masterScreenState._isLoadingDialogVisible = false;
+        });
+      }
+    });
+  }
+
+  void _closeLoadingDialog() {
+    final masterScreenState =
+        context.findAncestorStateOfType<_MasterScreenState>();
+    if (masterScreenState?._isLoadingDialogVisible ??
+        false && mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+      masterScreenState?.setState(() {
+        masterScreenState._isLoadingDialogVisible = false;
+      });
+    }
   }
 
   Future<void> _fetchProfilePhoto() async {
@@ -368,7 +712,7 @@ class _MasterContentState extends State<MasterContent> {
       _showLoading(context);
       final hasNetwork = await _checkNetwork();
       if (!hasNetwork) {
-        Navigator.pop(context); // Close loading dialog
+        _closeLoadingDialog();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const Error404Screen()),
@@ -381,7 +725,7 @@ class _MasterContentState extends State<MasterContent> {
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
-      Navigator.pop(context); // Close loading dialog
+      _closeLoadingDialog();
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -404,7 +748,7 @@ class _MasterContentState extends State<MasterContent> {
       }
     } catch (e) {
       print('Error fetching profile photo: $e');
-      Navigator.pop(context); // Close loading dialog
+      _closeLoadingDialog();
       setState(() {
         _urlFoto = null;
       });
@@ -430,7 +774,7 @@ class _MasterContentState extends State<MasterContent> {
       _showLoading(context);
       final hasNetwork = await _checkNetwork();
       if (!hasNetwork) {
-        Navigator.pop(context); // Close loading dialog
+        _closeLoadingDialog();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const Error404Screen()),
@@ -443,7 +787,7 @@ class _MasterContentState extends State<MasterContent> {
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
-      Navigator.pop(context); // Close loading dialog
+      _closeLoadingDialog();
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -469,14 +813,48 @@ class _MasterContentState extends State<MasterContent> {
       }
     } catch (e) {
       print('Error fetching profile data: $e');
-      Navigator.pop(context); // Close loading dialog
+      _closeLoadingDialog();
       setState(() {
         _employeeName = "Nama Tidak Tersedia";
         _jobTitle = "Departemen Tidak Tersedia";
         _email = "Email Tidak Tersedia";
         _telepon = "Telepon Tidak Tersedia";
       });
+    } finally {
+      if (mounted) {
+        final masterScreenState =
+            context.findAncestorStateOfType<_MasterScreenState>();
+        masterScreenState?.setState(() {
+          masterScreenState._isInitialLoadComplete = true;
+        });
+        // Panggil modal setelah data selesai di-load
+        masterScreenState?._checkProfileAndShowModal();
+      }
     }
+  }
+
+  Future<bool> _isProfileIncomplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    final requiredFields = [
+      'employeeName',
+      'jobTitle',
+      'employeeNo',
+      'birthDate',
+      'gender',
+      'education',
+      'serviceDate',
+      'workLocation',
+      'section',
+      'telepon',
+      'email',
+      'livingArea',
+    ];
+    for (final field in requiredFields) {
+      final value = prefs.getString(field);
+      print('$field: "$value"');
+      if (value == null || value.trim().isEmpty) return true;
+    }
+    return false;
   }
 
   @override
@@ -497,7 +875,7 @@ class _MasterContentState extends State<MasterContent> {
                       onProfileTap: () async {
                         _showLoading(context);
                         final hasNetwork = await _checkNetwork();
-                        Navigator.pop(context); // Close loading dialog
+                        _closeLoadingDialog();
                         if (!hasNetwork) {
                           Navigator.pushReplacement(
                             context,
@@ -523,6 +901,7 @@ class _MasterContentState extends State<MasterContent> {
             ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () {
+                _closeLoadingDialog();
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -773,49 +1152,6 @@ class Categories extends StatelessWidget {
 
   const Categories({super.key, required this.checkNetwork});
 
-  void _showLoading(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Memuat halaman...",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Harap tunggu sebentar",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     List<Map<String, String>> categories = [
@@ -864,60 +1200,69 @@ class Categories extends StatelessWidget {
               return CategoryCard(
                 iconPath: category["icon"]!,
                 text: category["text"]!,
-                press: () {
-                  _showLoading(context);
-                  Future.delayed(const Duration(seconds: 2), () {
-                    Navigator.pop(context);
-                    if (category["text"] == "BPJS") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BPJSPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "HR Chat") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const HRCareMenuPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "ID Card") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const IdCardUploadPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "SK Kerja & Medical") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SKKMedicPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "Layanan Karyawan") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LayananMenuPage(),
-                        ),
-                      );
-                    } else if (category["text"] == "Lainnya") {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Menu Lainnya belum tersedia'),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              Text('Menu ${category["text"]} belum tersedia'),
-                        ),
-                      );
-                    }
-                  });
+                press: () async {
+                  final masterScreenState =
+                      context.findAncestorStateOfType<_MasterScreenState>();
+                  masterScreenState?._showLoading(context);
+                  final hasNetwork = await checkNetwork();
+                  masterScreenState?._closeLoadingDialog();
+                  if (!hasNetwork) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const Error404Screen()),
+                    );
+                    return;
+                  }
+                  if (category["text"] == "BPJS") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BPJSPage(),
+                      ),
+                    );
+                  } else if (category["text"] == "HR Chat") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HRCareMenuPage(),
+                      ),
+                    );
+                  } else if (category["text"] == "ID Card") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const IdCardUploadPage(),
+                      ),
+                    );
+                  } else if (category["text"] == "SK Kerja & Medical") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SKKMedicPage(),
+                      ),
+                    );
+                  } else if (category["text"] == "Layanan Karyawan") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LayananMenuPage(),
+                      ),
+                    );
+                  } else if (category["text"] == "Lainnya") {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Menu Lainnya belum tersedia'),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('Menu ${category["text"]} belum tersedia'),
+                      ),
+                    );
+                  }
                 },
               );
             },
@@ -944,7 +1289,6 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final dpi = MediaQuery.of(context).devicePixelRatio;
-    // Jika DPI kecil, font lebih kecil
     final double fontSize = screenWidth < 390 ? 10 : 12;
 
     return Column(
@@ -1010,7 +1354,7 @@ class DailyInfo extends StatelessWidget {
                 ),
                 SizedBox(width: 12),
                 InfoCard(
-                  title: "Ulang Tahun 🎂",
+                  title: "Ulang Tahun ðŸŽ‚",
                   subtitle: "Andi P. (Dept. QC)",
                   description: "Kirim ucapan via HR Chat",
                 ),

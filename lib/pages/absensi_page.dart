@@ -19,7 +19,7 @@ class _EventMenuPageState extends State<EventMenuPage> {
   List<Map<String, dynamic>> _eventList = [];
   bool _eventLoading = true;
   bool _eventError = false;
-  Map<int, String> _placeNames = {}; // key: index, value: place name
+  final Map<int, String> _placeNames = {}; // key: index, value: place name
 
   @override
   void initState() {

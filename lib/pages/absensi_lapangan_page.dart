@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:indocement_apk/pages/absensi_page.dart';
-import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:camera/camera.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
