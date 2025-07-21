@@ -62,9 +62,16 @@ class _EventMenuPageState extends State<EventMenuPage> {
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
+      final today = DateTime.now();
       return data.where((event) {
         final employees = event['Employees'] as List<dynamic>?;
         if (employees == null) return false;
+        // Filter event yang tanggal selesai >= hari ini
+        final tglSelesaiStr = event['TanggalSelesai']?.toString();
+        if (tglSelesaiStr == null) return false;
+        final tglSelesai = DateTime.tryParse(tglSelesaiStr);
+        if (tglSelesai == null) return false;
+        if (tglSelesai.isBefore(DateTime(today.year, today.month, today.day))) return false;
         return employees.contains(idEmployee);
       }).map<Map<String, dynamic>>((event) => {
         'id': event['Id'],

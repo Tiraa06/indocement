@@ -332,9 +332,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
         await prefs.setString('employeeName', _employeeNameController.text);
         await prefs.setString('jobTitle', _jobTitleController.text);
         await prefs.setString('livingArea', _livingAreaController.text);
-        if (_photoUrl != null) {
-          await prefs.setString('urlFoto', _photoUrl!);
-        }
+        await prefs.setString('birthDate', _birthDateController.text);
+        await prefs.setString('gender', _selectedGender ?? '');
+        await prefs.setString('education', _selectedEducation ?? '');
+        await prefs.setString('serviceDate', _serviceDateController.text);
+        await prefs.setString('workLocation', _workLocationController.text);
+        await prefs.setString('section', _sectionController.text);
+        await prefs.setString('telepon', _phoneController.text);
+        await prefs.setString('email', _emailController.text);
+        await prefs.setString('livingArea', _livingAreaController.text);
+        await prefs.setString('noBpjs', _noBpjsController.text);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Gagal memuat data: ${response.statusCode}')),

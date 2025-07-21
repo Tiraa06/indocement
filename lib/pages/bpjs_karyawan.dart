@@ -198,7 +198,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         context: context,
         title: 'Berhasil',
         message:
-            'Dokumen BPJS ${anggotaBpjs == "Pasangan" ? "Istri" : "Anak"} berhasil diunggah.',
+            'Dokumen BPJS ${anggotaBpjs == "Pasangan" ? "Pasangan" : "Anak"} berhasil diunggah.',
         onPressed: () {
           Navigator.pushReplacement(
             context,

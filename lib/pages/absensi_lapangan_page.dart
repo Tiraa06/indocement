@@ -439,7 +439,7 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
     final request = http.MultipartRequest('POST', uri);
 
     // Pastikan tipe data sesuai spesifikasi API
-    request.fields['IdEmployee'] = _idEmployee.toString(); // double
+    request.fields['IdEmployee'] = (_idEmployee?.toString() ?? '');
     request.fields['Jarak'] = _jarak!.toString(); // double
     request.fields['Status'] = (_jarak! <= radiusZona)
         ? 'Berada di lingkungan Event'

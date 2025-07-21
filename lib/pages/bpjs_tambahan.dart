@@ -10,6 +10,7 @@ import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'bpjs_upload_service.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 class BPJSTambahanPage extends StatefulWidget {
   const BPJSTambahanPage({super.key});
@@ -38,6 +39,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
   void initState() {
     super.initState();
     _loadEmployeeId();
+    _requestStoragePermission();
   }
 
   void _loadEmployeeId() async {
@@ -45,6 +47,16 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
     setState(() {
       idEmployee = prefs.getInt('idEmployee');
     });
+  }
+
+  Future<void> _requestStoragePermission() async {
+    if (Platform.isAndroid) {
+      var status = await Permission.storage.request();
+      if (!status.isGranted) {
+        // Jika user menolak, minta lagi sampai diberikan atau user memilih "Jangan tanya lagi"
+        await Permission.storage.request();
+      }
+    }
   }
 
   Future<void> pickImage({
@@ -96,93 +108,72 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         'http://103.31.235.237:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
 
     try {
-      // Minta izin penyimpanan
-      if (Platform.isAndroid) {
-        var status = await Permission.storage.request();
-        if (!status.isGranted) {
-          throw Exception('Izin penyimpanan tidak diberikan');
-        }
-      }
-
       // Tampilkan dialog loading
       showDialog(
         context: this.context,
-        barrierDismissible:
-            false, // Dialog tidak bisa ditutup dengan klik di luar
+        barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
+            content: Row(
               children: const [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Downloading...'),
+                SizedBox(width: 28, height: 28, child: CircularProgressIndicator()),
+                SizedBox(width: 20),
+                Expanded(child: Text('Mohon tunggu, file sedang didownload...')),
               ],
             ),
           );
         },
       );
 
-      // Download file menggunakan Dio
       final response = await dio.get(
         fileUrl,
         options: Options(responseType: ResponseType.bytes),
       );
 
-      // Jika data kosong, tampilkan popup
-      if (response.data == null || response.data.isEmpty) {
-        Navigator.of(this.context).pop(); // Tutup dialog loading
+      Navigator.of(this.context).pop(); // Tutup loading dialog
+
+      if (response.statusCode == 200) {
+        final directory = Directory('/storage/emulated/0/Download');
+        if (!directory.existsSync()) {
+          directory.createSync(recursive: true);
+        }
+        final filePath =
+            '${directory.path}/salary_deduction_${idEmployee}_$selectedRelationship.pdf';
+        final file = File(filePath);
+        await file.writeAsBytes(response.data!);
+
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          SnackBar(content: Text('File berhasil didownload ke $filePath')),
+        );
+
+        setState(() {
+          isDownloaded = true;
+          isFormVisible = true;
+        });
+
+        _showDownloadPopup(
+          title: 'Download Berhasil',
+          message: 'File berhasil diunduh.',
+          onOpenFile: () {
+            OpenFile.open(filePath);
+          },
+        );
+      } else {
+        // Jika gagal download, tampilkan modal dengan pesan khusus
         _showPopup(
           context: this.context,
-          title: 'Download Gagal',
-          message: 'Data belum diinput PIC.',
+          title: 'Gagal Download',
+          message: 'Data keluarga belum tersedia. Silakan input data keluarga terlebih dahulu.',
         );
-        return;
       }
-
-      // Tentukan path folder Download
-      final directory = Directory('/storage/emulated/0/Download');
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-      }
-
-      // Simpan file di folder Download
-      final filePath =
-          '${directory.path}/salary_deduction_${idEmployee}_$selectedRelationship.pdf';
-      final file = File(filePath);
-      await file.writeAsBytes(response.data!);
-
-      // Tutup dialog loading
-      Navigator.of(this.context).pop();
-
-      // Tampilkan notifikasi berhasil
-      ScaffoldMessenger.of(this.context).showSnackBar(
-        SnackBar(content: Text('File berhasil didownload ke folder Download!')),
-      );
-
-      // Tampilkan form upload
-      setState(() {
-        isFormVisible = true; // Tampilkan form upload
-      });
-
-      _showDownloadPopup(
-        title: 'Download Berhasil',
-        message: 'File berhasil diunduh.',
-        onOpenFile: () {
-          // Buka file/folder, misal pakai open_file/open_filex
-          OpenFile.open(filePath);
-        },
-      );
     } catch (e) {
-      // Tutup dialog loading
       Navigator.of(this.context).pop();
-
-      // Tampilkan popup jika download gagal
       _showPopup(
         context: this.context,
         title: 'Download Gagal',
-        message: 'Terjadi kesalahan saat mendownload file: $e',
+        message: 'Data keluarga belum tersedia. Silakan input data keluarga terlebih dahulu.',
       );
+      print('Download error: $e');
     }
   }
 

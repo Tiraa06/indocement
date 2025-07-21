@@ -41,6 +41,7 @@ class _PCIRPageState extends State<PCIRPage>
   }
 
   Future<void> _fetchFamilyData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
@@ -51,13 +52,15 @@ class _PCIRPageState extends State<PCIRPage>
         headers: {'Content-Type': 'application/json'},
       ),
     );
-    if (response == null) return; // Sudah redirect ke error
+    if (response == null) return;
     if (response.statusCode == 200) {
+      if (!mounted) return;
       setState(() {
         _familyData = jsonDecode(response.body);
         _isLoading = false;
       });
     } else {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });

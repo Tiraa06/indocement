@@ -402,19 +402,12 @@ class _InboxPageState extends State<InboxPage> {
         final data = jsonDecode(response.body);
         if (data is List) {
           setState(() {
-            _bpjsNotifList = data
-                .where((notif) =>
-                    notif['Source'] == 'BPJS' &&
-                    notif['IdEmployee']?.toString() == _employeeId?.toString())
-                .map((notif) {
-              print('BPJS Notif: IdSource=${notif['IdSource']}, Status=${notif['Status']}');
-              return {
-                ...notif,
-                'source': 'BPJS',
-                'timestamp': notif['UpdatedAt']?.toString() ?? '',
-                'Status': notif['Status']?.toString() ?? 'Pending'
-              };
-            }).toList().cast<Map<String, dynamic>>();
+            _bpjsNotifList = (data as List)
+              .where((notif) =>
+                notif['Source'] == 'BPJS' &&
+                notif['IdEmployee']?.toString() == _employeeId?.toString())
+              .map<Map<String, dynamic>>((notif) => Map<String, dynamic>.from(notif))
+              .toList();
           });
         }
       }

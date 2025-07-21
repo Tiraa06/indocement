@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/medic_pasutri.dart';
 import 'package:indocement_apk/pages/skk_form.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SKKMedicPage extends StatefulWidget {
   const SKKMedicPage({super.key});
@@ -19,6 +20,9 @@ class _SKKMedicPageState extends State<SKKMedicPage>
   @override
   void initState() {
     super.initState();
+
+    // Minta izin akses penyimpanan saat halaman dibuka
+    _requestStoragePermission();
 
     _menuItems = [
       {
@@ -71,6 +75,12 @@ class _SKKMedicPageState extends State<SKKMedicPage>
       _animationController.reverse();
     } else {
       _animationController.forward();
+    }
+  }
+
+  Future<void> _requestStoragePermission() async {
+    if (await Permission.storage.isDenied) {
+      await Permission.storage.request();
     }
   }
 

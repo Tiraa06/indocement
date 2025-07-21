@@ -51,7 +51,7 @@ class _FamilyDataPageState extends State<FamilyDataPage> {
       final stopwatch = Stopwatch()..start();
       final response = await http.get(
         Uri.parse(
-            'http://192.168.100.140:5555/api/FamilyEmployees?IdEmployee=$_employeeId'),
+            'http://103.31.237.5555/api/FamilyEmployees?IdEmployee=$_employeeId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 

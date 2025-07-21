@@ -422,7 +422,8 @@ Future<void> sendBpjsNotification({
         "IdSection": idSection,
         "IdSource": idSource,
         "Status": "Diajukan",
-        "Source": "Bpjs"
+        "Source": "Bpjs",
+        "CreatedAt": DateTime.now().toIso8601String(), // Tambahkan tanggal kirim
       });
       print("🔔 Mengirim notifikasi BPJS: $notifBody");
       final notifResp = await http.post(
@@ -508,7 +509,8 @@ Future<void> sendBpjsNotificationWatcher(Map data) async {
         "IdSection": idSection,
         "IdSource": data['Id'],
         "Status": "Diajukan",
-        "Source": "Bpjs"
+        "Source": "Bpjs",
+        "CreatedAt": DateTime.now().toIso8601String(), // Tambahkan tanggal kirim
       });
       print("🔔 [Watcher] Mengirim notifikasi BPJS: $notifBody");
       final notifResp = await http.post(

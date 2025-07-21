@@ -4,6 +4,7 @@ import 'package:indocement_apk/pages/bpjs_kesehatan.dart';
 import 'package:indocement_apk/pages/master.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/pcir_page.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class BPJSPage extends StatefulWidget {
   const BPJSPage({super.key});
@@ -550,6 +551,33 @@ class _BPJSPageState extends State<BPJSPage>
         ],
       ),
     );
+  }
+
+  // Panggil fungsi ini sebelum akses kamera/mikrofon
+  Future<void> requestAllPermissions() async {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.microphone,
+      Permission.locationWhenInUse,
+    ].request();
+
+    // Cek jika ada yang tidak diberikan
+    if (statuses.values.any((status) => !status.isGranted)) {
+      // Tampilkan dialog atau info ke user
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Izin Diperlukan'),
+          content: const Text('Aplikasi membutuhkan izin Kamera, Suara, dan Lokasi untuk melanjutkan.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
 

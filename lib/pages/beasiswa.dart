@@ -570,7 +570,36 @@ void _showLoading(BuildContext context) {
                                   onTap: () => _selectDate(context),
                                   validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
                                 ),
-                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Pendidikan Kuliah
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: const [
+                                    Icon(Icons.school, color: Colors.green),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Pendidikan Kuliah',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 18),
                                 TextFormField(
                                   controller: namaPerguruanTinggiController,
                                   decoration: const InputDecoration(
@@ -603,7 +632,36 @@ void _showLoading(BuildContext context) {
                                     prefixIcon: Icon(Icons.calendar_today),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Pendidikan Sekolah
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: const [
+                                    Icon(Icons.school_outlined, color: Colors.blue),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Pendidikan Sekolah',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 18),
                                 TextFormField(
                                   controller: namaSekolahController,
                                   decoration: const InputDecoration(
