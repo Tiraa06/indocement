@@ -99,7 +99,7 @@ class _FamilyDataPageState extends State<FamilyDataPage> {
     } catch (e) {
       print('Error fetching family data: $e');
       setState(() {
-        _errorMessage = 'Terjadi kesalahan saat memuat data: $e';
+        _errorMessage = 'Terjadi kesalahan saat memuat data: Data Keluarga Belum Tersedia, pastikan data telah di input oleh PIC';
         _isLoading = false;
       });
     }

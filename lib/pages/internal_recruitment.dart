@@ -166,14 +166,6 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
         "AlasanPindah": formData['AlasanPindah'],
         "SuratIjinAtasanUrl": formData['SuratIzinAtasan'] ?? "",
         "TanggalDaftar": formData['TanggalDaftar'],
-        "Lowongan": {
-          "Judul": l['Judul'],
-          "Deskripsi": l['Deskripsi'],
-          "PlantDiv": l['PlantDiv'],
-          "Kriteria": l['Kriteria'],
-          "TanggalMulai": l['TanggalMulai'],
-          "TanggalSelesai": l['TanggalSelesai']
-        }
       }),
     );
     Navigator.pop(context); // Tutup loading

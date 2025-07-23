@@ -7,6 +7,7 @@ import 'package:indocement_apk/pages/schedule_shift.dart';
 import 'package:indocement_apk/pages/dispensasi_page.dart';
 import 'package:indocement_apk/pages/uang_duka_page.dart';
 import 'package:indocement_apk/pages/internal_recruitment.dart';
+import 'package:indocement_apk/pages/masa_kerja.dart';
 
 class LayananMenuPage extends StatefulWidget {
   const LayananMenuPage({super.key});
@@ -110,7 +111,13 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.star,
         'title': 'Penghargaan Masa Kerja',
         'color': Colors.amber,
-        'onTap': () => _navigateToFeature("Penghargaan Masa Kerja"),
+        'onTap': () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MasaKerjaPage()),
+          );
+        },
       },
       {
         'icon': Icons.group,
