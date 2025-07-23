@@ -1,0 +1,2 @@
+C:/Users/kinga/Documents/Kelas XI Arsip/indocement_apk/android/app/.cxx/Debug/2twb371g/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/kinga/Documents/Kelas XI Arsip/indocement_apk/android/app/.cxx/Debug/2twb371g/armeabi-v7a/CMakeFiles/rebuild_cache.dir
