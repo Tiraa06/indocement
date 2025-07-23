@@ -8,10 +8,7 @@ import 'package:indocement_apk/pages/dispensasi_page.dart';
 import 'package:indocement_apk/pages/uang_duka_page.dart';
 import 'package:indocement_apk/pages/internal_recruitment.dart';
 import 'package:indocement_apk/pages/masa_kerja.dart';
-<<<<<<< HEAD
 import 'package:indocement_apk/pages/file_aktif_page.dart';
-=======
->>>>>>> 886a118e1eca690253f55857ad9418a04d444e82
 
 class LayananMenuPage extends StatefulWidget {
   const LayananMenuPage({super.key});
@@ -97,7 +94,6 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'icon': Icons.folder,
         'title': 'File Aktif',
         'color': Colors.blueGrey,
-<<<<<<< HEAD
         'onTap': () {
           Navigator.pop(context);
           Navigator.push(
@@ -105,9 +101,6 @@ class _LayananMenuPageState extends State<LayananMenuPage>
             MaterialPageRoute(builder: (context) => const FileAktifPage()),
           );
         },
-=======
-        'onTap': () => _navigateToFeature("File Aktif"),
->>>>>>> 886a118e1eca690253f55857ad9418a04d444e82
       },
       {
         'icon': Icons.school,
