@@ -7,7 +7,8 @@ import 'dart:io';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
-import 'package:indocement_apk/utils/network_helper.dart'; // Tambahkan import ini
+import 'package:indocement_apk/utils/network_helper.dart';
+import 'package:device_info_plus/device_info_plus.dart'; // Tambahkan import ini
 
 class SkkFormPage extends StatefulWidget {
   const SkkFormPage({super.key});
@@ -258,24 +259,27 @@ class _SkkFormPageState extends State<SkkFormPage> {
   }
 
   Future<bool> _requestStoragePermission() async {
-    if (Platform.isAndroid) {
-      var status = await Permission.storage.status;
-      if (!status.isGranted) {
-        status = await Permission.storage.request();
-        if (!status.isGranted) {
-          _showPermissionDeniedDialog();
-          return false;
-        }
+    final info = DeviceInfoPlugin();
+    final androidInfo = await info.androidInfo;
+    if (androidInfo.version.sdkInt >= 33) {
+      // Android 13+, minta izin READ_MEDIA_*
+      final photos = await Permission.photos.request();
+      final videos = await Permission.videos.request();
+      final audio = await Permission.audio.request();
+      if (!photos.isGranted || !videos.isGranted || !audio.isGranted) {
+        _showPermissionDeniedDialog();
+        return false;
       }
-
-      if (Platform.version.split('.')[0].compareTo('11') >= 0 &&
-          await Permission.manageExternalStorage.isPermanentlyDenied) {
+      return true;
+    } else {
+      // Android 12 ke bawah, minta izin storage
+      final storage = await Permission.storage.request();
+      if (!storage.isGranted) {
         _showPermissionDeniedDialog();
         return false;
       }
       return true;
     }
-    return true;
   }
 
   void _showPermissionDeniedDialog() {
@@ -308,73 +312,57 @@ class _SkkFormPageState extends State<SkkFormPage> {
 
   Future<void> _downloadSkk(String? noSkk, String? urlSkk) async {
     if (noSkk == null || urlSkk == null) {
-      _showPopup(context, 'Gagal', 'Data download tidak lengkap.');
+      _showPopup(context, 'Gagal', 'Data file tidak lengkap.');
       return;
     }
 
-    final url = '$baseUrl$urlSkk';
-    print('Attempting to download from: $url');
-
+    final String fullUrl = '$baseUrl$urlSkk';
     final hasPermission = await _requestStoragePermission();
     if (!hasPermission) {
       return;
     }
 
+    setState(() => isLoading = true);
+
     try {
-      final response = await http.head(Uri.parse(url));
-      if (response.statusCode == 200) {
-        Directory dir;
-        bool isExternal = false;
-        if (Platform.isAndroid) {
-          var status = await Permission.manageExternalStorage.status;
-          if (status.isGranted) {
-            dir = Directory('/storage/emulated/0/Download');
-            isExternal = true;
-          } else {
-            dir = await getTemporaryDirectory();
-          }
-        } else if (Platform.isIOS) {
-          dir = await getApplicationDocumentsDirectory();
-        } else {
-          dir = await getTemporaryDirectory();
-        }
+      final response = await http.get(Uri.parse(fullUrl));
+      if (response.statusCode != 200) {
+        _showPopup(context, 'Gagal',
+            'File tidak ditemukan di server: ${response.statusCode}');
+        setState(() => isLoading = false);
+        return;
+      }
 
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-
-        final filePath = '${dir.path}/skk-$noSkk.pdf';
-        final file = File(filePath);
-
-        final httpResponse = await http.get(Uri.parse(url));
-        if (httpResponse.statusCode == 200) {
-          await file.writeAsBytes(httpResponse.bodyBytes);
-          if (mounted) {
-            _showPopup(context, 'Berhasil',
-                'File telah diunduh ke: $filePath${isExternal ? ' (akses di folder Downloads)' : ' (di dalam aplikasi, gunakan file manager untuk melihat)'}');
-
-            final result = await OpenFile.open(filePath);
-            if (result.type != ResultType.done) {
-              _showPopup(context, 'Gagal',
-                  'Tidak dapat membuka file: ${result.message}');
-            }
-          }
-        } else {
-          if (mounted) {
-            _showPopup(context, 'Gagal',
-                'Gagal mengunduh file: ${httpResponse.statusCode} - ${httpResponse.reasonPhrase}');
-          }
-        }
+      Directory dir;
+      if (Platform.isAndroid) {
+        // Simpan di folder app-specific external dir yang aman di Android 10+
+        dir = await getExternalStorageDirectory() ??
+            await getTemporaryDirectory();
       } else {
-        if (mounted) {
-          _showPopup(context, 'Gagal',
-              'Gagal mengakses file: ${response.statusCode} - ${response.reasonPhrase}');
-        }
+        dir = await getApplicationDocumentsDirectory();
+      }
+
+      String ext = '.pdf'; // Default ke pdf karena SKK biasanya PDF
+      if (urlSkk.contains('.')) {
+        ext = urlSkk.substring(urlSkk.lastIndexOf('.'));
+      }
+
+      final filePath = '${dir.path}/skk-$noSkk$ext';
+      final file = File(filePath);
+
+      await file.writeAsBytes(response.bodyBytes);
+
+      _showPopup(context, 'Berhasil', 'File berhasil diunduh ke:\n$filePath');
+
+      final result = await OpenFile.open(filePath);
+      if (result.type != ResultType.done) {
+        _showPopup(
+            context, 'Gagal', 'Tidak dapat membuka file: ${result.message}');
       }
     } catch (e) {
-      if (mounted) {
-        _showPopup(context, 'Gagal', 'Terjadi kesalahan saat mengunduh: $e');
-      }
+      _showPopup(context, 'Gagal', 'Gagal mengunduh file: $e');
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -732,20 +720,14 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                     if (data['Status']?.toLowerCase() ==
                                             'diapprove' &&
                                         data['UrlSkk'] != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(left: 8),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.download,
-                                            color: Color(0xFF1572E8),
-                                            size: 24,
-                                          ),
-                                          onPressed: () => _downloadSkk(
-                                            data['NoSkk'],
-                                            data['UrlSkk'],
-                                          ),
-                                          tooltip: 'Download SKK',
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.download,
+                                          color: Color(0xFF1572E8),
                                         ),
+                                        onPressed: () => _downloadSkk(
+                                            data['NoSkk'], data['UrlSkk']),
+                                        tooltip: 'Download SKK',
                                       ),
                                   ],
                                 ),

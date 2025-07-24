@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/absensi_lapangan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';
-import 'absensi_lapangan_page.dart'; // Import halaman AbsensiLapanganScreen
+// Import halaman AbsensiLapanganScreen
 
 class EventMenuPage extends StatefulWidget {
   const EventMenuPage({super.key});
