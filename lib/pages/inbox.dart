@@ -402,7 +402,7 @@ class _InboxPageState extends State<InboxPage> {
         final data = jsonDecode(response.body);
         if (data is List) {
           setState(() {
-            _bpjsNotifList = (data as List)
+            _bpjsNotifList = (data)
               .where((notif) =>
                 notif['Source'] == 'BPJS' &&
                 notif['IdEmployee']?.toString() == _employeeId?.toString())

@@ -8,7 +8,7 @@ import 'dart:convert';
 const Color customBlue = Color(0xFF1572E8);
 
 class MasaKerjaPage extends StatefulWidget {
-  const MasaKerjaPage({Key? key}) : super(key: key);
+  const MasaKerjaPage({super.key});
 
   @override
   State<MasaKerjaPage> createState() => _MasaKerjaPageState();
