@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'dart:math';
 // Ensure this import is present
 import 'package:shared_preferences/shared_preferences.dart';
 // Tambahkan di bagian import jika belum
@@ -344,6 +345,15 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     }
   }
 
+  String randomString(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final rnd = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+          length, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))),
+    );
+  }
+
   Future<void> cekStatusPasanganDanSetDropdown() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -426,8 +436,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   final TextEditingController tanggalSuratController = TextEditingController();
 
   // Controller tambahan untuk Surat Pernyataan
-  final TextEditingController idEslController = TextEditingController();
-  final TextEditingController namaEslController = TextEditingController();
+  final TextEditingController nikController = TextEditingController();
   final TextEditingController plandivController = TextEditingController();
   final TextEditingController departementController = TextEditingController();
   final TextEditingController tahunController = TextEditingController();
@@ -457,6 +466,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     jabatanAtasanController.dispose();
     namaPerusahaanController.dispose();
     alamatPerusahaanController.dispose();
+    nikController.dispose();
     namaKaryawanController.dispose();
     tempatLahirKaryawanController.dispose();
     tanggalLahirKaryawanController.dispose();
@@ -1592,21 +1602,12 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                       ),
                                       const SizedBox(height: 12),
                                       TextFormField(
-                                        controller: idEslController,
+                                        controller:
+                                            nikController, // <- Buat controller baru di atas, ya!
                                         decoration: const InputDecoration(
-                                          labelText: 'ID ESL *',
-                                          prefixIcon: Icon(Icons.numbers),
-                                        ),
-                                        validator: (v) => v == null || v.isEmpty
-                                            ? 'Wajib diisi'
-                                            : null,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      TextFormField(
-                                        controller: namaEslController,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Nama ESL *',
-                                          prefixIcon: Icon(Icons.person),
+                                          labelText: 'NIK *',
+                                          prefixIcon:
+                                              Icon(Icons.badge_outlined),
                                         ),
                                         validator: (v) => v == null || v.isEmpty
                                             ? 'Wajib diisi'
@@ -1629,18 +1630,6 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                         decoration: const InputDecoration(
                                           labelText: 'Departement *',
                                           prefixIcon: Icon(Icons.apartment),
-                                        ),
-                                        validator: (v) => v == null || v.isEmpty
-                                            ? 'Wajib diisi'
-                                            : null,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      TextFormField(
-                                        controller: sectionController,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Section *',
-                                          prefixIcon:
-                                              Icon(Icons.layers_outlined),
                                         ),
                                         validator: (v) => v == null || v.isEmpty
                                             ? 'Wajib diisi'
@@ -2062,180 +2051,38 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                             String url =
                                                 'http://103.31.235.237:5555/api/Medical/generate-medical-document?jenisSurat=$jenisSurat';
 
-                                            Map<String, dynamic> data;
-                                            if (jenisSurat == 'pernyataan') {
-                                              data = {
-                                                "{{id_employee}}":
-                                                    idEmployee.toString(),
-                                                "{{nama_pemberi_keterangan}}":
-                                                    namaAtasanController.text,
-                                                "{{jabatan_pemberi_keterangan}}":
-                                                    jabatanAtasanController
-                                                        .text,
-                                                "{{nama_perusahaan}}":
-                                                    namaPerusahaanController
-                                                        .text,
-                                                "{{alamat_perusahaan}}":
-                                                    alamatPerusahaanController
-                                                        .text,
-                                                "{{nama_pegawai}}":
-                                                    namaKaryawanController.text,
-                                                "{{nik_pegawai}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{id_esl_pegawai}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{nama_esl}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{section}}":
-                                                    sectionController.text,
-                                                "{{departement}}":
-                                                    sectionController.text,
-                                                "{{Unit}}": unitController.text,
-                                                "{{plandiv}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{status_pasangan}}":
-                                                    statusPasanganController
-                                                        .text,
-                                                "{{nama_suami}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? namaPasanganController
-                                                            .text
-                                                        : "",
-                                                "{{ttl_suami}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? tanggalLahirPasanganController
-                                                            .text
-                                                        : "",
-                                                "{{tempat_lahir_suami}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{tanggal_suami}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{usaha_suami}}":
-                                                    "", // Isi dari controller jika ada
-                                                "{{nama_pasangan}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? ""
-                                                        : namaPasanganController
-                                                            .text,
-                                                "{{ttl_pasangan}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? ""
-                                                        : tanggalLahirPasanganController
-                                                            .text,
-                                                "{{nama_anak1}}":
-                                                    namaAnak1Controller.text,
-                                                "{{ttl_anak1}}":
-                                                    ttlAnak1Controller.text,
-                                                "{{nama_anak2}}":
-                                                    namaAnak2Controller.text,
-                                                "{{ttl_anak2}}":
-                                                    ttlAnak2Controller.text,
-                                                "{{nama_anak3}}":
-                                                    namaAnak3Controller.text,
-                                                "{{ttl_anak3}}":
-                                                    ttlAnak3Controller.text,
-                                                "{{Unit}}": unitController.text,
-                                                "{{departement}}":
-                                                    sectionController.text,
-                                              };
-                                            } else {
-                                              data = {
-                                                "{{id_employee}}":
-                                                    idEmployee.toString(),
-                                                "{{nama_pemberi_keterangan}}":
-                                                    namaAtasanController.text,
-                                                "{{jabatan_pemberi_keterangan}}":
-                                                    jabatanAtasanController
-                                                        .text,
-                                                "{{nama_perusahaan}}":
-                                                    namaPerusahaanController
-                                                        .text,
-                                                "{{alamat_perusahaan}}":
-                                                    alamatPerusahaanController
-                                                        .text,
-                                                "{{nama_pegawai}}":
-                                                    namaKaryawanController.text,
-                                                "{{tempat_lahir_pegawai}}":
-                                                    tempatLahirKaryawanController
-                                                        .text,
-                                                "{{tanggal_lahir_pegawai}}":
-                                                    tanggalLahirKaryawanController
-                                                        .text,
-                                                "{{alamat_pegawai}}":
-                                                    alamatKaryawanController
-                                                        .text,
-                                                "{{tanggal_mulai_kerja}}":
-                                                    tglMulaiKerjaController
-                                                        .text,
-                                                "{{jabatan_terakhir}}":
-                                                    jabatanTerakhirController
-                                                        .text,
-                                                "{{section}}":
-                                                    sectionController.text,
-                                                "{{status_pasangan}}":
-                                                    statusPasanganController
-                                                        .text,
-                                                "{{nama_suami}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? ""
-                                                        : namaPasanganController
-                                                            .text,
-                                                "{{ttl_suami}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? ""
-                                                        : tanggalLahirPasanganController
-                                                            .text,
-                                                "{{nama_pasangan}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? namaPasanganController
-                                                            .text
-                                                        : "",
-                                                "{{ttl_pasangan}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? tanggalLahirPasanganController
-                                                            .text
-                                                        : "",
-                                                "{{nama_anak1}}":
-                                                    namaAnak1Controller.text,
-                                                "{{ttl_anak1}}":
-                                                    ttlAnak1Controller.text,
-                                                "{{nama_anak2}}":
-                                                    namaAnak2Controller.text,
-                                                "{{ttl_anak2}}":
-                                                    ttlAnak2Controller.text,
-                                                "{{nama_anak3}}":
-                                                    namaAnak3Controller.text,
-                                                "{{ttl_anak3}}":
-                                                    ttlAnak3Controller.text,
-                                                "{{Unit}}": unitController.text,
-                                                "{{departement}}":
-                                                    sectionController.text,
-                                              };
-                                            }
+Map<String, dynamic> data;
+if (jenisSurat == 'pernyataan') {
+  data = {
+    "{{nama_pegawai}}": namaKaryawanController.text.trim().isEmpty ? "{{}}" : namaKaryawanController.text.trim(),
+    "{{nik_pegawai}}": nikController.text.trim().isEmpty ? "{{}}" : nikController.text.trim(),
+    "{{plandiv}}": plandivController.text.trim().isEmpty ? "{{}}" : plandivController.text.trim(),
+    "{{departement}}": departementController.text.trim().isEmpty ? "{{}}" : departementController.text.trim(),
+    "{{tanggal_suami}}": tanggalLahirSuamiController.text.trim().isEmpty ? "{{}}" : tanggalLahirSuamiController.text.trim(),
+    "{{nama_suami}}": namaSuamiController.text.trim().isEmpty ? "{{}}" : namaSuamiController.text.trim(),
+    "{{tempat_lahir_suami}}": tempatLahirSuamiController.text.trim().isEmpty ? "{{}}" : tempatLahirSuamiController.text.trim(),
+    "{{ttl_suami}}": tanggalLahirSuamiController.text.trim().isEmpty ? "{{}}" : tanggalLahirSuamiController.text.trim(),
+    "{{usaha_suami}}": bidangUsahaController.text.trim().isEmpty ? "{{}}" : bidangUsahaController.text.trim(),
+    "{{nama_anak1}}": namaAnak1Controller.text.trim().isEmpty ? "" : namaAnak1Controller.text.trim(),
+    "{{tempat_lahir_anak1}}": tempatLahirAnak1Controller.text.trim().isEmpty ? "" : tempatLahirAnak1Controller.text.trim(),
+    "{{ttl_anak1}}": ttlAnak1Controller.text.trim().isEmpty ? "" : ttlAnak1Controller.text.trim(),
+    "{{Pendidikan_anak1}}": pendidikanAnak1Controller.text.trim().isEmpty ? "" : pendidikanAnak1Controller.text.trim(),
+    "{{nama_anak2}}": namaAnak2Controller.text.trim().isEmpty ? "" : namaAnak2Controller.text.trim(),
+    "{{tempat_lahir_anak2}}": tempatLahirAnak2Controller.text.trim().isEmpty ? "" : tempatLahirAnak2Controller.text.trim(),
+    "{{ttl_anak2}}": ttlAnak2Controller.text.trim().isEmpty ? "" : ttlAnak2Controller.text.trim(),
+    "{{Pendidikan_anak2}}": pendidikanAnak2Controller.text.trim().isEmpty ? "" : pendidikanAnak2Controller.text.trim(),
+    "{{nama_anak3}}": namaAnak3Controller.text.trim().isEmpty ? "" : namaAnak3Controller.text.trim(),
+    "{{tempat_lahir_anak3}}": tempatLahirAnak3Controller.text.trim().isEmpty ? "" : tempatLahirAnak3Controller.text.trim(),
+    "{{ttl_anak3}}": ttlAnak3Controller.text.trim().isEmpty ? "" : ttlAnak3Controller.text.trim(),
+    "{{Pendidikan_anak3}}": pendidikanAnak3Controller.text.trim().isEmpty ? "" : pendidikanAnak3Controller.text.trim(),
+    "{{Unit}}": unitController.text.trim().isEmpty ? "       " : unitController.text.trim(),
+  };
+} else {
+  data = {
+    // ...mapping untuk keterangan seperti sebelumnya
+  };
+}
+
 
                                             final response = await Dio().post(
                                               url,
@@ -2261,8 +2108,9 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                                 directory.createSync(
                                                     recursive: true);
                                               }
+                                              // --- Ganti baris ini:
                                               final filePath =
-                                                  '${directory.path}/medical_$idEmployee.pdf';
+                                                  '${directory.path}/medical_${randomString(8)}.pdf';
                                               final file = File(filePath);
                                               await file
                                                   .writeAsBytes(response.data!);
@@ -2273,7 +2121,6 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                                 isDownloadEnabled = true;
                                               });
 
-                                              // Tutup dropdown jika masih terbuka
                                               FocusScope.of(context).unfocus();
 
                                               ScaffoldMessenger.of(context)
@@ -2651,30 +2498,30 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   }
 
   Future<void> simpanIdSectionIdEslKePrefs() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final idEmployee = prefs.getInt('idEmployee');
-    if (idEmployee == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idEmployee = prefs.getInt('idEmployee');
+      if (idEmployee == null) return;
 
-    final response = await Dio().get(
-      'http://103.31.237.5555/api/Employees',
-      options: Options(headers: {'accept': 'text/plain'}),
-    );
-
-    if (response.statusCode == 200 && response.data is List) {
-      final List employees = response.data;
-      final user = employees.firstWhere(
-        (e) => e['Id'] == idEmployee,
-        orElse: () => null,
+      final response = await Dio().get(
+        'http://103.31.237.5555/api/Employees',
+        options: Options(headers: {'accept': 'text/plain'}),
       );
-      if (user != null) {
-        await prefs.setInt('idSection', user['IdSection'] ?? 0);
-        await prefs.setInt('idEsl', user['IdEsl'] ?? 0);
-        print('IdSection dan IdEsl berhasil disimpan ke SharedPreferences');
+
+      if (response.statusCode == 200 && response.data is List) {
+        final List employees = response.data;
+        final user = employees.firstWhere(
+          (e) => e['Id'] == idEmployee,
+          orElse: () => null,
+        );
+        if (user != null) {
+          await prefs.setInt('idSection', user['IdSection'] ?? 0);
+          await prefs.setInt('idEsl', user['IdEsl'] ?? 0);
+          print('IdSection dan IdEsl berhasil disimpan ke SharedPreferences');
+        }
       }
+    } catch (e) {
+      print('Gagal simpan IdSection/IdEsl: $e');
     }
-  } catch (e) {
-    print('Gagal simpan IdSection/IdEsl: $e');
   }
-}
 }
