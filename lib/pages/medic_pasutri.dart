@@ -26,6 +26,7 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   File? uploadedFile; // Menyimpan file yang diunggah
   bool isUploading = false; // Status apakah sedang mengunggah file
   bool isDownloadEnabled = false; // Status apakah tombol download diaktifkan
+  String? selectedJenisSuratUpload;
   // Tambahkan variabel state untuk loading kirim surat
   bool isSending = false;
   bool isDropdownEnabled = false;
@@ -41,7 +42,6 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
     tahunController.text = now.year.toString();
 
     // Panggil fungsi untuk menyimpan IdSection dan IdEsl ke SharedPreferences
-    simpanIdSectionIdEslKePrefs();
   }
 
   Future<void> downloadFile() async {
@@ -203,6 +203,61 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
       });
     }
   }
+
+Future<void> uploadSuratMedic(String jenisSurat) async {
+  if (uploadedFile == null) {
+    ScaffoldMessenger.of(this.context).showSnackBar(
+      const SnackBar(content: Text('Silakan pilih file terlebih dahulu')),
+    );
+    return;
+  }
+  setState(() {
+    isUploading = true;
+  });
+  try {
+    final idEmployee = await getIdEmployee();
+    if (idEmployee == null) {
+      throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
+    }
+    final dio = Dio();
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        uploadedFile!.path,
+        filename: basename(uploadedFile!.path),
+      ),
+      'idEmployee': idEmployee,
+      'jenisSurat': jenisSurat,
+    });
+    final response = await dio.post(
+      'http://103.31.235.237:5555/api/Medical/upload',
+      data: formData,
+      options: Options(
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'multipart/form-data',
+        },
+      ),
+    );
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('File $jenisSurat berhasil diupload!')),
+      );
+      setState(() {
+        uploadedFile = null;
+      });
+    } else {
+      throw Exception('Gagal mengunggah file: ${response.statusCode}');
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(this.context).showSnackBar(
+      SnackBar(content: Text('Gagal upload file: $e')),
+    );
+  } finally {
+    setState(() {
+      isUploading = false;
+    });
+  }
+}
 
   Future<void> requestStoragePermission() async {
     if (await Permission.storage.request().isGranted) {
@@ -616,9 +671,6 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
                                 setState(() {
                                   selectedJenisSurat = value;
                                 });
-                                if (value == 'keterangan') {
-                                  await isiOtomatisAtasan();
-                                }
                               },
                             ),
                           ),
@@ -2225,303 +2277,267 @@ if (jenisSurat == 'pernyataan') {
                         ),
 
                       // Card untuk upload file PDF
-                      Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: const [
-                                  Icon(Icons.upload_file,
-                                      color: Color(0xFF1572E8)),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Upload Surat Medic',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
-                                      color: Color(0xFF1572E8),
-                                    ),
-                                  ),
-                                ],
+Card(
+  margin: const EdgeInsets.only(bottom: 16),
+  elevation: 2,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  child: Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: const [
+            Icon(Icons.upload_file, color: Color(0xFF1572E8)),
+            SizedBox(width: 8),
+            Text(
+              'Upload Surat Medic',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: Color(0xFF1572E8),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: selectedJenisSuratUpload,
+          decoration: InputDecoration(
+            labelText: 'Pilih Jenis Surat untuk Upload',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            prefixIcon: const Icon(Icons.description),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: 'pernyataan',
+              child: Text('Surat Pernyataan'),
+            ),
+            DropdownMenuItem(
+              value: 'keterangan',
+              child: Text('Surat Keterangan'),
+            ),
+          ],
+          onChanged: isUploading
+              ? null
+              : (value) {
+                  setState(() {
+                    selectedJenisSuratUpload = value;
+                  });
+                },
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: isUploading
+              ? null
+              : () async {
+                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                  );
+                  if (result != null && result.files.single.path != null) {
+                    setState(() {
+                      uploadedFile = File(result.files.single.path!);
+                    });
+                  }
+                },
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: uploadedFile != null ? Colors.green : const Color(0xFF1572E8),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1572E8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: uploadedFile == null
+                      ? const Icon(Icons.upload_file, size: 30, color: Colors.white)
+                      : (uploadedFile!.path.toLowerCase().endsWith('.pdf')
+                          ? const Icon(Icons.picture_as_pdf, size: 30, color: Colors.white)
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                uploadedFile!,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
                               ),
-                              const Divider(height: 24),
-                              GestureDetector(
-                                onTap: isUploading
-                                    ? null
-                                    : () async {
-                                        FilePickerResult? result =
-                                            await FilePicker.platform.pickFiles(
-                                          type: FileType.custom,
-                                          allowedExtensions: [
-                                            'pdf',
-                                            'jpg',
-                                            'jpeg',
-                                            'png'
-                                          ],
-                                        );
-                                        if (result != null &&
-                                            result.files.single.path != null) {
-                                          setState(() {
-                                            uploadedFile =
-                                                File(result.files.single.path!);
-                                          });
-                                        }
-                                      },
-                                child: Container(
-                                  padding: const EdgeInsets.all(16.0),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border:
-                                        Border.all(color: Color(0xFF1572E8)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 60,
-                                        height: 60,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1572E8),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: uploadedFile == null
-                                            ? const Icon(
-                                                Icons.upload_file,
-                                                size: 30,
-                                                color: Colors.white,
-                                              )
-                                            : (uploadedFile!.path
-                                                    .toLowerCase()
-                                                    .endsWith('.pdf')
-                                                ? const Icon(
-                                                    Icons.picture_as_pdf,
-                                                    size: 30,
-                                                    color: Colors.white)
-                                                : ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    child: Image.file(
-                                                      uploadedFile!,
-                                                      width: 60,
-                                                      height: 60,
-                                                      fit: BoxFit.cover,
-                                                    ),
-                                                  )),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              'Pilih File untuk Diunggah',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              uploadedFile != null
-                                                  ? basename(uploadedFile!.path)
-                                                  : 'Belum ada file yang dipilih',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                            )),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        uploadedFile != null
+                            ? basename(uploadedFile!.path)
+                            : 'Belum ada file yang dipilih',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: uploadedFile != null ? Colors.black87 : Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (uploadedFile != null)
+                        const Text(
+                          'File siap diunggah',
+                          style: TextStyle(fontSize: 12, color: Colors.green),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: isUploading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.cloud_upload, color: Colors.white),
+            label: Text(
+              isUploading ? 'Mengunggah...' : 'Upload File',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1572E8),
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 2,
+            ),
+            onPressed: isUploading
+                ? null
+                : () async {
+                    if (uploadedFile == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Silakan pilih file terlebih dahulu')),
+                      );
+                      return;
+                    }
+                    if (selectedJenisSuratUpload == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pilih jenis surat terlebih dahulu')),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      isUploading = true;
+                    });
+                    try {
+                      final idEmployee = await getIdEmployee();
+                      if (idEmployee == null) {
+                        throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
+                      }
+                      final dio = Dio();
+                      final formData = FormData.fromMap({
+                        'file': await MultipartFile.fromFile(
+                          uploadedFile!.path,
+                          filename: basename(uploadedFile!.path),
+                        ),
+                        'idEmployee': idEmployee,
+                        'jenisSurat': selectedJenisSuratUpload,
+                      });
+                      final response = await dio.post(
+                        'http://103.31.235.237:5555/api/Medical/upload',
+                        data: formData,
+                        options: Options(
+                          headers: {
+                            'accept': '*/*',
+                            'Content-Type': 'multipart/form-data',
+                          },
+                        ),
+                      );
+                      if (response.statusCode == 200) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            title: Column(
+                              children: const [
+                                Icon(Icons.check_circle, color: Colors.green, size: 48),
+                                SizedBox(height: 8),
+                                Text('Upload Berhasil'),
+                              ],
+                            ),
+                            content: const Text(
+                              'File berhasil diupload!',
+                              textAlign: TextAlign.center,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text('OK'),
                               ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: isUploading
-                                    ? null
-                                    : () async {
-                                        if (uploadedFile == null) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'Silakan pilih file terlebih dahulu'),
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        setState(() {
-                                          isUploading = true;
-                                        });
-                                        try {
-                                          final idEmployee =
-                                              await getIdEmployee();
-                                          if (idEmployee == null) {
-                                            throw Exception(
-                                                'ID Employee tidak ditemukan. Harap login ulang.');
-                                          }
-                                          final dio = Dio();
-                                          final formData = FormData.fromMap({
-                                            'file':
-                                                await MultipartFile.fromFile(
-                                              uploadedFile!.path,
-                                              filename:
-                                                  basename(uploadedFile!.path),
-                                            ),
-                                            'idEmployee': idEmployee,
-                                          });
-                                          final response = await dio.post(
-                                            'http://103.31.235.237:5555/api/Medical/upload',
-                                            data: formData,
-                                            options: Options(
-                                              headers: {
-                                                'accept': '*/*',
-                                                'Content-Type':
-                                                    'multipart/form-data',
-                                              },
-                                            ),
-                                          );
-                                          if (response.statusCode == 200) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                  content: Text(
-                                                      'File berhasil diupload!')),
-                                            );
-                                            setState(() {
-                                              uploadedFile = null;
-                                            });
-                                          } else {
-                                            throw Exception(
-                                                'Gagal mengunggah file: ${response.statusCode}');
-                                          }
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'Gagal upload file: $e')),
-                                          );
-                                        } finally {
-                                          setState(() {
-                                            isUploading = false;
-                                          });
-                                        }
-                                      },
-                                icon: const Icon(Icons.cloud_upload,
-                                    color: Colors.white),
-                                label: const Text(
-                                  'Upload File',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF1572E8),
-                                  minimumSize: const Size(double.infinity, 48),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                              if (isUploading)
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 12.0),
-                                  child: LinearProgressIndicator(),
-                                ),
                             ],
                           ),
-                        ),
-                      )
+                        );
+                        setState(() {
+                          uploadedFile = null;
+                          selectedJenisSuratUpload = null;
+                        });
+                      } else {
+                        throw Exception('Gagal mengunggah file: ${response.statusCode}');
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal upload file: $e')),
+                      );
+                    } finally {
+                      setState(() {
+                        isUploading = false;
+                      });
+                    }
+                  },
+          ),
+        ),
+      ],
+    ),
+  ),
+),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
+            ]),
           ),
-        ),
-      ),
-    );
+        ));
   }
-
-  Future<void> isiOtomatisAtasan() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final idEmployee = prefs.getInt('idEmployee');
-      final idSection = prefs.getInt('idSection');
-      // Pastikan idSection sudah disimpan di SharedPreferences saat login
-
-      if (idSection == null) return;
-
-      final response = await Dio().get(
-        'http://103.31.235.237:5555/api/Employees',
-        options: Options(headers: {'accept': 'text/plain'}),
-      );
-
-      if (response.statusCode == 200 && response.data is List) {
-        final List employees = response.data;
-
-        // Cari atasan dengan idSection sama dan idEsl == 3
-        final atasan = employees.firstWhere(
-          (e) => e['IdSection'] == idSection && e['IdEsl'] == 3,
-          orElse: () => null,
-        );
-
-        if (atasan != null) {
-          setState(() {
-            namaAtasanController.text = atasan['EmployeeName'] ?? '';
-            jabatanAtasanController.text = atasan['JobTitle'] ?? '';
-          });
-        }
-      }
-    } catch (e) {
-      print('Gagal isi otomatis atasan: $e');
-    }
   }
-
-  Future<void> simpanIdSectionIdEslKePrefs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final idEmployee = prefs.getInt('idEmployee');
-      if (idEmployee == null) return;
-
-      final response = await Dio().get(
-        'http://103.31.237.5555/api/Employees',
-        options: Options(headers: {'accept': 'text/plain'}),
-      );
-
-      if (response.statusCode == 200 && response.data is List) {
-        final List employees = response.data;
-        final user = employees.firstWhere(
-          (e) => e['Id'] == idEmployee,
-          orElse: () => null,
-        );
-        if (user != null) {
-          await prefs.setInt('idSection', user['IdSection'] ?? 0);
-          await prefs.setInt('idEsl', user['IdEsl'] ?? 0);
-          print('IdSection dan IdEsl berhasil disimpan ke SharedPreferences');
-        }
-      }
-    } catch (e) {
-      print('Gagal simpan IdSection/IdEsl: $e');
-    }
-  }
-}
+  

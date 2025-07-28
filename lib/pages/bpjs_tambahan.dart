@@ -400,6 +400,14 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
     showLoadingDialog(context);
 
     try {
+      final formData = FormData.fromMap({
+        for (var doc in documents)
+          doc['fieldName']: await MultipartFile.fromFile(
+            (doc['file'] as File).path,
+            filename: basename((doc['file'] as File).path),
+          ),
+      });
+
       await uploadBpjsDocumentsCompressed(
         idEmployee: idEmployee!,
         anggotaBpjs: anggotaBpjs,
@@ -886,8 +894,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          selectedImages[
-                                                      'UrlAkteLahirTambahan'] !=
+                                          selectedImages['UrlAkteLahirTambahan'] !=
                                                   null
                                               ? basename(selectedImages[
                                                       'UrlAkteLahirTambahan']!
@@ -985,14 +992,12 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                             child: ElevatedButton.icon(
                               // ...tombol kirim anak ke-4 dst...
                               onPressed: () async {
-                                // Validasi file
-                                if (selectedImages['UrlAkteLahirTambahan'] ==
-                                    null) {
+                                if (selectedImages['UrlKkTambahan'] == null) {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
                                     message:
-                                        'Anda harus mengunggah Akte Kelahiran terlebih dahulu.',
+                                        'Anda harus mengunggah KK terlebih dahulu.',
                                   );
                                   return;
                                 }
@@ -1000,8 +1005,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message:
-                                        'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
+                                    message: 'Anda harus mengunggah Surat Registrasi BPJS Tambahan terlebih dahulu.',
                                   );
                                   return;
                                 }
@@ -1013,106 +1017,89 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                   );
                                   return;
                                 }
+                                if (selectedAnggotaBpjs == null) {
+                                  _showPopup(
+                                    context: context,
+                                    title: 'Gagal',
+                                    message: 'Pilih anggota BPJS terlebih dahulu.',
+                                  );
+                                  return;
+                                }
                                 showLoadingDialog(context);
                                 try {
-                                  final dio = Dio();
-                                  final formData = FormData();
+                                  // Ambil data BPJS untuk dapatkan matchingId
+                                  final response = await Dio().get(
+                                    'http://103.31.235.237:5555/api/Bpjs',
+                                    queryParameters: {'idEmployee': idEmployee},
+                                  );
+                                  if (response.statusCode == 200) {
+                                    final List<dynamic> data = response.data;
+                                    final matchingEntry = data.firstWhere(
+                                      (item) =>
+                                          item['IdEmployee'] == idEmployee &&
+                                          item['AnggotaBpjs'] == selectedAnggotaBpjs,
+                                      orElse: () => null,
+                                    );
+                                    if (matchingEntry == null) {
+                                      Navigator.of(context).pop();
+                                      _showPopup(
+                                        context: context,
+                                        title: 'Gagal',
+                                        message: 'Data BPJS tidak ditemukan untuk karyawan dan anggota ini.',
+                                      );
+                                      return;
+                                    }
+                                    final matchingId = matchingEntry['Id'];
 
-                                  // Ambil angka anak ke-berapa dari string, misal "Anak ke-4" -> 4
-                                  int anakKe = 0;
-                                  if (selectedAnggotaBpjs != null &&
-                                      selectedAnggotaBpjs!
-                                          .startsWith('Anak ke-')) {
-                                    anakKe = int.tryParse(selectedAnggotaBpjs!
-                                            .replaceAll(
-                                                RegExp(r'[^0-9]'), '')) ??
-                                        0;
-                                  }
-
-                                  // Tambahkan file ke array Files & FileTypes
-                                  formData.files.addAll([
-                                    MapEntry(
-                                      "Files",
-                                      await MultipartFile.fromFile(
-                                        selectedImages['UrlAkteLahirTambahan']!
-                                            .path,
-                                        filename: basename(selectedImages[
-                                                'UrlAkteLahirTambahan']!
-                                            .path),
+                                    final formData = FormData.fromMap({
+                                      "UrlKk": await MultipartFile.fromFile(
+                                        selectedImages['UrlKkTambahan']!.path,
+                                        filename: basename(selectedImages['UrlKkTambahan']!.path),
                                       ),
-                                    ),
-                                    MapEntry(
-                                      "Files",
-                                      await MultipartFile.fromFile(
+                                      "UrlSuratPotongGaji": await MultipartFile.fromFile(
                                         uploadedFile!.path,
                                         filename: basename(uploadedFile!.path),
                                       ),
-                                    ),
-                                  ]);
-                                  formData.fields.addAll([
-                                    MapEntry(
-                                        "IdEmployee", idEmployee.toString()),
-                                    MapEntry("FileTypes", "UrlAkteLahir"),
-                                    MapEntry("FileTypes", "UrlSuratPotongGaji"),
-                                    // Kirim hanya "Anak" ke AnggotaBpjs
-                                    MapEntry("AnggotaBpjs", "Anak"),
-                                    // Kirim hanya angka ke AnakKe
-                                    MapEntry("AnakKe", anakKe.toString()),
-                                  ]);
+                                    });
 
-                                  final response = await dio.post(
-                                    'http://103.31.235.237:5555/api/Bpjs/upload',
-                                    data: formData,
-                                    options: Options(
-                                      headers: {
-                                        'accept': 'application/json',
-                                        'Content-Type': 'multipart/form-data',
-                                      },
-                                    ),
-                                  );
-                                  Navigator.of(context).pop();
-                                  if (response.statusCode == 200) {
-                                    _showPopup(
-                                      context: context,
-                                      title: 'Berhasil',
-                                      message: 'Data anak berhasil dikirim.',
+                                    final uploadResponse = await Dio().put(
+                                      'http://103.31.235.237:5555/api/Bpjs/upload/$matchingId',
+                                      data: formData,
+                                      options: Options(
+                                        headers: {
+                                          'accept': 'application/json',
+                                          'Content-Type': 'multipart/form-data',
+                                        },
+                                      ),
                                     );
+                                    Navigator.of(context).pop();
+                                    if (uploadResponse.statusCode == 200) {
+                                      _showPopup(
+                                        context: context,
+                                        title: 'Berhasil',
+                                        message: 'Dokumen berhasil dikirim.',
+                                      );
+                                    } else {
+                                      _showPopup(
+                                        context: context,
+                                        title: 'Gagal',
+                                        message: 'Gagal mengirim file. (${uploadResponse.statusCode})\n${uploadResponse.data}',
+                                      );
+                                    }
                                   } else {
+                                    Navigator.of(context).pop();
                                     _showPopup(
                                       context: context,
                                       title: 'Gagal',
-                                      message:
-                                          'Gagal mengirim data anak. (${response.statusCode})\n${response.data}',
+                                      message: 'Gagal mengambil data BPJS.',
                                     );
                                   }
-                                } on DioException {
-                                  Navigator.of(context).pop();
-                                  _showPopup(
-                                    context: context,
-                                    title: 'Gagal',
-                                    message: 'Server sedang dalam gangguan.',
-                                  );
-                                } on SocketException catch (_) {
-                                  Navigator.of(context).pop();
-                                  _showPopup(
-                                    context: context,
-                                    title: 'Gagal',
-                                    message: 'Server sedang dalam gangguan.',
-                                  );
-                                } on TimeoutException catch (_) {
-                                  Navigator.of(context).pop();
-                                  _showPopup(
-                                    context: context,
-                                    title: 'Gagal',
-                                    message: 'Server sedang dalam gangguan.',
-                                  );
                                 } catch (e) {
                                   Navigator.of(context).pop();
                                   _showPopup(
                                     context: context,
                                     title: 'Gagal',
-                                    message:
-                                        'Terjadi kesalahan saat mengirim data.\n$e',
+                                    message: 'Terjadi kesalahan saat mengirim file.\n$e',
                                   );
                                 }
                               },
@@ -1252,7 +1239,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                                         filename: basename(uploadedFile!.path),
                                       ),
                                     ),
-                                  ]);
+                        ]);
                                   formData.fields.addAll([
                                     MapEntry(
                                         "IdEmployee", idEmployee.toString()),
