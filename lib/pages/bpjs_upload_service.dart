@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 
@@ -535,5 +537,113 @@ Future<void> sendBpjsNotificationWatcher(Map data) async {
   } else {
     print(
         "❌ [Watcher] Gagal mengambil data Employees: ${empResponse.statusCode}");
+  }
+}
+
+/// Utility upload dokumen BPJS sesuai kebutuhan backend.
+/// - Untuk POST (Ortu/Mertua): key 'Files' dua kali jika dua file, 'FileTypes' satu string dipisah koma.
+/// - Untuk POST satu file: key 'Files' sekali, 'FileTypes' satu value.
+/// - Untuk PUT (Anak ke-4 dst): key harus 'UrlKk' dan 'UrlSuratPotongGaji' (bukan 'Files').
+/// - Tidak boleh pakai array di field (seperti FileTypes) kecuali backend meminta.
+/// - Validasi jumlah file dan fileTypes sebelum request.
+/// - Setelah request, tampilkan body response backend di UI (return String).
+
+Future<String> uploadBpjsDokumenUniversal({
+  required String method, // 'POST' atau 'PUT'
+  required String url, // endpoint lengkap
+  required List<File> files, // urut: [suratPotongGaji, kk] atau satu file
+  required List<String> fileTypes, // urut: ['UrlSuratPotongGaji', 'UrlKk'] atau satu value
+  required int idEmployee,
+  String? anggotaBpjs, // untuk POST
+}) async {
+  // Validasi jumlah file dan fileTypes
+  if (files.isEmpty || fileTypes.isEmpty) {
+    throw Exception('File dan FileTypes tidak boleh kosong.');
+  }
+  if (files.length != fileTypes.length) {
+    throw Exception('Jumlah file dan FileTypes harus sama.');
+  }
+
+  final dio = Dio();
+  FormData formData;
+
+  if (method == 'POST') {
+    formData = FormData();
+    // Dua file: key 'Files' dua kali, FileTypes gabungan
+    if (files.length == 2) {
+      for (final file in files) {
+        formData.files.add(
+          MapEntry(
+            "Files",
+            await MultipartFile.fromFile(
+              file.path,
+              filename: basename(file.path),
+            ),
+          ),
+        );
+      }
+      formData.fields.add(MapEntry("IdEmployee", idEmployee.toString()));
+      formData.fields.add(MapEntry("FileTypes", fileTypes.join(',')));
+      if (anggotaBpjs != null) {
+        formData.fields.add(MapEntry("AnggotaBpjs", anggotaBpjs));
+      }
+    }
+    // Satu file: key 'Files' sekali, FileTypes satu value
+    else if (files.length == 1) {
+      formData.files.add(
+        MapEntry(
+          "Files",
+          await MultipartFile.fromFile(
+            files[0].path,
+            filename: basename(files[0].path),
+          ),
+        ),
+      );
+      formData.fields.add(MapEntry("IdEmployee", idEmployee.toString()));
+      formData.fields.add(MapEntry("FileTypes", fileTypes[0]));
+      if (anggotaBpjs != null) {
+        formData.fields.add(MapEntry("AnggotaBpjs", anggotaBpjs));
+      }
+    } else {
+      throw Exception('Jumlah file tidak didukung untuk mode POST.');
+    }
+  } else if (method == 'PUT') {
+    // Untuk PUT: key sesuai FileTypes (bukan 'Files')
+    final map = <String, dynamic>{
+      "IdEmployee": idEmployee.toString(),
+    };
+    for (int i = 0; i < files.length; i++) {
+      map[fileTypes[i]] = await MultipartFile.fromFile(
+        files[i].path,
+        filename: basename(files[i].path),
+      );
+    }
+    formData = FormData.fromMap(map);
+  } else {
+    throw Exception('Method tidak didukung: $method');
+  }
+
+  try {
+    final response = await (method == 'POST'
+        ? dio.post(url, data: formData, options: Options(
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'multipart/form-data',
+            },
+          ))
+        : dio.put(url, data: formData, options: Options(
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'multipart/form-data',
+            },
+          )));
+
+    // Tampilkan body response backend
+    return response.data?.toString() ?? 'No response body';
+  } on DioException catch (e) {
+    final backendMsg = e.response?.data?.toString() ?? '';
+    throw Exception('Gagal upload file.\n$backendMsg\n$e');
+  } catch (e) {
+    throw Exception('Gagal upload file.\n$e');
   }
 }

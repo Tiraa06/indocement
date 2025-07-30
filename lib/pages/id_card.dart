@@ -9,6 +9,7 @@ import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:file_picker/file_picker.dart';
 
 class IdCardUploadPage extends StatefulWidget {
   const IdCardUploadPage({super.key});
@@ -363,6 +364,45 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     );
   }
 
+  Future<void> pickFileModern(Function(File) onPicked, {bool allowPdf = false}) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (allowPdf)
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                title: const Text('Pilih PDF dari File'),
+                onTap: () => Navigator.pop(context, 'pdf'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.image, color: Colors.blue),
+              title: const Text('Pilih Gambar dari Galeri'),
+              onTap: () => Navigator.pop(context, 'image'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == 'pdf') {
+      FilePickerResult? picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (picked != null && picked.files.single.path != null) {
+        onPicked(File(picked.files.single.path!));
+      }
+    } else if (result == 'image') {
+      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked != null) {
+        onPicked(File(picked.path));
+      }
+    }
+  }
+
   Widget buildUploadSection(String label, File? file, Function(File) onPicked,
       {bool allowPdf = false}) {
     return Column(
@@ -449,6 +489,87 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     );
   }
 
+  Widget buildUploadSectionModern(String label, File? file, Function(File) onPicked, {bool allowPdf = false}) {
+    final bool uploaded = file != null;
+    final bool isPdf = uploaded && file!.path.toLowerCase().endsWith('.pdf');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => pickFileModern(onPicked, allowPdf: allowPdf),
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: uploaded ? Colors.green : Colors.black,
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1572E8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: uploaded
+                      ? (isPdf
+                          ? const Icon(Icons.picture_as_pdf, color: Colors.white, size: 36)
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(file!, fit: BoxFit.cover),
+                            ))
+                      : const Icon(Icons.upload_file, size: 30, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pilih File',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        uploaded ? path.basename(file!.path) : 'Belum ada file yang dipilih',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: uploaded ? Colors.green[700] : Colors.grey,
+                          fontWeight: uploaded ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -521,15 +642,11 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                   ),
                   const SizedBox(height: 24),
                   // Upload Foto
-                  buildUploadSection('Foto Terbaru', fotoBaru,
-                      (f) => setState(() => fotoBaru = f)),
+                  buildUploadSectionModern('Foto Terbaru', fotoBaru, (f) => setState(() => fotoBaru = f)),
                   if (_selectedStatus == 'Rusak')
-                    buildUploadSection('Foto ID Card Rusak', fotoRusak,
-                        (f) => setState(() => fotoRusak = f)),
+                    buildUploadSectionModern('Foto ID Card Rusak', fotoRusak, (f) => setState(() => fotoRusak = f)),
                   if (_selectedStatus == 'Hilang')
-                    buildUploadSection('Surat Kehilangan', suratKehilangan,
-                        (f) => setState(() => suratKehilangan = f),
-                        allowPdf: true),
+                    buildUploadSectionModern('Surat Kehilangan', suratKehilangan, (f) => setState(() => suratKehilangan = f), allowPdf: true),
 
                   // Tombol Submit
                   const SizedBox(height: 20),

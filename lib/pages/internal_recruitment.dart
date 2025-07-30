@@ -98,42 +98,45 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1976D2), // Biru Indocement
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.all(24.0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          child: Padding(
+            padding: const EdgeInsets.all(28.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 48),
-                const SizedBox(height: 16),
+                const Icon(Icons.check_circle, color: Color(0xFF1976D2), size: 60),
+                const SizedBox(height: 18),
                 const Text(
                   "Pendaftaran Berhasil!",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.black87,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 const Text(
                   "Data pendaftaran Anda sudah terkirim.\nSilakan tunggu proses seleksi berikutnya.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: Colors.white),
+                  style: TextStyle(fontSize: 15, color: Colors.black54),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushReplacementNamed('/master');
-                  },
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  label: const Text('Kembali ke Beranda', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    elevation: 0,
+                const SizedBox(height: 26),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushReplacementNamed('/master');
+                    },
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    label: const Text('Kembali ke Beranda', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF1976D2),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      elevation: 0,
+                    ),
                   ),
                 ),
               ],
@@ -759,10 +762,20 @@ class _RecruitmentDropdownFormState extends State<RecruitmentDropdownForm> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                suratIzinPath ?? '',
-                                style: const TextStyle(color: Colors.green, fontSize: 13),
+                                suratIzinPath!.split('/').last, // hanya nama file
+                                style: const TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.w600),
                                 overflow: TextOverflow.ellipsis,
                               ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
+                              tooltip: 'Hapus file',
+                              onPressed: () {
+                                setState(() {
+                                  suratIzinPath = null;
+                                });
+                              },
                             ),
                           ],
                         ),

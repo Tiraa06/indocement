@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart'; // Untuk mendapatkan nama file utama
 import 'package:dio/dio.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:file_picker/file_picker.dart';
 
 class TambahDataPasutriPage extends StatefulWidget {
   const TambahDataPasutriPage({super.key});
@@ -97,6 +98,52 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
       setState(() {
         selectedImages[fieldName] = File(pickedFile.path);
       });
+    }
+  }
+
+  // Tambahkan fungsi pickFile (pilihan PDF atau image)
+  Future<void> pickFile({
+    required String fieldName,
+  }) async {
+    final result = await showModalBottomSheet<String>(
+      context: this.context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Pilih PDF dari File'),
+              onTap: () => Navigator.pop(context, 'pdf'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.image, color: Colors.blue),
+              title: const Text('Pilih Gambar dari Galeri'),
+              onTap: () => Navigator.pop(context, 'image'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == 'pdf') {
+      FilePickerResult? picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (picked != null && picked.files.single.path != null) {
+        setState(() {
+          selectedImages[fieldName] = File(picked.files.single.path!);
+        });
+      }
+    } else if (result == 'image') {
+      final picked = await ImagePicker()
+          .pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked != null) {
+        setState(() {
+          selectedImages[fieldName] = File(picked.path);
+        });
+      }
     }
   }
 
@@ -304,73 +351,110 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
     );
   }
 
+  // Widget upload modern (seperti di beasiswa)
+  Widget uploadFieldPasutri({
+    required String title,
+    required File? file,
+    required VoidCallback onPressed,
+  }) {
+    final bool uploaded = file != null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(
+            color: uploaded ? Colors.green : Colors.grey[400]!,
+            width: 1.2,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: uploaded ? Colors.green : Colors.grey[300]!,
+                  width: 1.0,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[100],
+              ),
+              child: uploaded
+                  ? (file!.path.endsWith('.pdf')
+                      ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.file(file, fit: BoxFit.cover),
+                        ))
+                  : const Icon(Icons.insert_drive_file, color: Colors.grey, size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.5,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    uploaded ? file!.path.split('/').last : "File belum dikirim",
+                    style: TextStyle(
+                      color: uploaded ? Colors.green[700] : Colors.grey[500],
+                      fontWeight: uploaded ? FontWeight.w600 : FontWeight.normal,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  OutlinedButton.icon(
+                    icon: Icon(Icons.upload_file, color: Colors.blue, size: 18),
+                    label: Text(
+                      uploaded ? "Ganti File" : "Upload",
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.blue, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                      backgroundColor: Colors.white,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: onPressed,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Ganti _buildBox menjadi:
   Widget _buildBox({
     required String title,
     required String fieldName,
   }) {
-    return GestureDetector(
-      onTap: () => pickImage(fieldName: fieldName),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        color: Colors.white, // Background card tetap putih
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1572E8),
-                  borderRadius: BorderRadius.circular(8),
-                  image: selectedImages[fieldName] != null
-                      ? DecorationImage(
-                          image: FileImage(selectedImages[fieldName]!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: selectedImages[fieldName] == null
-                    ? const Icon(
-                        Icons.upload_file,
-                        size: 30,
-                        color: Colors.white,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      selectedImages[fieldName] != null
-                          ? basename(selectedImages[fieldName]!
-                              .path) // Hanya nama file
-                          : 'Belum ada file yang dipilih',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return uploadFieldPasutri(
+      title: title,
+      file: selectedImages[fieldName],
+      onPressed: () => pickFile(fieldName: fieldName),
     );
   }
 
