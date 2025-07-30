@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -84,6 +85,166 @@ class _FileAktifPageState extends State<FileAktifPage> {
     }
   }
 
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  void _showSuccessModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF1572E8),
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Berhasil',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showErrorModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Gagal',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final chosenFile = await picker.pickImage(source: ImageSource.gallery);
@@ -94,14 +255,16 @@ class _FileAktifPageState extends State<FileAktifPage> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate() || _selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Lengkapi semua informasi dan unggah file.')));
+      if (mounted) {
+        _showErrorModal('Lengkapi semua informasi dan unggah file.');
+      }
       return;
     }
 
     final String noFile = _noFileController.text;
     final String fileName = path.basename(_selectedFile!.path);
     setState(() => _isLoading = true);
+    _showLoading(context);
     try {
       final request = http.MultipartRequest(
         'POST',
@@ -116,33 +279,38 @@ class _FileAktifPageState extends State<FileAktifPage> {
         ));
 
       final response = await request.send();
+      Navigator.pop(context); // Close loading dialog
       if (response.statusCode == 200) {
-        _showPopup(context, 'Berhasil', 'Pengajuan berhasil dikirim.');
+        if (mounted) {
+          _showSuccessModal('Pengajuan berhasil dikirim.');
+        }
         _noFileController.clear();
         setState(() => _selectedFile = null);
         await _fetchSubmissionHistory();
       } else {
-        _showPopup(context, 'Gagal', 'Pengajuan gagal. Coba lagi.');
+        if (mounted) {
+          _showErrorModal('Pengajuan gagal. Coba lagi.');
+        }
       }
     } catch (e) {
-      _showPopup(context, 'Error', 'Terjadi kesalahan: $e');
+      Navigator.pop(context); // Close loading dialog
+      if (mounted) {
+        _showErrorModal('Terjadi kesalahan: $e');
+      }
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  // Fungsi permintaan permission yang kompatibel Android 13+ dan versi lama
   Future<bool> _requestStoragePermission() async {
     final info = DeviceInfoPlugin();
     final androidInfo = await info.androidInfo;
     if (androidInfo.version.sdkInt >= 33) {
-      // Android 13+, minta izin READ_MEDIA_*
       final photos = await Permission.photos.request();
       final videos = await Permission.videos.request();
       final audio = await Permission.audio.request();
       return photos.isGranted && videos.isGranted && audio.isGranted;
     } else {
-      // Android 12 ke bawah, minta izin storage
       final storage = await Permission.storage.request();
       return storage.isGranted;
     }
@@ -150,7 +318,9 @@ class _FileAktifPageState extends State<FileAktifPage> {
 
   Future<void> _downloadFileAktif(String? noFile, String? urlPath) async {
     if (noFile == null || urlPath == null) {
-      _showPopup(context, 'Gagal', 'Data file tidak lengkap.');
+      if (mounted) {
+        _showErrorModal('Data file tidak lengkap.');
+      }
       return;
     }
 
@@ -159,23 +329,27 @@ class _FileAktifPageState extends State<FileAktifPage> {
 
     final hasPermission = await _requestStoragePermission();
     if (!hasPermission) {
-      _showPopup(context, 'Gagal', 'Izin penyimpanan ditolak.');
+      if (mounted) {
+        _showErrorModal('Izin penyimpanan ditolak.');
+      }
       return;
     }
 
     setState(() => _isLoading = true);
-
+    _showLoading(context);
     try {
       final response = await http.get(Uri.parse(fullUrl));
+      Navigator.pop(context); // Close loading dialog
       if (response.statusCode != 200) {
-        _showPopup(context, 'Gagal', 'File tidak ditemukan di server.');
+        if (mounted) {
+          _showErrorModal('File tidak ditemukan di server.');
+        }
         setState(() => _isLoading = false);
         return;
       }
 
       Directory dir;
       if (Platform.isAndroid) {
-        // Simpan di folder app-specific external dir yang aman di Android 10+
         dir = await getExternalStorageDirectory() ??
             await getTemporaryDirectory();
       } else {
@@ -190,30 +364,19 @@ class _FileAktifPageState extends State<FileAktifPage> {
 
       await file.writeAsBytes(response.bodyBytes);
 
-      _showPopup(context, 'Berhasil', 'File berhasil diunduh ke:\n$filePath');
+      if (mounted) {
+        _showSuccessModal('File berhasil diunduh ke:\n$filePath');
+      }
 
       await OpenFile.open(file.path);
     } catch (e) {
-      _showPopup(context, 'Gagal', 'Gagal mengunduh file: $e');
+      Navigator.pop(context); // Close loading dialog
+      if (mounted) {
+        _showErrorModal('Gagal mengunduh file: $e');
+      }
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  void _showPopup(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
   }
 
   IconData _statusIcon(String? status) {
