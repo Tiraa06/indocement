@@ -648,7 +648,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
               // BPJS Istri Section
               _buildSection(
-                title: 'BPJS Pasanagan',
+                title: 'BPJS Pasangan',
                 children: [
                   _buildBox(
                     title: 'Upload KK',

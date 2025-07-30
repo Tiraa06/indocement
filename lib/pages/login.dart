@@ -1,13 +1,15 @@
 import 'dart:convert';
-import 'package:animate_do/animate_do.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:indocement_apk/pages/register.dart';
 import 'package:indocement_apk/pages/forgot.dart';
 import 'package:indocement_apk/pages/master.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'dart:io'; // Added for exit functionality
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -27,85 +29,79 @@ class _LoginState extends State<Login> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Memuat...",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Harap tunggu sebentar",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+        return const Center(
+          child: CircularProgressIndicator(),
         );
       },
     );
   }
 
   void _showErrorModal(String message) {
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.error_outline,
+                  Icons.error_outline_rounded,
                   color: Colors.red,
-                  size: 40,
+                  size: 54,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  'Gagal',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1572E8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
                   ),
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -203,7 +199,10 @@ class _LoginState extends State<Login> {
     try {
       final hasNetwork = await _checkNetwork();
       if (!hasNetwork) {
-        _showErrorModal('Tidak ada koneksi internet. Silakan cek jaringan Anda.');
+        if (mounted) {
+          _showErrorModal(
+              'Tidak ada koneksi internet. Silakan cek jaringan Anda.');
+        }
         setState(() => _isLoading = false);
         return;
       }
@@ -233,10 +232,23 @@ class _LoginState extends State<Login> {
         print('Parsed User: $user');
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
+          // Check account status
+          final String status = user['Status'] ?? 'Aktif';
+          if (status.toLowerCase() == 'nonaktif') {
+            if (mounted) {
+              _showErrorModal(
+                  'Akun Anda sudah tidak aktif lagi. Silakan hubungi admin.');
+            }
+            setState(() => _isLoading = false);
+            return;
+          }
+
           final String role = user['Role'] ?? '';
           if (role.toLowerCase() != 'karyawan') {
-            _showErrorModal(
-                'Akses ditolak. Hanya pengguna dengan role Karyawan yang dapat login.');
+            if (mounted) {
+              _showErrorModal(
+                  'Akses ditolak. Hanya pengguna dengan role Karyawan yang dapat login.');
+            }
             setState(() => _isLoading = false);
             return;
           }
@@ -244,7 +256,10 @@ class _LoginState extends State<Login> {
           final employeeData = await _fetchIdEmployee(email) ?? {};
 
           if (employeeData.isEmpty && user['IdEmployee'] == null) {
-            _showErrorModal('Gagal mengambil data karyawan. Silakan coba lagi.');
+            if (mounted) {
+              _showErrorModal(
+                  'Gagal mengambil data karyawan. Silakan coba lagi.');
+            }
             setState(() => _isLoading = false);
             return;
           }
@@ -264,7 +279,10 @@ class _LoginState extends State<Login> {
           final int idEmployee =
               employeeData['idEmployee'] ?? user['IdEmployee'] ?? 0;
           if (idEmployee <= 0) {
-            _showErrorModal('ID karyawan tidak valid. Silakan hubungi admin.');
+            if (mounted) {
+              _showErrorModal(
+                  'ID karyawan tidak valid. Silakan hubungi admin.');
+            }
             setState(() => _isLoading = false);
             return;
           }
@@ -292,17 +310,23 @@ class _LoginState extends State<Login> {
               'Saved to SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
 
           if (savedEmployeeName == null || savedEmployeeName.isEmpty) {
-            _showErrorModal(
-                'Nama karyawan tidak tersedia. Silakan hubungi admin.');
+            if (mounted) {
+              _showErrorModal(
+                  'Nama karyawan tidak tersedia. Silakan hubungi admin.');
+            }
           }
 
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const MasterScreen()),
-            (route) => false,
-          );
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const MasterScreen()),
+              (route) => false,
+            );
+          }
         } else {
-          _showErrorModal('Akun tidak valid');
+          if (mounted) {
+            _showErrorModal('Akun tidak valid');
+          }
         }
       } else {
         String errorMessage = 'Akun tidak valid';
@@ -313,12 +337,16 @@ class _LoginState extends State<Login> {
           errorMessage =
               response.body.isNotEmpty ? response.body : errorMessage;
         }
-        _showErrorModal(errorMessage);
+        if (mounted) {
+          _showErrorModal(errorMessage);
+        }
       }
     } catch (e) {
       print('Error: $e');
-      _showErrorModal('Terjadi kesalahan. Silakan coba lagi.');
-      Navigator.pop(context, false); // Close loading dialog if open
+      Navigator.pop(context); // Close loading dialog
+      if (mounted) {
+        _showErrorModal('Terjadi kesalahan. Silakan coba lagi.');
+      }
     }
 
     setState(() => _isLoading = false);
@@ -357,12 +385,12 @@ class _LoginState extends State<Login> {
                     const SizedBox(height: 30),
                     FadeInLeft(
                       duration: const Duration(milliseconds: 800),
-                      child: const Text(
+                      child: Text(
                         'Login',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2035),
+                          color: const Color(0xFF1A2035),
                         ),
                       ),
                     ),
@@ -385,9 +413,11 @@ class _LoginState extends State<Login> {
                               ),
                             );
                           },
-                          child: const Text(
+                          child: Text(
                             'Forgot your password?',
-                            style: TextStyle(color: Color(0xFF1A2035)),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF1A2035),
+                            ),
                           ),
                         ),
                       ),
@@ -409,9 +439,11 @@ class _LoginState extends State<Login> {
                           child: _isLoading
                               ? const CircularProgressIndicator(
                                   color: Colors.white)
-                              : const Text(
+                              : Text(
                                   'Login',
-                                  style: TextStyle(color: Colors.white),
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                  ),
                                 ),
                         ),
                       ),
@@ -430,10 +462,12 @@ class _LoginState extends State<Login> {
                             );
                           },
                           child: RichText(
-                            text: const TextSpan(
-                              style:
-                                  TextStyle(color: Colors.black, fontSize: 14),
-                              children: [
+                            text: TextSpan(
+                              style: GoogleFonts.poppins(
+                                color: Colors.black,
+                                fontSize: 14,
+                              ),
+                              children: const [
                                 TextSpan(text: 'Belum punya akun? '),
                                 TextSpan(
                                   text: 'Register',
@@ -483,6 +517,7 @@ class _LoginState extends State<Login> {
               hintText: hint,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              hintStyle: GoogleFonts.poppins(),
               suffixIcon: obscure
                   ? IconButton(
                       icon: Icon(
@@ -499,6 +534,7 @@ class _LoginState extends State<Login> {
                     )
                   : null,
             ),
+            style: GoogleFonts.poppins(),
           ),
         ),
       ),
@@ -521,11 +557,7 @@ class WavePainter extends CustomPainter {
     Path path = Path();
     Paint gradientPaint = Paint()
       ..shader = LinearGradient(
-        colors: const [
-          Color(0xFF0E5AB7),
-          Color(0xFF1572E8),
-          Color(0xFF5A9DF3)
-        ],
+        colors: const [Color(0xFF0E5AB7), Color(0xFF1572E8), Color(0xFF5A9DF3)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.15));

@@ -2651,30 +2651,30 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
   }
 
   Future<void> simpanIdSectionIdEslKePrefs() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final idEmployee = prefs.getInt('idEmployee');
-    if (idEmployee == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idEmployee = prefs.getInt('idEmployee');
+      if (idEmployee == null) return;
 
-    final response = await Dio().get(
-      'http://103.31.237.5555/api/Employees',
-      options: Options(headers: {'accept': 'text/plain'}),
-    );
-
-    if (response.statusCode == 200 && response.data is List) {
-      final List employees = response.data;
-      final user = employees.firstWhere(
-        (e) => e['Id'] == idEmployee,
-        orElse: () => null,
+      final response = await Dio().get(
+        'http://103.31.237.5555/api/Employees',
+        options: Options(headers: {'accept': 'text/plain'}),
       );
-      if (user != null) {
-        await prefs.setInt('idSection', user['IdSection'] ?? 0);
-        await prefs.setInt('idEsl', user['IdEsl'] ?? 0);
-        print('IdSection dan IdEsl berhasil disimpan ke SharedPreferences');
+
+      if (response.statusCode == 200 && response.data is List) {
+        final List employees = response.data;
+        final user = employees.firstWhere(
+          (e) => e['Id'] == idEmployee,
+          orElse: () => null,
+        );
+        if (user != null) {
+          await prefs.setInt('idSection', user['IdSection'] ?? 0);
+          await prefs.setInt('idEsl', user['IdEsl'] ?? 0);
+          print('IdSection dan IdEsl berhasil disimpan ke SharedPreferences');
+        }
       }
+    } catch (e) {
+      print('Gagal simpan IdSection/IdEsl: $e');
     }
-  } catch (e) {
-    print('Gagal simpan IdSection/IdEsl: $e');
   }
-}
 }

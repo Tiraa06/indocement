@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:file_selector/file_selector.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,39 +43,8 @@ class _KeluhanPageState extends State<KeluhanPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Memuat...",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Harap tunggu sebentar",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+        return const Center(
+          child: CircularProgressIndicator(),
         );
       },
     );
@@ -86,44 +56,63 @@ class _KeluhanPageState extends State<KeluhanPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.error_outline,
+                  Icons.error_outline_rounded,
                   color: Colors.red,
-                  size: 40,
+                  size: 54,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Text(
-                  message,
+                  'Gagal',
                   style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1572E8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
                   ),
-                  child: Text(
-                    'OK',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ),
                 ),
@@ -141,47 +130,64 @@ class _KeluhanPageState extends State<KeluhanPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.green,
-                  size: 40,
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF1572E8),
+                  size: 54,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Text(
-                  'Keluhan Berhasil Terkirim',
+                  'Berhasil',
                   style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.pop(context); // Return to previous screen
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1572E8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  'Keluhan Berhasil Terkirim',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
                   ),
-                  child: Text(
-                    'OK',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ),
                 ),
@@ -230,7 +236,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
       final response = await http.get(
         Uri.parse('http://103.31.235.237:5555/api/Employees/$_employeeId'),
       );
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -256,7 +262,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
           _sectionName = 'Unknown';
         });
       }
-      Navigator.of(context).pop(); // Close loading dialog if open
+      Navigator.of(context).pop();
     }
   }
 
@@ -277,7 +283,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
       final response = await http.get(
         Uri.parse('http://103.31.235.237:5555/api/sections/$_idSection'),
       );
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -304,7 +310,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
           _sectionName = 'Unknown';
         });
       }
-      Navigator.of(context).pop(); // Close loading dialog if open
+      Navigator.of(context).pop();
     }
   }
 
@@ -327,7 +333,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
 
       if (file != null) {
         final fileSize = await file.length();
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
         if (fileSize > maxSize) {
           if (mounted) {
             _showErrorModal('Ukuran file melebihi batas 10MB.');
@@ -355,7 +361,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
       final files = await openFiles(acceptedTypeGroups: [typeGroup]);
 
       if (files.isNotEmpty) {
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
         for (var file in files) {
           final fileSize = await file.length();
           if (fileSize > maxSize) {
@@ -378,17 +384,15 @@ class _KeluhanPageState extends State<KeluhanPage> {
   }
 
   Future<bool> _sendWhatsAppNotification(String number, String message) async {
-    // Validate phone number format: 10-13 digits, starting with +62
     final phoneRegex = RegExp(r'^\+62\d{9,11}$');
     if (!phoneRegex.hasMatch(number)) {
       print('Invalid WhatsApp number: $number');
       return false;
     }
 
-    // Simulate WhatsApp API call (replace with actual implementation)
     try {
       print('Simulating WhatsApp notification to $number: $message');
-      return true; // Simulate success for valid numbers
+      return true;
     } catch (e) {
       print('WhatsApp notification error: $e');
       return false;
@@ -442,7 +446,8 @@ class _KeluhanPageState extends State<KeluhanPage> {
       print('IdEmployee: $_employeeId');
       print('Keluhan: ${_messageController.text}');
       print(
-          'TglKeluhan: ${DateTime.now().toUtc().add(const Duration(hours: 7)).toIso8601String()}');
+        'TglKeluhan: ${DateTime.now().toUtc().add(const Duration(hours: 7)).toIso8601String()}',
+      );
       print('Status: Terkirim');
       print('Subject: ${_subjectController.text}');
       print('Section: $_sectionName');
@@ -486,7 +491,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
       print('Response Status: ${response.statusCode}');
       print('Response Body: ${responseBody.body}');
 
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
 
       if (response.statusCode == 201) {
         if (mounted) {
@@ -495,14 +500,15 @@ class _KeluhanPageState extends State<KeluhanPage> {
       } else {
         if (mounted) {
           _showErrorModal(
-              'Gagal mengirim keluhan: ${response.statusCode} - ${responseBody.body}');
+            'Gagal mengirim keluhan: ${response.statusCode} - ${responseBody.body}',
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         _showErrorModal('Kesalahan saat mengirim keluhan: $e');
       }
-      Navigator.of(context).pop(); // Close loading dialog if open
+      Navigator.of(context).pop();
     }
   }
 
@@ -521,7 +527,6 @@ class _KeluhanPageState extends State<KeluhanPage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Exit the app when back button is pressed
         exit(0);
         return false;
       },
@@ -529,36 +534,37 @@ class _KeluhanPageState extends State<KeluhanPage> {
         builder: (context, constraints) {
           final double screenWidth = constraints.maxWidth;
           final double screenHeight = constraints.maxHeight;
-          final double paddingValue = screenWidth * 0.05; // 5% of screen width
-          final double baseFontSize = screenWidth * 0.04; // 4% of screen width
-          final double cardElevation = screenWidth * 0.01; // Dynamic elevation
+          final double paddingValue = screenWidth * 0.05;
+          final double baseFontSize = screenWidth * 0.04;
+          final double cardElevation = screenWidth * 0.01;
 
           return Scaffold(
             backgroundColor: Colors.grey[100],
             appBar: AppBar(
               title: Text(
-                "HR Care",
+                'HR Care',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
-                  fontSize: baseFontSize * 1.2, // 20 on 500px screen
+                  fontSize: baseFontSize * 1.2,
                   color: Colors.white,
                 ),
               ),
-              backgroundColor: const Color(0xFF1E88E5),
+              backgroundColor: const Color(0xFF1572E8),
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const HRCareMenuPage()),
+                    MaterialPageRoute(
+                        builder: (context) => const HRCareMenuPage()),
                   );
                 },
               ),
               flexibleSpace: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+                    colors: [Color(0xFF1572E8), Color(0xFF42A5F5)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -584,17 +590,17 @@ class _KeluhanPageState extends State<KeluhanPage> {
                         ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+                            colors: [Color(0xFF1572E8), Color(0xFF42A5F5)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          "Form Keluhan",
+                          'Form Keluhan',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
-                            fontSize: baseFontSize * 1.3, // 22 on 500px screen
+                            fontSize: baseFontSize * 1.3,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -616,7 +622,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                               controller: _nameController,
                               readOnly: true,
                               decoration: InputDecoration(
-                                labelText: 'Name',
+                                labelText: 'Nama',
                                 labelStyle: GoogleFonts.poppins(
                                   fontSize: baseFontSize * 0.9,
                                   color: Colors.grey[700],
@@ -642,7 +648,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                               controller: _emailController,
                               readOnly: true,
                               decoration: InputDecoration(
-                                labelText: 'Email Address',
+                                labelText: 'Alamat Email',
                                 labelStyle: GoogleFonts.poppins(
                                   fontSize: baseFontSize * 0.9,
                                   color: Colors.grey[700],
@@ -668,10 +674,10 @@ class _KeluhanPageState extends State<KeluhanPage> {
                             TextField(
                               controller: _subjectController,
                               decoration: InputDecoration(
-                                labelText: 'Subject',
+                                labelText: 'Subjek',
                                 labelStyle: GoogleFonts.poppins(
                                   fontSize: baseFontSize * 0.9,
-                                  color: Colors.grey[700],
+                                  color: Colors.grey[600],
                                 ),
                                 filled: true,
                                 fillColor: Colors.white,
@@ -694,7 +700,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                               controller: _sectionController,
                               readOnly: true,
                               decoration: InputDecoration(
-                                labelText: 'Section',
+                                labelText: 'Seksi',
                                 labelStyle: GoogleFonts.poppins(
                                   fontSize: baseFontSize * 0.9,
                                   color: Colors.grey[700],
@@ -717,7 +723,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                             ),
                             SizedBox(height: paddingValue * 0.5),
                             Text(
-                              'Message',
+                              'Pesan',
                               style: GoogleFonts.poppins(
                                 fontSize: baseFontSize * 0.9,
                                 color: Colors.black87,
@@ -729,7 +735,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                               controller: _messageController,
                               maxLines: 5,
                               decoration: InputDecoration(
-                                hintText: 'Type your message here...',
+                                hintText: 'Ketik pesan Anda di sini...',
                                 hintStyle: GoogleFonts.poppins(
                                   color: Colors.grey[500],
                                   fontSize: baseFontSize * 0.8,
@@ -752,7 +758,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                             ),
                             SizedBox(height: paddingValue * 0.3),
                             Text(
-                              'Lines: $_lines | Words: $_words | Saved',
+                              'Baris: $_lines | Karakter: $_words | Tersimpan',
                               style: GoogleFonts.poppins(
                                 color: Colors.grey[600],
                                 fontSize: baseFontSize * 0.7,
@@ -775,7 +781,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Attachment',
+                              'Lampiran',
                               style: GoogleFonts.poppins(
                                 fontSize: baseFontSize * 0.9,
                                 fontWeight: FontWeight.w500,
@@ -789,14 +795,14 @@ class _KeluhanPageState extends State<KeluhanPage> {
                                   onPressed: _chooseFile,
                                   icon: const Icon(Icons.upload_file, size: 20),
                                   label: Text(
-                                    'Choose File',
+                                    'Pilih File',
                                     style: GoogleFonts.poppins(
                                       fontSize: baseFontSize * 0.8,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1E88E5),
+                                    backgroundColor: const Color(0xFF1572E8),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -812,8 +818,8 @@ class _KeluhanPageState extends State<KeluhanPage> {
                                 Expanded(
                                   child: Text(
                                     _selectedFiles.isEmpty
-                                        ? 'No file chosen'
-                                        : '${_selectedFiles.length} file(s) selected',
+                                        ? 'Tidak ada file yang dipilih'
+                                        : '${_selectedFiles.length} file dipilih',
                                     style: GoogleFonts.poppins(
                                       fontSize: baseFontSize * 0.8,
                                       color: Colors.grey[600],
@@ -827,7 +833,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                             if (_selectedFiles.isNotEmpty)
                               ConstrainedBox(
                                 constraints: BoxConstraints(
-                                  maxHeight: screenHeight * 0.2, // Limit height
+                                  maxHeight: screenHeight * 0.2,
                                 ),
                                 child: ListView.builder(
                                   shrinkWrap: true,
@@ -836,7 +842,8 @@ class _KeluhanPageState extends State<KeluhanPage> {
                                     final file = _selectedFiles[index];
                                     return Padding(
                                       padding: EdgeInsets.symmetric(
-                                          vertical: paddingValue * 0.2),
+                                        vertical: paddingValue * 0.2,
+                                      ),
                                       child: Row(
                                         children: [
                                           Expanded(
@@ -850,8 +857,11 @@ class _KeluhanPageState extends State<KeluhanPage> {
                                             ),
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.close,
-                                                size: 20, color: Colors.red),
+                                            icon: const Icon(
+                                              Icons.close,
+                                              size: 20,
+                                              color: Colors.red,
+                                            ),
                                             onPressed: () {
                                               setState(() {
                                                 _selectedFiles.remove(file);
@@ -871,10 +881,10 @@ class _KeluhanPageState extends State<KeluhanPage> {
                                 onPressed: _addMoreFiles,
                                 icon: const Icon(Icons.add, size: 20),
                                 label: Text(
-                                  'Add More',
+                                  'Tambah File',
                                   style: GoogleFonts.poppins(
                                     fontSize: baseFontSize * 0.8,
-                                    color: const Color(0xFF1E88E5),
+                                    color: const Color(0xFF1572E8),
                                   ),
                                 ),
                                 style: TextButton.styleFrom(
@@ -887,7 +897,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                             ),
                             SizedBox(height: paddingValue * 0.3),
                             Text(
-                              'Allowed extensions: jpg, gif, jpeg, png, txt, pdf (Max: 10MB)',
+                              'Ekstensi yang diizinkan: jpg, gif, jpeg, png, txt, pdf (Maks: 10MB)',
                               style: GoogleFonts.poppins(
                                 fontSize: baseFontSize * 0.7,
                                 color: Colors.grey[600],
@@ -905,7 +915,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                           child: ElevatedButton(
                             onPressed: _submitComplaint,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E88E5),
+                              backgroundColor: const Color(0xFF1572E8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -915,7 +925,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                               elevation: 3,
                             ),
                             child: Text(
-                              'SUBMIT',
+                              'KIRIM',
                               style: GoogleFonts.poppins(
                                 fontSize: baseFontSize * 0.9,
                                 color: Colors.white,
@@ -941,7 +951,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
                               ),
                             ),
                             child: Text(
-                              'CANCEL',
+                              'BATAL',
                               style: GoogleFonts.poppins(
                                 fontSize: baseFontSize * 0.9,
                                 color: Colors.black87,

@@ -1,12 +1,13 @@
 import 'dart:convert';
+
+import 'package:animate_do/animate_do.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:animate_do/animate_do.dart';
 import 'package:http/http.dart' as http;
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DispensasiPage extends StatefulWidget {
   const DispensasiPage({super.key});
@@ -36,6 +37,10 @@ class _DispensasiPageState extends State<DispensasiPage> {
       var connectivityResult = await (Connectivity().checkConnectivity());
       if (connectivityResult.contains(ConnectivityResult.none)) {
         print('No network connectivity');
+        if (mounted) {
+          _showErrorModal(
+              'Tidak ada koneksi internet. Silakan cek jaringan Anda.');
+        }
         return false;
       }
 
@@ -47,6 +52,9 @@ class _DispensasiPageState extends State<DispensasiPage> {
       return response.statusCode == 200;
     } catch (e) {
       print('Network check failed: $e');
+      if (mounted) {
+        _showErrorModal('Gagal memeriksa jaringan: $e');
+      }
       return false;
     }
   }
@@ -56,35 +64,153 @@ class _DispensasiPageState extends State<DispensasiPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  void _showErrorModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(
-                  color: Colors.blue,
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Text(
-                  "Mengirim...",
+                  'Gagal',
                   style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Harap tunggu sebentar",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSuccessModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF1572E8),
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Berhasil',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Pengajuan dispensasi berhasil dikirim.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pop(context); // Return to previous screen
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -120,29 +246,41 @@ class _DispensasiPageState extends State<DispensasiPage> {
         });
       }
     } catch (e) {
-      _showMessage('Gagal memilih file: $e');
+      if (mounted) {
+        _showErrorModal('Gagal memilih file: $e');
+      }
     }
   }
 
   Future<void> _handleSubmit() async {
     if (_jenisDispensasiController.text.trim().isEmpty) {
-      _showMessage('Jenis dispensasi tidak boleh kosong.');
+      if (mounted) {
+        _showErrorModal('Jenis dispensasi tidak boleh kosong.');
+      }
       return;
     }
     if (_keteranganController.text.trim().isEmpty) {
-      _showMessage('Keterangan tidak boleh kosong.');
+      if (mounted) {
+        _showErrorModal('Keterangan tidak boleh kosong.');
+      }
       return;
     }
     if (_suratKeteranganMeninggal == null) {
-      _showMessage('Surat Keterangan Meninggal wajib diunggah.');
+      if (mounted) {
+        _showErrorModal('Surat Keterangan Meninggal wajib diunggah.');
+      }
       return;
     }
     if (_ktp == null) {
-      _showMessage('KTP wajib diunggah.');
+      if (mounted) {
+        _showErrorModal('KTP wajib diunggah.');
+      }
       return;
     }
     if (_sim == null) {
-      _showMessage('SIM wajib diunggah.');
+      if (mounted) {
+        _showErrorModal('SIM wajib diunggah.');
+      }
       return;
     }
 
@@ -151,7 +289,6 @@ class _DispensasiPageState extends State<DispensasiPage> {
     try {
       final hasNetwork = await _checkNetwork();
       if (!hasNetwork) {
-        _showMessage('Tidak ada koneksi internet. Silakan cek jaringan Anda.');
         setState(() => _isLoading = false);
         return;
       }
@@ -159,7 +296,9 @@ class _DispensasiPageState extends State<DispensasiPage> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final idEmployee = prefs.getInt('idEmployee');
       if (idEmployee == null || idEmployee <= 0) {
-        _showMessage('ID karyawan tidak valid. Silakan login ulang.');
+        if (mounted) {
+          _showErrorModal('ID karyawan tidak valid. Silakan login ulang.');
+        }
         setState(() => _isLoading = false);
         return;
       }
@@ -177,7 +316,6 @@ class _DispensasiPageState extends State<DispensasiPage> {
           _jenisDispensasiController.text.trim();
       request.fields['Keterangan'] = _keteranganController.text.trim();
 
-      // Add files
       if (_suratKeteranganMeninggal != null) {
         request.files.add(await http.MultipartFile.fromPath(
           'SuratKeteranganMeninggal',
@@ -216,7 +354,9 @@ class _DispensasiPageState extends State<DispensasiPage> {
       Navigator.pop(context); // Close loading dialog
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _showSuccessModal();
+        if (mounted) {
+          _showSuccessModal();
+        }
       } else {
         String errorMessage = 'Gagal mengajukan dispensasi';
         try {
@@ -225,80 +365,55 @@ class _DispensasiPageState extends State<DispensasiPage> {
         } catch (e) {
           errorMessage = responseBody.isNotEmpty ? responseBody : errorMessage;
         }
-        _showMessage(errorMessage);
+        if (mounted) {
+          _showErrorModal(errorMessage);
+        }
       }
     } catch (e) {
       print('Error: $e');
       Navigator.pop(context); // Close loading dialog if open
-      _showMessage('Terjadi kesalahan: $e');
+      if (mounted) {
+        _showErrorModal('Terjadi kesalahan: $e');
+      }
     }
 
     setState(() => _isLoading = false);
-  }
-
-  void _showSuccessModal() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Berhasil!',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        content: Text(
-          'Pengajuan dispensasi berhasil dikirim.',
-          style: GoogleFonts.poppins(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(
-                  context); // Return to previous screen (e.g., MasterScreen)
-            },
-            child: Text(
-              'OK',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: const Color(0xFF1572E8),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.poppins(fontSize: 14),
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: Text(
+          'Pengajuan Dispensasi',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: MediaQuery.of(context).size.width * 0.05,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF1572E8),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 30),
                   FadeInDown(
                     duration: const Duration(milliseconds: 800),
                     child: Center(
@@ -326,8 +441,11 @@ class _DispensasiPageState extends State<DispensasiPage> {
                   _buildTextField(
                       'Jenis Dispensasi', _jenisDispensasiController, 900),
                   _buildTextField('Keterangan', _keteranganController, 1000),
-                  _buildFileField('Surat Keterangan Meninggal',
-                      'SuratKeteranganMeninggal', 1100),
+                  _buildFileField(
+                    'Surat Keterangan Meninggal',
+                    'SuratKeteranganMeninggal',
+                    1100,
+                  ),
                   _buildFileField('KTP', 'Ktp', 1200),
                   _buildFileField('SIM', 'Sim', 1300),
                   _buildFileField(
@@ -348,7 +466,8 @@ class _DispensasiPageState extends State<DispensasiPage> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: Colors.white,
+                              )
                             : Text(
                                 'KIRIM',
                                 style: GoogleFonts.poppins(
@@ -365,20 +484,16 @@ class _DispensasiPageState extends State<DispensasiPage> {
               ),
             ),
           ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: WavePainter(),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildTextField(
-      String hint, TextEditingController controller, int duration) {
+    String hint,
+    TextEditingController controller,
+    int duration,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: FadeInLeft(
@@ -458,7 +573,10 @@ class _DispensasiPageState extends State<DispensasiPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Icon(Icons.upload_file, color: const Color(0xFF1572E8)),
+                    Icon(
+                      Icons.upload_file,
+                      color: const Color(0xFF1572E8),
+                    ),
                   ],
                 ),
               ),
@@ -468,33 +586,4 @@ class _DispensasiPageState extends State<DispensasiPage> {
       ),
     );
   }
-}
-
-class WavePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()..style = PaintingStyle.fill;
-
-    Path path = Path();
-    Paint gradientPaint = Paint()
-      ..shader = LinearGradient(
-        colors: const [Color(0xFF0E5AB7), Color(0xFF1572E8), Color(0xFF5A9DF3)],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.15));
-
-    path.moveTo(0, size.height * 0.15);
-    path.quadraticBezierTo(size.width * 0.25, size.height * 0.05,
-        size.width * 0.5, size.height * 0.1);
-    path.quadraticBezierTo(
-        size.width * 0.75, size.height * 0.15, size.width, size.height * 0.1);
-    path.lineTo(size.width, 0);
-    path.lineTo(0, 0);
-    path.close();
-
-    canvas.drawPath(path, gradientPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

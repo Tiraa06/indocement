@@ -1,14 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'package:indocement_apk/utils/network_helper.dart';
-import 'package:device_info_plus/device_info_plus.dart'; // Tambahkan import ini
+import 'package:device_info_plus/device_info_plus.dart';
 
 class SkkFormPage extends StatefulWidget {
   const SkkFormPage({super.key});
@@ -22,6 +24,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
   String? employeeName;
   String? employeeNo;
   final TextEditingController _keperluanController = TextEditingController();
+  final TextEditingController _tempatLahirController = TextEditingController();
   List<Map<String, dynamic>> skkData = [];
   bool isLoading = false;
   bool isEmployeeDataLoading = true;
@@ -41,6 +44,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
   void dispose() {
     _refreshTimer?.cancel();
     _keperluanController.dispose();
+    _tempatLahirController.dispose();
     super.dispose();
   }
 
@@ -61,7 +65,6 @@ class _SkkFormPageState extends State<SkkFormPage> {
       isEmployeeDataLoading = false;
     });
 
-    // Fetch employee data regardless of what's in SharedPreferences to ensure freshness
     await _fetchEmployeeData();
   }
 
@@ -71,10 +74,8 @@ class _SkkFormPageState extends State<SkkFormPage> {
 
     if (employeeId == null || employeeId <= 0) {
       if (mounted) {
-        _showPopup(
-            context, 'Gagal', 'ID karyawan tidak valid, silakan login ulang');
-        Navigator.pushReplacementNamed(
-            context, '/login'); // Adjust based on your app's navigation setup
+        _showErrorModal('ID karyawan tidak valid, silakan login ulang');
+        Navigator.pushReplacementNamed(context, '/login');
       }
       return;
     }
@@ -94,7 +95,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
           },
         ),
       );
-      if (response == null) return; // Sudah redirect ke error
+      if (response == null) return;
 
       if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
@@ -106,14 +107,12 @@ class _SkkFormPageState extends State<SkkFormPage> {
           isEmployeeDataLoading = false;
         });
 
-        // Save to SharedPreferences for future use
         await prefs.setInt('idEmployee', idEmployee!);
         await prefs.setString('employeeName', employeeName!);
         await prefs.setString('employeeNo', employeeNo!);
       } else {
         if (mounted) {
-          _showPopup(context, 'Gagal',
-              'Gagal memuat data karyawan: ${response.statusCode}');
+          _showErrorModal('Gagal memuat data karyawan: ${response.statusCode}');
           setState(() {
             isEmployeeDataLoading = false;
           });
@@ -121,7 +120,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
       }
     } catch (e) {
       if (mounted) {
-        _showPopup(context, 'Gagal', 'Terjadi kesalahan: $e');
+        _showErrorModal('Terjadi kesalahan: $e');
         setState(() {
           isEmployeeDataLoading = false;
         });
@@ -187,7 +186,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
       }
     } catch (e) {
       if (mounted) {
-        _showPopup(context, 'Error', 'Gagal mengambil data SKK: $e');
+        _showErrorModal('Gagal mengambil data SKK: $e');
       }
     } finally {
       if (mounted) {
@@ -205,20 +204,192 @@ class _SkkFormPageState extends State<SkkFormPage> {
     }
   }
 
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  void _showSuccessModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF1572E8),
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Berhasil',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showErrorModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Gagal',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _submitSkk() async {
     if (idEmployee == null) {
-      _showPopup(context, 'Gagal', 'ID karyawan tidak valid.');
+      if (mounted) {
+        _showErrorModal('ID karyawan tidak valid.');
+      }
       return;
     }
 
     if (_keperluanController.text.isEmpty) {
-      _showPopup(context, 'Gagal', 'Keperluan harus diisi.');
+      if (mounted) {
+        _showErrorModal('Keperluan harus diisi.');
+      }
+      return;
+    }
+
+    if (_tempatLahirController.text.isEmpty) {
+      if (mounted) {
+        _showErrorModal('Tempat Lahir harus diisi.');
+      }
       return;
     }
 
     setState(() {
       isLoading = true;
     });
+    _showLoading(context);
 
     try {
       final response = await http.post(
@@ -230,24 +401,29 @@ class _SkkFormPageState extends State<SkkFormPage> {
         body: jsonEncode({
           'IdEmployee': idEmployee,
           'Keperluan': _keperluanController.text,
+          'TempatLahir': _tempatLahirController.text,
         }),
       );
 
+      Navigator.pop(context); // Close loading dialog
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
-          _showPopup(context, 'Berhasil', 'Pengajuan SKK berhasil dikirim.');
+          _showSuccessModal('Pengajuan SKK berhasil dikirim.');
           _keperluanController.clear();
+          _tempatLahirController.clear();
           await _fetchSkkData();
         }
       } else {
         if (mounted) {
-          _showPopup(context, 'Gagal',
+          _showErrorModal(
               'Gagal mengirim pengajuan: ${response.statusCode} - ${response.body}');
         }
       }
     } catch (e) {
+      Navigator.pop(context); // Close loading dialog
       if (mounted) {
-        _showPopup(context, 'Gagal', 'Terjadi kesalahan: $e');
+        _showErrorModal('Terjadi kesalahan: $e');
       }
     } finally {
       if (mounted) {
@@ -262,7 +438,6 @@ class _SkkFormPageState extends State<SkkFormPage> {
     final info = DeviceInfoPlugin();
     final androidInfo = await info.androidInfo;
     if (androidInfo.version.sdkInt >= 33) {
-      // Android 13+, minta izin READ_MEDIA_*
       final photos = await Permission.photos.request();
       final videos = await Permission.videos.request();
       final audio = await Permission.audio.request();
@@ -272,7 +447,6 @@ class _SkkFormPageState extends State<SkkFormPage> {
       }
       return true;
     } else {
-      // Android 12 ke bawah, minta izin storage
       final storage = await Permission.storage.request();
       if (!storage.isGranted) {
         _showPermissionDeniedDialog();
@@ -286,25 +460,88 @@ class _SkkFormPageState extends State<SkkFormPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Izin Ditolak'),
-          content: const Text(
-              'Izin penyimpanan ditolak. Silakan aktifkan izin di Pengaturan > Aplikasi > indocement_apk > Izin > Penyimpanan, lalu coba lagi.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                openAppSettings();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Buka Pengaturan'),
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Izin Ditolak',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Izin penyimpanan ditolak. Silakan aktifkan izin di Pengaturan > Aplikasi > indocement_apk > Izin > Penyimpanan, lalu coba lagi.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      openAppSettings();
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'Buka Pengaturan',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'Batal',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Batal'),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -312,7 +549,9 @@ class _SkkFormPageState extends State<SkkFormPage> {
 
   Future<void> _downloadSkk(String? noSkk, String? urlSkk) async {
     if (noSkk == null || urlSkk == null) {
-      _showPopup(context, 'Gagal', 'Data file tidak lengkap.');
+      if (mounted) {
+        _showErrorModal('Data file tidak lengkap.');
+      }
       return;
     }
 
@@ -322,27 +561,28 @@ class _SkkFormPageState extends State<SkkFormPage> {
       return;
     }
 
-    setState(() => isLoading = true);
+    _showLoading(context);
 
     try {
       final response = await http.get(Uri.parse(fullUrl));
+      Navigator.pop(context); // Close loading dialog
       if (response.statusCode != 200) {
-        _showPopup(context, 'Gagal',
-            'File tidak ditemukan di server: ${response.statusCode}');
-        setState(() => isLoading = false);
+        if (mounted) {
+          _showErrorModal(
+              'File tidak ditemukan di server: ${response.statusCode}');
+        }
         return;
       }
 
       Directory dir;
       if (Platform.isAndroid) {
-        // Simpan di folder app-specific external dir yang aman di Android 10+
         dir = await getExternalStorageDirectory() ??
             await getTemporaryDirectory();
       } else {
         dir = await getApplicationDocumentsDirectory();
       }
 
-      String ext = '.pdf'; // Default ke pdf karena SKK biasanya PDF
+      String ext = '.pdf';
       if (urlSkk.contains('.')) {
         ext = urlSkk.substring(urlSkk.lastIndexOf('.'));
       }
@@ -352,64 +592,113 @@ class _SkkFormPageState extends State<SkkFormPage> {
 
       await file.writeAsBytes(response.bodyBytes);
 
-      _showPopup(context, 'Berhasil', 'File berhasil diunduh ke:\n$filePath');
-
       final result = await OpenFile.open(filePath);
       if (result.type != ResultType.done) {
-        _showPopup(
-            context, 'Gagal', 'Tidak dapat membuka file: ${result.message}');
+        if (mounted) {
+          _showErrorModal('Tidak dapat membuka file: ${result.message}');
+        }
+        return;
+      }
+
+      if (mounted) {
+        _showSuccessModal('File berhasil diunduh ke:\n$filePath');
       }
     } catch (e) {
-      _showPopup(context, 'Gagal', 'Gagal mengunduh file: $e');
-    } finally {
-      setState(() => isLoading = false);
+      Navigator.pop(context); // Close loading dialog
+      if (mounted) {
+        _showErrorModal('Gagal mengunduh file: $e');
+      }
     }
-  }
-
-  void _showPopup(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void _showReturnModal(BuildContext context, String keperluan) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pengajuan Ditolak'),
-          content: const Text('Silahkan mengajukan ulang permintaan SKK ini'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _keperluanController.text = keperluan;
-                });
-              },
-              child: const Text('Ajukan Ulang'),
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Pengajuan Ditolak',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Silahkan mengajukan ulang permintaan SKK ini',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        _keperluanController.text = keperluan;
+                      });
+                    },
+                    child: Text(
+                      'Ajukan Ulang',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'Batal',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Batal'),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -430,9 +719,13 @@ class _SkkFormPageState extends State<SkkFormPage> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
+        title: Text(
           'Pengajuan SKK',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: MediaQuery.of(context).size.width * 0.05,
+          ),
         ),
         elevation: 0,
       ),
@@ -480,7 +773,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                           children: [
                             Text(
                               'Surat Keterangan Kerja',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -490,7 +783,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                             const SizedBox(height: 8),
                             Text(
                               'Ajukan surat keterangan kerja untuk keperluan Anda.',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.9),
                                 height: 1.4,
@@ -519,61 +812,65 @@ class _SkkFormPageState extends State<SkkFormPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Form Pengajuan',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Nama Karyawan',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
                       isEmployeeDataLoading
-                          ? const Text(
+                          ? Text(
                               'Memuat...',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.grey),
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             )
                           : Text(
                               employeeName ?? 'Nama Tidak Diketahui',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 color: Colors.grey[700],
                               ),
                             ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'NIK',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
                       isEmployeeDataLoading
-                          ? const Text(
+                          ? Text(
                               'Memuat...',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.grey),
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             )
                           : Text(
                               employeeNo ?? 'NIK Tidak Diketahui',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 color: Colors.grey[700],
                               ),
                             ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Keperluan',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -596,9 +893,43 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                 color: Color(0xFF1572E8), width: 2),
                           ),
                           hintText: 'Masukkan keperluan SKK',
+                          hintStyle: GoogleFonts.poppins(),
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 14, horizontal: 16),
                         ),
+                        style: GoogleFonts.poppins(),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tempat Lahir',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _tempatLahirController,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[400]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[400]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF1572E8), width: 2),
+                          ),
+                          hintText: 'Masukkan tempat lahir',
+                          hintStyle: GoogleFonts.poppins(),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                        ),
+                        style: GoogleFonts.poppins(),
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton(
@@ -613,11 +944,10 @@ class _SkkFormPageState extends State<SkkFormPage> {
                         ),
                         child: isEmployeeDataLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text(
+                                color: Colors.white)
+                            : Text(
                                 'Ajukan SKK',
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -644,9 +974,9 @@ class _SkkFormPageState extends State<SkkFormPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Riwayat Pengajuan SKK',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -655,9 +985,12 @@ class _SkkFormPageState extends State<SkkFormPage> {
                       if (isLoading && skkData.isEmpty)
                         const Center(child: CircularProgressIndicator())
                       else if (skkData.isEmpty)
-                        const Text(
+                        Text(
                           'Anda belum mengajukan SKK apapun.',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
                         )
                       else
                         ListView.separated(
@@ -709,7 +1042,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                                 'Tidak diketahui',
                                         child: Text(
                                           'Keperluan: ${data['Keperluan']?.toString() ?? 'Tidak diketahui'}',
-                                          style: const TextStyle(
+                                          style: GoogleFonts.poppins(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -734,14 +1067,12 @@ class _SkkFormPageState extends State<SkkFormPage> {
                                 const SizedBox(height: 8),
                                 GestureDetector(
                                   onTap: isClickable
-                                      ? () => _showReturnModal(
-                                            context,
-                                            data['Keperluan']?.toString() ?? '',
-                                          )
+                                      ? () => _showReturnModal(context,
+                                          data['Keperluan']?.toString() ?? '')
                                       : null,
                                   child: Text(
                                     'Status: ${data['Status'] ?? 'Tidak diketahui'}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       color: statusColor,
                                       fontWeight: isClickable

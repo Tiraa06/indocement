@@ -1,15 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'package:intl/intl.dart';
 import 'package:indocement_apk/utils/network_helper.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScheduleShiftPage extends StatefulWidget {
   const ScheduleShiftPage({super.key});
@@ -23,23 +24,17 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
 
-  // Form controllers and state
   final _formKey = GlobalKey<FormState>();
   List<Map<String, dynamic>> _employees = [];
   final List<Map<String, dynamic>> _selectedPairs = [];
   DateTime? _selectedDate;
   final _keteranganController = TextEditingController();
   bool _isLoading = false;
+  bool _isLoadingShifts = true;
   String? _userSection;
   int? _userIdEmployee;
 
-  // Shift options
-  final List<String> _shiftOptions = [
-    'Shift A',
-    'Shift B',
-    'Shift C',
-    'Shift D'
-  ];
+  List<String> _shiftOptions = [];
 
   @override
   void initState() {
@@ -58,7 +53,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       curve: Curves.easeInOut,
     ));
 
-    _loadEmployeeData();
+    _fetchShiftOptions();
   }
 
   @override
@@ -68,7 +63,254 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
     super.dispose();
   }
 
+  Future<void> _fetchShiftOptions() async {
+    try {
+      setState(() {
+        _isLoadingShifts = true;
+      });
 
+      final response = await http.get(
+        Uri.parse('http://103.31.235.237:5555/api/JadwalShift'),
+        headers: {
+          'accept': 'text/plain',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      print('Fetch Shift Options Status: ${response.statusCode}');
+      print('Fetch Shift Options Body: ${response.body}');
+
+      if (response.statusCode == 200 && mounted) {
+        final List<dynamic> data = json.decode(response.body);
+        final List<String> shiftNames = data
+            .map((shift) => shift['NamaShift']?.toString() ?? '')
+            .where((name) => name.isNotEmpty)
+            .toSet()
+            .toList();
+
+        if (shiftNames.isNotEmpty) {
+          setState(() {
+            _shiftOptions = shiftNames;
+            _isLoadingShifts = false;
+            print('Updated _shiftOptions: $_shiftOptions');
+          });
+          _loadEmployeeData();
+        } else {
+          print('No valid shift names found in API response');
+          if (mounted) {
+            _showErrorModal('Tidak ada data shift yang valid dari server.');
+            setState(() {
+              _isLoadingShifts = false;
+            });
+          }
+        }
+      } else {
+        print('Failed to fetch shift options: ${response.statusCode}');
+        if (mounted) {
+          _showErrorModal('Gagal memuat data shift: ${response.statusCode}');
+          setState(() {
+            _isLoadingShifts = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching shift options: $e');
+      if (mounted) {
+        _showErrorModal('Terjadi kesalahan saat memuat data shift: $e');
+        setState(() {
+          _isLoadingShifts = false;
+        });
+      }
+    }
+  }
+
+  void _showLoading(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  void _showErrorModal(String message) {
+    if (!mounted) return;
+    String displayMessage = message;
+    try {
+      if (message.contains('Gagal mengajukan pengajuan:') &&
+          message.contains('{')) {
+        final jsonStart = message.indexOf('{');
+        final jsonStr = message.substring(jsonStart);
+        final errorJson = json.decode(jsonStr);
+        final errors = errorJson['errors'] as Map<String, dynamic>?;
+        if (errors != null) {
+          final errorMessages = errors.values
+              .expand((e) => e as List<dynamic>)
+              .map((e) => e.toString())
+              .join('; ');
+          displayMessage = 'Gagal mengajukan pengajuan: $errorMessages';
+        }
+      }
+    } catch (e) {
+      print('Error parsing error response: $e');
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.red,
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Gagal',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  displayMessage,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSuccessModal() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF1572E8),
+                  size: 54,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Berhasil',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Pengajuan tukar shift berhasil dikirim.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LayananMenuPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _loadEmployeeData() async {
     try {
@@ -76,12 +318,67 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         _isLoading = true;
       });
 
+      if (_shiftOptions.isEmpty) {
+        if (mounted) {
+          _showErrorModal(
+              'Data shift belum tersedia. Silakan coba lagi nanti.');
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final int? idEmployee = prefs.getInt('idEmployee');
       if (idEmployee == null) {
-        throw Exception('ID pengguna tidak ditemukan. Silakan login ulang.');
+        if (mounted) {
+          _showErrorModal('ID pengguna tidak ditemukan. Silakan login ulang.');
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
       _userIdEmployee = idEmployee;
+
+      final userResponse = await safeRequest(
+        context,
+        () => http.get(
+          Uri.parse('http://103.31.235.237:5555/api/User'),
+          headers: {
+            'accept': 'text/plain',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      if (userResponse == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      print('Fetch User Status: ${userResponse.statusCode}');
+      print('Fetch User Body: ${userResponse.body}');
+
+      if (userResponse.statusCode != 200) {
+        if (mounted) {
+          _showErrorModal('Gagal memuat data pengguna: ${userResponse.body}');
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final List<dynamic> userData = json.decode(userResponse.body);
+      final Set<int> activeKaryawanIds = userData
+          .where(
+              (user) => user['Status'] == 'Aktif' && user['Role'] == 'Karyawan')
+          .map((user) => user['IdEmployee'] as int)
+          .toSet();
+      print('Active Karyawan IdEmployee: $activeKaryawanIds');
 
       final employeeResponse = await safeRequest(
         context,
@@ -90,13 +387,25 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
           headers: {'Content-Type': 'application/json'},
         ),
       );
-      if (employeeResponse == null) return; // Sudah redirect ke error
+      if (employeeResponse == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
       print('Fetch User Employee Status: ${employeeResponse.statusCode}');
       print('Fetch User Employee Body: ${employeeResponse.body}');
 
       if (employeeResponse.statusCode != 200) {
-        throw Exception('Gagal memuat data pengguna: ${employeeResponse.body}');
+        if (mounted) {
+          _showErrorModal(
+              'Gagal memuat data pengguna: ${employeeResponse.body}');
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
       final employeeData = json.decode(employeeResponse.body);
       _userSection = employeeData['IdSection']?.toString();
@@ -104,7 +413,13 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
           'User ID: $idEmployee, IdSection: $_userSection, User Data: $employeeData');
 
       if (_userSection == null || _userSection!.isEmpty) {
-        throw Exception('IdSection pengguna tidak ditemukan dalam data.');
+        if (mounted) {
+          _showErrorModal('IdSection pengguna tidak ditemukan dalam data.');
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
 
       final response = await safeRequest(
@@ -114,7 +429,12 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
           headers: {'Content-Type': 'application/json'},
         ),
       );
-      if (response == null) return; // Sudah redirect ke error
+      if (response == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
       print('Fetch All Employees Status: ${response.statusCode}');
       print('Fetch All Employees Body: ${response.body}');
@@ -125,9 +445,10 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         final Map<int, Map<String, dynamic>> uniqueEmployees = {};
         for (var e in data) {
           final idEsl = e['IdEsl'] ?? e['idEsl'] ?? e['IDESL'];
+          final int id = e['Id'];
           if (e['IdSection']?.toString() == _userSection &&
-              (idEsl == 4 || idEsl == 5 || idEsl == 6)) {
-            final int id = e['Id'];
+              (idEsl == 4 || idEsl == 5 || idEsl == 6) &&
+              activeKaryawanIds.contains(id)) {
             if (!uniqueEmployees.containsKey(id)) {
               uniqueEmployees[id] = {
                 'IdEmployee': id,
@@ -135,47 +456,55 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                 'IdSection': e['IdSection']?.toString() ?? '',
                 'IdEsl': idEsl,
               };
-              print('Included Employee: Id=$id, Name=${e['EmployeeName']}, Section=${e['IdSection']}, IdEsl=$idEsl');
+              print(
+                  'Included Employee: Id=$id, Name=${e['EmployeeName']}, Section=${e['IdSection']}, IdEsl=$idEsl');
             } else {
               print('Skipped Duplicate Employee: Id=$id');
             }
           } else {
             print(
-      'Excluded Employee: Id=${e['Id']}, Section=${e['IdSection']}, IdEsl=$idEsl (Filter: Section=$_userSection, IdEsl in [4,5,6])');
+                'Excluded Employee: Id=$id, Section=${e['IdSection']}, IdEsl=$idEsl, IsActiveKaryawan=${activeKaryawanIds.contains(id)}');
           }
         }
-        setState(() {
-          _employees = uniqueEmployees.values.toList();
-          print(
-              'Filtered Employees (IdSection=$_userSection, IdEsl=6): $_employees');
-          if (_employees.any((e) => e['IdEmployee'] == idEmployee)) {
-            _selectedPairs.add({
-              'IdEmployee': idEmployee,
-              'EmployeeName': 'Anda',
-              'DariShift': null,
-              'KeShift': null,
-            });
+        if (mounted) {
+          setState(() {
+            _employees = uniqueEmployees.values.toList();
             print(
-                'Added current user to selectedPairs: IdEmployee=$idEmployee');
-          } else {
-            print(
-                'Warning: Current user (IdEmployee=$idEmployee) not found in filtered employees');
-          }
-        });
+                'Filtered Employees (IdSection=$_userSection, IdEsl=4,5,6, Active Karyawan): $_employees');
+            if (_employees.any((e) => e['IdEmployee'] == idEmployee)) {
+              _selectedPairs.add({
+                'IdEmployee': idEmployee,
+                'EmployeeName': 'Anda',
+                'DariShift': null,
+                'KeShift': null,
+              });
+              print(
+                  'Added current user to selectedPairs: IdEmployee=$idEmployee');
+            } else {
+              print(
+                  'Warning: Current user (IdEmployee=$idEmployee) not found in filtered employees');
+            }
+            _isLoading = false;
+          });
 
-        final idSet = _employees.map((e) => e['IdEmployee']).toSet();
-        if (idSet.length != _employees.length) {
-          print('Warning: Duplicate IdEmployee found in _employees');
+          final idSet = _employees.map((e) => e['IdEmployee']).toSet();
+          if (idSet.length != _employees.length) {
+            print('Warning: Duplicate IdEmployee found in _employees');
+          }
         }
       } else {
-        throw Exception('Gagal memuat data karyawan: ${response.body}');
+        if (mounted) {
+          _showErrorModal('Gagal memuat data karyawan: ${response.body}');
+        }
+        setState(() {
+          _isLoading = false;
+        });
       }
     } catch (e) {
       print('Error loading employee data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
+      if (mounted) {
+        _showErrorModal('Terjadi kesalahan: $e');
+      }
       setState(() {
         _isLoading = false;
       });
@@ -183,103 +512,140 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedPairs.length > 4 || _selectedPairs.length % 2 != 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Jumlah karyawan harus genap (2 atau 4) untuk tukar shift')),
-      );
+    if (!_formKey.currentState!.validate()) {
+      print('Form validation failed');
       return;
     }
-
-    for (var pair in _selectedPairs) {
-      if (pair['DariShift'] == null || pair['KeShift'] == null) {
+    if (_shiftOptions.isEmpty) {
+      if (mounted) {
+        _showErrorModal('Data shift belum tersedia. Silakan coba lagi nanti.');
+      }
+      return;
+    }
+    if (_selectedPairs.length > 4 || _selectedPairs.length % 2 != 0) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Semua shift harus diisi')),
+          SnackBar(
+            content: Text(
+              'Jumlah karyawan harus genap (2 atau 4) untuk tukar shift',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
         );
+      }
+      return;
+    }
+    if (_selectedDate == null || _selectedDate!.isBefore(DateTime.now())) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Pilih tanggal shift yang valid (hari ini atau masa depan).',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    for (var pair in _selectedPairs) {
+      print('Validating pair: $pair');
+      if (pair['IdEmployee'] == null ||
+          pair['DariShift'] == null ||
+          pair['KeShift'] == null ||
+          pair['DariShift'] == pair['KeShift']) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Data karyawan atau shift tidak valid. Pastikan semua shift berbeda dan diisi. Pair: ${pair['EmployeeName']}',
+                style: GoogleFonts.poppins(),
+              ),
+            ),
+          );
+        }
         return;
       }
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
     try {
+      _showLoading(context);
+      // Try sending individual objects instead of a list
       final requestBody = _selectedPairs
           .map((pair) => {
                 'IdEmployee': pair['IdEmployee'],
+                'TglPengajuan': DateFormat('yyyy-MM-dd').format(DateTime.now()),
                 'TglShift': DateFormat('yyyy-MM-dd').format(_selectedDate!),
                 'DariShift': pair['DariShift'],
                 'KeShift': pair['KeShift'],
                 'Keterangan': _keteranganController.text,
+                'Status': 'Diajukan',
               })
           .toList();
 
+      print('Selected Pairs before submission: $_selectedPairs');
       print('Submitting request: $requestBody');
 
-      final response = await http
-          .post(
-            Uri.parse(
-                'http://103.31.235.237:5555/api/TukarSchedule/generate-document'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': '*/*',
-            },
-            body: json.encode(requestBody),
-          )
-          .timeout(const Duration(seconds: 10));
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('authToken');
 
-      print('API Response: ${response.statusCode} - ${response.body}');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/plain',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      print('Request headers: $headers');
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Sukses'),
-            content: const Text('Pengajuan tukar shift berhasil dikirim.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const LayananMenuPage()),
-                  );
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+      const maxRetries = 3;
+      var attempt = 0;
+      http.Response? response;
+
+      while (attempt < maxRetries) {
+        try {
+          // Send each pair individually to test if list structure is the issue
+          for (var pair in requestBody) {
+            response = await http
+                .post(
+                  Uri.parse('http://103.31.235.237:5555/api/TukarSchedule'),
+                  headers: headers,
+                  body: json.encode(pair),
+                )
+                .timeout(const Duration(seconds: 15));
+            print(
+                'API Response for pair ${pair['IdEmployee']}: ${response.statusCode} - ${response.body}');
+            if (response.statusCode != 200 && response.statusCode != 201) {
+              throw Exception(
+                  'Failed for employee ${pair['IdEmployee']}: ${response.body}');
+            }
+          }
+          break;
+        } catch (e) {
+          attempt++;
+          if (attempt >= maxRetries) {
+            throw Exception(
+                'Gagal mengajukan pengajuan setelah $maxRetries percobaan: $e');
+          }
+          print('Retry $attempt/$maxRetries due to error: $e');
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (response!.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) {
+          _showSuccessModal();
+        }
       } else {
-        throw Exception('Gagal mengirim pengajuan: ${response.body}');
+        throw Exception(
+            'Gagal mengajukan pengajuan: ${response.body.isNotEmpty ? response.body : 'Tidak ada detail kesalahan dari server'}');
       }
     } catch (e) {
       print('Error submitting form: $e');
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Error'),
-          content: Text('Terjadi kesalahan: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        _showErrorModal('Terjadi kesalahan: $e');
+      }
     }
   }
 
@@ -290,7 +656,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null && picked != _selectedDate && mounted) {
       setState(() {
         _selectedDate = picked;
       });
@@ -321,12 +687,13 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const LayananMenuPage()),
+                    builder: (context) => const LayananMenuPage(),
+                  ),
                 );
               },
             ),
             title: Text(
-              "Tukar Schedule Shift",
+              'Tukar Schedule Shift',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: baseFontSize * 1.25,
@@ -338,7 +705,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
           ),
           body: Stack(
             children: [
-              _isLoading
+              _isLoading || _isLoadingShifts
                   ? const Center(child: CircularProgressIndicator())
                   : Padding(
                       padding: EdgeInsets.all(paddingValue),
@@ -359,7 +726,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                             ),
                           ),
                           Text(
-                            "Form untuk mengajukan tukar schedule shift. Pilih karyawan dari seksi yang sama (maksimal 2 pasangan).",
+                            'Form untuk mengajukan tukar schedule shift. Pilih karyawan dari seksi yang sama (maksimal 2 pasangan).',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
                               fontSize: baseFontSize * 0.9,
@@ -386,7 +753,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "Pilih Karyawan (Maks. 2 Pasangan)",
+                                            'Pilih Karyawan (Maks. 2 Pasangan)',
                                             style: GoogleFonts.poppins(
                                               fontSize: baseFontSize * 0.9,
                                               fontWeight: FontWeight.bold,
@@ -401,18 +768,24 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                   BorderRadius.circular(8),
                                             ),
                                             padding: const EdgeInsets.symmetric(
-                                                horizontal: 12, vertical: 8),
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
                                             child: availableEmployees.isEmpty
                                                 ? Text(
-                                                    "Tidak ada karyawan yang tersedia. Pastikan ada karyawan di seksi $_userSection dengan Id Esl= 4 - 6.",
-                                                    style: const TextStyle(
-                                                        color: Colors.red,
-                                                        fontSize: 14),
+                                                    'Tidak ada karyawan yang tersedia. Pastikan ada karyawan aktif di seksi $_userSection dengan Id Esl= 4 - 6.',
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.red,
+                                                      fontSize: 14,
+                                                    ),
                                                   )
                                                 : DropdownButton<int>(
                                                     isExpanded: true,
-                                                    hint: const Text(
-                                                        "Pilih karyawan"),
+                                                    hint: Text(
+                                                      'Pilih karyawan',
+                                                      style:
+                                                          GoogleFonts.poppins(),
+                                                    ),
                                                     value: null,
                                                     items: availableEmployees
                                                         .map((employee) {
@@ -421,8 +794,12 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                         value: employee[
                                                                 'IdEmployee']
                                                             as int,
-                                                        child: Text(employee[
-                                                            'EmployeeName']),
+                                                        child: Text(
+                                                          employee[
+                                                              'EmployeeName'],
+                                                          style: GoogleFonts
+                                                              .poppins(),
+                                                        ),
                                                       );
                                                     }).toList(),
                                                     onChanged: (int? value) {
@@ -461,9 +838,13 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                           ScaffoldMessenger.of(
                                                                   context)
                                                               .showSnackBar(
-                                                            const SnackBar(
-                                                                content: Text(
-                                                                    'Maksimal 2 pasangan (4 karyawan)')),
+                                                            SnackBar(
+                                                              content: Text(
+                                                                'Maksimal 2 pasangan (4 karyawan)',
+                                                                style: GoogleFonts
+                                                                    .poppins(),
+                                                              ),
+                                                            ),
                                                           );
                                                         }
                                                       }
@@ -473,305 +854,507 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                           ),
                                           const SizedBox(height: 8),
                                           ...List.generate(
-                                              (_selectedPairs.length / 2)
-                                                  .ceil(), (index) {
-                                            final pairIndex = index * 2;
-                                            final employee1 = pairIndex <
-                                                    _selectedPairs.length
-                                                ? _selectedPairs[pairIndex]
-                                                : null;
-                                            final employee2 = pairIndex + 1 <
-                                                    _selectedPairs.length
-                                                ? _selectedPairs[pairIndex + 1]
-                                                : null;
-                                            return Card(
-                                              margin:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 8),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(8.0),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Pasangan ${index + 1}',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize:
-                                                            baseFontSize * 0.9,
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                            (_selectedPairs.length / 2).ceil(),
+                                            (index) {
+                                              final pairIndex = index * 2;
+                                              final employee1 = pairIndex <
+                                                      _selectedPairs.length
+                                                  ? _selectedPairs[pairIndex]
+                                                  : null;
+                                              final employee2 = pairIndex + 1 <
+                                                      _selectedPairs.length
+                                                  ? _selectedPairs[
+                                                      pairIndex + 1]
+                                                  : null;
+                                              return Card(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        'Pasangan ${index + 1}',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontSize:
+                                                              baseFontSize *
+                                                                  0.9,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    if (employee1 != null) ...[
-                                                      Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              employee1[
-                                                                  'EmployeeName'],
-                                                              style: const TextStyle(
+                                                      const SizedBox(height: 8),
+                                                      if (employee1 !=
+                                                          null) ...[
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                employee1[
+                                                                    'EmployeeName'],
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .w500),
+                                                                          .w500,
+                                                                ),
+                                                              ),
                                                             ),
-                                                          ),
-                                                          IconButton(
-                                                            icon: const Icon(
+                                                            IconButton(
+                                                              icon: const Icon(
                                                                 Icons.delete,
                                                                 color:
-                                                                    Colors.red),
-                                                            onPressed: employee1[
-                                                                        'IdEmployee'] ==
-                                                                    _userIdEmployee
-                                                                ? null
-                                                                : () {
-                                                                    setState(
-                                                                        () {
-                                                                      _selectedPairs
-                                                                          .removeAt(
-                                                                              pairIndex);
-                                                                      if (employee2 !=
-                                                                          null) {
+                                                                    Colors.red,
+                                                              ),
+                                                              onPressed: employee1[
+                                                                          'IdEmployee'] ==
+                                                                      _userIdEmployee
+                                                                  ? null
+                                                                  : () {
+                                                                      setState(
+                                                                          () {
                                                                         _selectedPairs
                                                                             .removeAt(pairIndex);
-                                                                      }
-                                                                    });
-                                                                  },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child:
-                                                                DropdownButton<
-                                                                    String>(
-                                                              isExpanded: true,
-                                                              hint: const Text(
-                                                                  "Dari Shift"),
-                                                              value: employee1[
-                                                                  'DariShift'],
-                                                              items: _shiftOptions
-                                                                  .map((shift) {
-                                                                return DropdownMenuItem<
-                                                                    String>(
-                                                                  value: shift,
-                                                                  child: Text(
-                                                                      shift),
-                                                                );
-                                                              }).toList(),
-                                                              onChanged:
-                                                                  (value) {
-                                                                setState(() {
-                                                                  employee1[
-                                                                          'DariShift'] =
-                                                                      value;
-                                                                  if (employee2 !=
-                                                                          null &&
-                                                                      value !=
-                                                                          null) {
-                                                                    employee2[
-                                                                            'KeShift'] =
-                                                                        value;
-                                                                    if (employee2[
-                                                                            'DariShift'] ==
-                                                                        value) {
-                                                                      employee2[
-                                                                              'DariShift'] =
-                                                                          employee1[
-                                                                              'KeShift'];
-                                                                    }
-                                                                  }
-                                                                });
-                                                              },
+                                                                        if (employee2 !=
+                                                                            null) {
+                                                                          _selectedPairs
+                                                                              .removeAt(pairIndex);
+                                                                        }
+                                                                      });
+                                                                    },
                                                             ),
-                                                          ),
-                                                          const SizedBox(
-                                                              width: 8),
-                                                          Expanded(
-                                                            child:
-                                                                DropdownButton<
-                                                                    String>(
-                                                              isExpanded: true,
-                                                              hint: const Text(
-                                                                  "Ke Shift"),
-                                                              value: employee1[
-                                                                  'KeShift'],
-                                                              items: _shiftOptions
-                                                                  .map((shift) {
-                                                                return DropdownMenuItem<
-                                                                    String>(
-                                                                  value: shift,
-                                                                  child: Text(
-                                                                      shift),
-                                                                );
-                                                              }).toList(),
-                                                              onChanged:
-                                                                  (value) {
-                                                                setState(() {
-                                                                  employee1[
-                                                                          'KeShift'] =
-                                                                      value;
-                                                                  if (employee2 !=
-                                                                          null &&
-                                                                      value !=
-                                                                          null) {
-                                                                    employee2[
-                                                                            'DariShift'] =
-                                                                        value;
-                                                                    if (employee2[
-                                                                            'KeShift'] ==
-                                                                        value) {
-                                                                      employee2[
-                                                                              'KeShift'] =
-                                                                          employee1[
-                                                                              'DariShift'];
-                                                                    }
+                                                          ],
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child:
+                                                                  DropdownButtonFormField<
+                                                                      String>(
+                                                                isExpanded:
+                                                                    true,
+                                                                hint: Text(
+                                                                  _shiftOptions
+                                                                          .isEmpty
+                                                                      ? 'Memuat shift...'
+                                                                      : 'Dari Shift',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: _shiftOptions
+                                                                            .isEmpty
+                                                                        ? Colors
+                                                                            .grey
+                                                                        : null,
+                                                                  ),
+                                                                ),
+                                                                value: employee1[
+                                                                    'DariShift'],
+                                                                items: _shiftOptions
+                                                                        .isEmpty
+                                                                    ? []
+                                                                    : _shiftOptions
+                                                                        .map(
+                                                                            (shift) {
+                                                                        return DropdownMenuItem<
+                                                                            String>(
+                                                                          value:
+                                                                              shift,
+                                                                          child:
+                                                                              Text(
+                                                                            shift,
+                                                                            style:
+                                                                                GoogleFonts.poppins(),
+                                                                          ),
+                                                                        );
+                                                                      }).toList(),
+                                                                onChanged:
+                                                                    _shiftOptions
+                                                                            .isEmpty
+                                                                        ? null
+                                                                        : (value) {
+                                                                            setState(() {
+                                                                              employee1['DariShift'] = value;
+                                                                              if (employee2 != null && value != null) {
+                                                                                employee2['KeShift'] = value;
+                                                                                if (employee2['DariShift'] == value) {
+                                                                                  employee2['DariShift'] = employee1['KeShift'];
+                                                                                }
+                                                                              }
+                                                                            });
+                                                                          },
+                                                                decoration:
+                                                                    InputDecoration(
+                                                                  border:
+                                                                      OutlineInputBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
+                                                                  ),
+                                                                  contentPadding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          8),
+                                                                ),
+                                                                disabledHint:
+                                                                    Text(
+                                                                  'Tidak ada shift tersedia',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                          color:
+                                                                              Colors.grey),
+                                                                ),
+                                                                validator:
+                                                                    (value) {
+                                                                  if (value ==
+                                                                          null ||
+                                                                      value
+                                                                          .isEmpty) {
+                                                                    return 'Pilih Dari Shift';
                                                                   }
-                                                                });
-                                                              },
+                                                                  return null;
+                                                                },
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                    if (employee2 != null) ...[
-                                                      const SizedBox(height: 8),
-                                                      Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              employee2[
-                                                                  'EmployeeName'],
-                                                              style: const TextStyle(
+                                                            const SizedBox(
+                                                                width: 8),
+                                                            Expanded(
+                                                              child:
+                                                                  DropdownButtonFormField<
+                                                                      String>(
+                                                                isExpanded:
+                                                                    true,
+                                                                hint: Text(
+                                                                  _shiftOptions
+                                                                          .isEmpty
+                                                                      ? 'Memuat shift...'
+                                                                      : 'Ke Shift',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: _shiftOptions
+                                                                            .isEmpty
+                                                                        ? Colors
+                                                                            .grey
+                                                                        : null,
+                                                                  ),
+                                                                ),
+                                                                value: employee1[
+                                                                    'KeShift'],
+                                                                items: _shiftOptions
+                                                                        .isEmpty
+                                                                    ? []
+                                                                    : _shiftOptions
+                                                                        .map(
+                                                                            (shift) {
+                                                                        return DropdownMenuItem<
+                                                                            String>(
+                                                                          value:
+                                                                              shift,
+                                                                          child:
+                                                                              Text(
+                                                                            shift,
+                                                                            style:
+                                                                                GoogleFonts.poppins(),
+                                                                          ),
+                                                                        );
+                                                                      }).toList(),
+                                                                onChanged:
+                                                                    _shiftOptions
+                                                                            .isEmpty
+                                                                        ? null
+                                                                        : (value) {
+                                                                            setState(() {
+                                                                              employee1['KeShift'] = value;
+                                                                              if (employee2 != null && value != null) {
+                                                                                employee2['DariShift'] = value;
+                                                                                if (employee2['KeShift'] == value) {
+                                                                                  employee2['KeShift'] = employee1['DariShift'];
+                                                                                }
+                                                                              }
+                                                                            });
+                                                                          },
+                                                                decoration:
+                                                                    InputDecoration(
+                                                                  border:
+                                                                      OutlineInputBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
+                                                                  ),
+                                                                  contentPadding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          8),
+                                                                ),
+                                                                disabledHint:
+                                                                    Text(
+                                                                  'Tidak ada shift tersedia',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                          color:
+                                                                              Colors.grey),
+                                                                ),
+                                                                validator:
+                                                                    (value) {
+                                                                  if (value ==
+                                                                          null ||
+                                                                      value
+                                                                          .isEmpty) {
+                                                                    return 'Pilih Ke Shift';
+                                                                  }
+                                                                  return null;
+                                                                },
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                      if (employee2 !=
+                                                          null) ...[
+                                                        const SizedBox(
+                                                            height: 8),
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                employee2[
+                                                                    'EmployeeName'],
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .w500),
+                                                                          .w500,
+                                                                ),
+                                                              ),
                                                             ),
-                                                          ),
-                                                          IconButton(
-                                                            icon: const Icon(
+                                                            IconButton(
+                                                              icon: const Icon(
                                                                 Icons.delete,
                                                                 color:
-                                                                    Colors.red),
-                                                            onPressed: employee2[
-                                                                        'IdEmployee'] ==
-                                                                    _userIdEmployee
-                                                                ? null
-                                                                : () {
-                                                                    setState(
-                                                                        () {
-                                                                      _selectedPairs.removeAt(
-                                                                          pairIndex +
-                                                                              1);
-                                                                    });
-                                                                  },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child:
-                                                                DropdownButton<
-                                                                    String>(
-                                                              isExpanded: true,
-                                                              hint: const Text(
-                                                                  "Dari Shift"),
-                                                              value: employee2[
-                                                                  'DariShift'],
-                                                              items: _shiftOptions
-                                                                  .map((shift) {
-                                                                return DropdownMenuItem<
-                                                                    String>(
-                                                                  value: shift,
-                                                                  child: Text(
-                                                                      shift),
-                                                                );
-                                                              }).toList(),
-                                                              onChanged:
-                                                                  (value) {
-                                                                setState(() {
-                                                                  employee2[
-                                                                          'DariShift'] =
-                                                                      value;
-                                                                  if (value !=
-                                                                      null) {
-                                                                    employee1?[
-                                                                            'KeShift'] =
-                                                                        value;
-                                                                    if (employee1?[
-                                                                            'DariShift'] ==
-                                                                        value) {
-                                                                      employee1?[
-                                                                              'DariShift'] =
-                                                                          employee2[
-                                                                              'KeShift'];
-                                                                    }
-                                                                  }
-                                                                });
-                                                              },
+                                                                    Colors.red,
+                                                              ),
+                                                              onPressed: employee2[
+                                                                          'IdEmployee'] ==
+                                                                      _userIdEmployee
+                                                                  ? null
+                                                                  : () {
+                                                                      setState(
+                                                                          () {
+                                                                        _selectedPairs.removeAt(
+                                                                            pairIndex +
+                                                                                1);
+                                                                      });
+                                                                    },
                                                             ),
-                                                          ),
-                                                          const SizedBox(
-                                                              width: 8),
-                                                          Expanded(
-                                                            child:
-                                                                DropdownButton<
-                                                                    String>(
-                                                              isExpanded: true,
-                                                              hint: const Text(
-                                                                  "Ke Shift"),
-                                                              value: employee2[
-                                                                  'KeShift'],
-                                                              items: _shiftOptions
-                                                                  .map((shift) {
-                                                                return DropdownMenuItem<
-                                                                    String>(
-                                                                  value: shift,
-                                                                  child: Text(
-                                                                      shift),
-                                                                );
-                                                              }).toList(),
-                                                              onChanged:
-                                                                  (value) {
-                                                                setState(() {
-                                                                  employee2[
-                                                                          'KeShift'] =
-                                                                      value;
-                                                                  if (value !=
-                                                                      null) {
-                                                                    employee1?[
-                                                                            'DariShift'] =
-                                                                        value;
-                                                                    if (employee1?[
-                                                                            'KeShift'] ==
-                                                                        value) {
-                                                                      employee1?[
-                                                                              'KeShift'] =
-                                                                          employee2[
-                                                                              'DariShift'];
-                                                                    }
+                                                          ],
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child:
+                                                                  DropdownButtonFormField<
+                                                                      String>(
+                                                                isExpanded:
+                                                                    true,
+                                                                hint: Text(
+                                                                  _shiftOptions
+                                                                          .isEmpty
+                                                                      ? 'Memuat shift...'
+                                                                      : 'Dari Shift',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: _shiftOptions
+                                                                            .isEmpty
+                                                                        ? Colors
+                                                                            .grey
+                                                                        : null,
+                                                                  ),
+                                                                ),
+                                                                value: employee2[
+                                                                    'DariShift'],
+                                                                items: _shiftOptions
+                                                                        .isEmpty
+                                                                    ? []
+                                                                    : _shiftOptions
+                                                                        .map(
+                                                                            (shift) {
+                                                                        return DropdownMenuItem<
+                                                                            String>(
+                                                                          value:
+                                                                              shift,
+                                                                          child:
+                                                                              Text(
+                                                                            shift,
+                                                                            style:
+                                                                                GoogleFonts.poppins(),
+                                                                          ),
+                                                                        );
+                                                                      }).toList(),
+                                                                onChanged:
+                                                                    _shiftOptions
+                                                                            .isEmpty
+                                                                        ? null
+                                                                        : (value) {
+                                                                            setState(() {
+                                                                              employee2['DariShift'] = value;
+                                                                              if (value != null) {
+                                                                                employee1?['KeShift'] = value;
+                                                                                if (employee1?['DariShift'] == value) {
+                                                                                  employee1?['DariShift'] = employee2['KeShift'];
+                                                                                }
+                                                                              }
+                                                                            });
+                                                                          },
+                                                                decoration:
+                                                                    InputDecoration(
+                                                                  border:
+                                                                      OutlineInputBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
+                                                                  ),
+                                                                  contentPadding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          8),
+                                                                ),
+                                                                disabledHint:
+                                                                    Text(
+                                                                  'Tidak ada shift tersedia',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                          color:
+                                                                              Colors.grey),
+                                                                ),
+                                                                validator:
+                                                                    (value) {
+                                                                  if (value ==
+                                                                          null ||
+                                                                      value
+                                                                          .isEmpty) {
+                                                                    return 'Pilih Dari Shift';
                                                                   }
-                                                                });
-                                                              },
+                                                                  return null;
+                                                                },
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
+                                                            const SizedBox(
+                                                                width: 8),
+                                                            Expanded(
+                                                              child:
+                                                                  DropdownButtonFormField<
+                                                                      String>(
+                                                                isExpanded:
+                                                                    true,
+                                                                hint: Text(
+                                                                  _shiftOptions
+                                                                          .isEmpty
+                                                                      ? 'Memuat shift...'
+                                                                      : 'Ke Shift',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: _shiftOptions
+                                                                            .isEmpty
+                                                                        ? Colors
+                                                                            .grey
+                                                                        : null,
+                                                                  ),
+                                                                ),
+                                                                value: employee2[
+                                                                    'KeShift'],
+                                                                items: _shiftOptions
+                                                                        .isEmpty
+                                                                    ? []
+                                                                    : _shiftOptions
+                                                                        .map(
+                                                                            (shift) {
+                                                                        return DropdownMenuItem<
+                                                                            String>(
+                                                                          value:
+                                                                              shift,
+                                                                          child:
+                                                                              Text(
+                                                                            shift,
+                                                                            style:
+                                                                                GoogleFonts.poppins(),
+                                                                          ),
+                                                                        );
+                                                                      }).toList(),
+                                                                onChanged:
+                                                                    _shiftOptions
+                                                                            .isEmpty
+                                                                        ? null
+                                                                        : (value) {
+                                                                            setState(() {
+                                                                              employee2['KeShift'] = value;
+                                                                              if (value != null) {
+                                                                                employee1?['DariShift'] = value;
+                                                                                if (employee1?['KeShift'] == value) {
+                                                                                  employee1?['KeShift'] = employee2['DariShift'];
+                                                                                }
+                                                                              }
+                                                                            });
+                                                                          },
+                                                                decoration:
+                                                                    InputDecoration(
+                                                                  border:
+                                                                      OutlineInputBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
+                                                                  ),
+                                                                  contentPadding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          8),
+                                                                ),
+                                                                disabledHint:
+                                                                    Text(
+                                                                  'Tidak ada shift tersedia',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                          color:
+                                                                              Colors.grey),
+                                                                ),
+                                                                validator:
+                                                                    (value) {
+                                                                  if (value ==
+                                                                          null ||
+                                                                      value
+                                                                          .isEmpty) {
+                                                                    return 'Pilih Ke Shift';
+                                                                  }
+                                                                  return null;
+                                                                },
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
                                                     ],
-                                                  ],
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                          }),
+                                              );
+                                            },
+                                          ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            "Tanggal Shift",
+                                            'Tanggal Shift',
                                             style: GoogleFonts.poppins(
                                               fontSize: baseFontSize * 0.9,
                                               fontWeight: FontWeight.bold,
@@ -796,12 +1379,13 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                     ? 'Pilih tanggal'
                                                     : DateFormat('dd/MM/yyyy')
                                                         .format(_selectedDate!),
+                                                style: GoogleFonts.poppins(),
                                               ),
                                             ),
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            "Keterangan",
+                                            'Keterangan',
                                             style: GoogleFonts.poppins(
                                               fontSize: baseFontSize * 0.9,
                                               fontWeight: FontWeight.bold,
@@ -814,6 +1398,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                             decoration: InputDecoration(
                                               hintText:
                                                   'Masukkan alasan tukar shift',
+                                              hintStyle: GoogleFonts.poppins(),
                                               border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
@@ -823,6 +1408,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                       horizontal: 12,
                                                       vertical: 8),
                                             ),
+                                            style: GoogleFonts.poppins(),
                                             validator: (value) {
                                               if (value == null ||
                                                   value.isEmpty) {
@@ -835,7 +1421,8 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                           SizedBox(
                                             width: double.infinity,
                                             child: ElevatedButton(
-                                              onPressed: _isLoading
+                                              onPressed: (_isLoading ||
+                                                      _isLoadingShifts)
                                                   ? null
                                                   : _submitForm,
                                               style: ElevatedButton.styleFrom(
@@ -849,9 +1436,11 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                                     const EdgeInsets.symmetric(
                                                         vertical: 12),
                                               ),
-                                              child: _isLoading
+                                              child: _isLoading ||
+                                                      _isLoadingShifts
                                                   ? const CircularProgressIndicator(
-                                                      color: Colors.white)
+                                                      color: Colors.white,
+                                                    )
                                                   : Text(
                                                       'Kirim Pengajuan',
                                                       style:
@@ -888,8 +1477,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                             ScrollController();
                         return AlertDialog(
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                              borderRadius: BorderRadius.circular(16)),
                           contentPadding: const EdgeInsets.all(16.0),
                           content: SizedBox(
                             width: MediaQuery.of(context).size.width * 0.95,
@@ -904,12 +1492,12 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Frequently Asked Questions (FAQ)',
-                                      style: TextStyle(
+                                      style: GoogleFonts.poppins(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1572E8),
+                                        color: const Color(0xFF1572E8),
                                       ),
                                     ),
                                     const SizedBox(height: 16),
@@ -943,11 +1531,13 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 12),
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Tutup',
-                                  style: TextStyle(
+                                  style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -960,9 +1550,11 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                     );
                   },
                   icon: const Icon(Icons.help_outline, color: Colors.white),
-                  label: const Text(
-                    "FAQ",
-                    style: TextStyle(color: Colors.white),
+                  label: Text(
+                    'FAQ',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                    ),
                   ),
                   backgroundColor: Colors.blue,
                 ),
@@ -995,11 +1587,11 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            "Menu",
-                            style: TextStyle(
+                            'Menu',
+                            style: GoogleFonts.poppins(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
@@ -1009,67 +1601,70 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                         const Divider(color: Colors.grey),
                         _buildMenuItem(
                           icon: Icons.health_and_safety,
-                          title: "BPJS",
+                          title: 'BPJS',
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => const BPJSPage()),
+                                builder: (context) => const BPJSPage(),
+                              ),
                             );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
                           icon: Icons.badge,
-                          title: "ID & Slip Salary",
+                          title: 'ID & Slip Salary',
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      const IdCardUploadPage()),
+                                builder: (context) => const IdCardUploadPage(),
+                              ),
                             );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
                           icon: Icons.description,
-                          title: "SK Kerja & Medical",
+                          title: 'SK Kerja & Medical',
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => const SKKMedicPage()),
+                                builder: (context) => const SKKMedicPage(),
+                              ),
                             );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
                           icon: Icons.headset_mic,
-                          title: "HR Care",
+                          title: 'HR Care',
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => const HRCareMenuPage()),
+                                builder: (context) => const HRCareMenuPage(),
+                              ),
                             );
                           },
                         ),
                         SizedBox(height: paddingValue * 0.5),
                         _buildMenuItem(
                           icon: Icons.support_agent,
-                          title: "Layanan Karyawan",
+                          title: 'Layanan Karyawan',
                           color: Colors.blue,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      const LayananMenuPage()),
+                                builder: (context) => const LayananMenuPage(),
+                              ),
                             );
                           },
                         ),
@@ -1100,7 +1695,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         leading: Icon(icon, color: color),
         title: Text(
           title,
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             fontSize: 16,
             color: color,
@@ -1130,7 +1725,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
               children: [
                 Text(
                   question,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -1138,7 +1733,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
                 const SizedBox(height: 4),
                 Text(
                   answer,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 14,
                   ),
                 ),
