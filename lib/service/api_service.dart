@@ -37,16 +37,23 @@ class ApiService {
     Map<String, dynamic>? headers,
   }) async {
     final token = await getToken();
+    final isFormData = data is FormData;
+    final allHeaders = <String, dynamic>{
+      'accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      if (!isFormData) 'Content-Type': 'application/json',
+      ...?headers,
+    };
+    if (isFormData) {
+      allHeaders.remove('Content-Type');
+    }
+    print('Request $url');
+    print('Headers: $allHeaders');
+    print('Token: $token');
     return _dio.post(
       url,
       data: data,
-      options: Options(
-        headers: {
-          'accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-      ),
+      options: Options(headers: allHeaders),
     );
   }
 
@@ -88,5 +95,16 @@ class ApiService {
         },
       ),
     );
+  }
+
+  /// Mendapatkan headers dengan token
+  static Future<Map<String, String>> getHeaders({Map<String, String>? extra}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final headers = {
+      if (token != null) 'Authorization': 'Bearer $token',
+      ...?extra,
+    };
+    return headers;
   }
 }

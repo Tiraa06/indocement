@@ -8,6 +8,7 @@ import 'package:path/path.dart'; // Tambahkan ini untuk mendapatkan nama file ut
 import 'bpjs_upload_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:indocement_apk/service/api_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class BPJSKaryawanPage extends StatefulWidget {
   const BPJSKaryawanPage({super.key});
@@ -634,6 +635,15 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         ),
       ),
     );
+  }
+
+  Future<bool> _checkNetwork() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
+      return false;
+    }
+    return true;
   }
 
   @override

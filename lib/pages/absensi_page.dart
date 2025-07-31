@@ -5,6 +5,8 @@ import 'package:indocement_apk/pages/absensi_lapangan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:indocement_apk/service/api_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 // Import halaman AbsensiLapanganScreen
 
 class EventMenuPage extends StatefulWidget {
@@ -111,6 +113,15 @@ class _EventMenuPageState extends State<EventMenuPage> {
         _placeNames[index] = "-";
       });
     }
+  }
+
+  Future<bool> _checkNetwork() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
+      return false;
+    }
+    return true;
   }
 
   @override

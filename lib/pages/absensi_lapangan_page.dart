@@ -14,6 +14,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as imageLib;
 import 'package:geocoding/geocoding.dart';
 import 'package:indocement_apk/service/api_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class AbsensiLapanganScreen extends StatefulWidget {
   final double kantorLat;
@@ -590,6 +591,15 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
         ),
       ),
     );
+  }
+
+  Future<bool> _checkNetwork() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
+      return false;
+    }
+    return true;
   }
 
   @override

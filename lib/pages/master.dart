@@ -358,23 +358,13 @@ class _MasterScreenState extends State<MasterScreen>
   }
 
   Future<bool> _checkNetwork() async {
-    try {
-      var connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult.contains(ConnectivityResult.none)) {
-        print('No network connectivity');
-        return false;
-      }
-
-      final response = await ApiService.get(
-        'http://103.31.235.237:5555/api/Employees',
-        headers: {'Content-Type': 'application/json'},
-      );
-      print('Network check response: ${response.statusCode}');
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Network check failed: $e');
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
       return false;
     }
+    // Jangan cek ke API yang butuh token di sini!
+    return true;
   }
 
   void _showLoading(BuildContext context) {
@@ -703,23 +693,13 @@ class _MasterContentState extends State<MasterContent> {
   }
 
   Future<bool> _checkNetwork() async {
-    try {
-      var connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult.contains(ConnectivityResult.none)) {
-        print('No network connectivity');
-        return false;
-      }
-
-      final response = await ApiService.get(
-        'http://103.31.235.237:5555/api/Employees',
-        headers: {'Content-Type': 'application/json'},
-      );
-      print('Network check response: ${response.statusCode}');
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Network check failed: $e');
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
       return false;
     }
+    // Jangan cek ke API yang butuh token di sini!
+    return true;
   }
 
   void _showLoading(BuildContext context) {

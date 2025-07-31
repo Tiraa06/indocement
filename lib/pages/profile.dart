@@ -7,7 +7,7 @@ import 'dart:convert';
 
 import 'package:indocement_apk/pages/edit_profile.dart';
 import 'package:indocement_apk/pages/faq.dart';
-import 'package:indocement_apk/utils/network_helper.dart'; // Tambahkan import ini
+import 'package:indocement_apk/service/api_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -66,20 +66,12 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     try {
-      final response = await safeRequest(
-        context,
-        () => http.get(
-          Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
-          headers: {'Content-Type': 'application/json'},
-        ),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$employeeId',
+        headers: {'Content-Type': 'application/json'},
       );
-      if (response == null) return; // Sudah redirect ke error
-
-      print('Fetch Employee Status: ${response.statusCode}');
-      print('Fetch Employee Body: ${response.body}');
-
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is String ? jsonDecode(response.data) : response.data;
         print('Employee Data Keys: ${data.keys}');
         setState(() {
           _employeeName = data['EmployeeName']?.isNotEmpty == true
@@ -104,7 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Validasi apakah URL gambar dapat dimuat
         if (_urlFoto != null) {
-          final imageResponse = await http.head(Uri.parse(_urlFoto!));
+          final imageResponse = await ApiService.get(_urlFoto!);
           if (imageResponse.statusCode != 200) {
             print('Image URL is invalid or not accessible: $_urlFoto');
             setState(() {

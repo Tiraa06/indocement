@@ -10,6 +10,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:indocement_apk/pages/register.dart';
 import 'package:indocement_apk/pages/forgot.dart';
 import 'package:indocement_apk/pages/master.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -113,23 +114,12 @@ class _LoginState extends State<Login> {
   }
 
   Future<bool> _checkNetwork() async {
-    try {
-      var connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult.contains(ConnectivityResult.none)) {
-        print('No network connectivity');
-        return false;
-      }
-
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 3));
-      print('Network check response: ${response.statusCode}');
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Network check failed: $e');
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
       return false;
     }
+    return true;
   }
 
   Future<Map<String, dynamic>?> _fetchIdEmployee(String email) async {
@@ -209,14 +199,14 @@ class _LoginState extends State<Login> {
 
       _showLoading(context);
 
-      final response = await http.post(
-        Uri.parse('http://103.31.235.237:5555/api/User/login'),
-        body: json.encode({
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/User/login',
+        data: json.encode({
           'email': email,
           'password': password,
         }),
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       Navigator.pop(context); // Close loading dialog
 
@@ -225,11 +215,19 @@ class _LoginState extends State<Login> {
             'password': password
           })}');
       print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      print('Response Body: ${response.data}');
 
       if (response.statusCode == 200) {
-        final user = json.decode(response.body);
+        final user = response.data is String ? json.decode(response.data) : response.data;
         print('Parsed User: $user');
+
+        // Simpan token jika ada
+        final token = user['Token'] ?? user['token'];
+        if (token != null) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
+          print('Token saved: $token');
+        }
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
           // Check account status
@@ -331,11 +329,11 @@ class _LoginState extends State<Login> {
       } else {
         String errorMessage = 'Akun tidak valid';
         try {
-          final responseBody = json.decode(response.body);
+          final responseBody = response.data is String ? json.decode(response.data) : response.data;
           errorMessage = responseBody['message'] ?? errorMessage;
         } catch (e) {
           errorMessage =
-              response.body.isNotEmpty ? response.body : errorMessage;
+              response.data != null && response.data.toString().isNotEmpty ? response.data.toString() : errorMessage;
         }
         if (mounted) {
           _showErrorModal(errorMessage);

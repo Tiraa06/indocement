@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart';
 import 'package:indocement_apk/service/api_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class BeasiswaPage extends StatefulWidget {
   const BeasiswaPage({super.key});
@@ -477,6 +478,15 @@ void _showLoading(BuildContext context) {
         ),
       );
     }
+  }
+
+  Future<bool> _checkNetwork() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
+      return false;
+    }
+    return true;
   }
 
   @override
