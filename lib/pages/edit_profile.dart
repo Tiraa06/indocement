@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String employeeName;
@@ -260,13 +261,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
     await _fetchVerifData();
 
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$employeeId',
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       if (response.statusCode == 200) {
-        final employee = jsonDecode(response.body);
+        // Perbaikan parsing response
+        final employee = response.data is String
+            ? jsonDecode(response.data)
+            : response.data;
+
         final idSection = employee['IdSection'] != null
             ? int.tryParse(employee['IdSection'].toString())
             : null;

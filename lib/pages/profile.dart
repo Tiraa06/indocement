@@ -71,7 +71,8 @@ class _ProfilePageState extends State<ProfilePage> {
         headers: {'Content-Type': 'application/json'},
       );
       if (response.statusCode == 200) {
-        final data = response.data is String ? jsonDecode(response.data) : response.data;
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         print('Employee Data Keys: ${data.keys}');
         setState(() {
           _employeeName = data['EmployeeName']?.isNotEmpty == true
@@ -181,7 +182,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 16),
               Text(
-                _employeeName.isNotEmpty ? _employeeName : "Nama Tidak Tersedia",
+                _employeeName.isNotEmpty
+                    ? _employeeName
+                    : "Nama Tidak Tersedia",
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -243,7 +246,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _employeeName, _jobTitle, _urlFoto, _employeeId);
                   }
                 },
-              ),              
+              ),
               MenuItem(
                 icon: 'assets/icons/setting.svg',
                 title: 'Pengaturan',

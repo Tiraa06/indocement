@@ -49,7 +49,6 @@ class ApiService {
     }
     print('Request $url');
     print('Headers: $allHeaders');
-    print('Token: $token');
     return _dio.post(
       url,
       data: data,
@@ -98,7 +97,8 @@ class ApiService {
   }
 
   /// Mendapatkan headers dengan token
-  static Future<Map<String, String>> getHeaders({Map<String, String>? extra}) async {
+  static Future<Map<String, String>> getHeaders(
+      {Map<String, String>? extra}) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final headers = {

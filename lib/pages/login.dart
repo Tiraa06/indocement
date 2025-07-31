@@ -218,16 +218,17 @@ class _LoginState extends State<Login> {
       print('Response Body: ${response.data}');
 
       if (response.statusCode == 200) {
-        final user = response.data is String ? json.decode(response.data) : response.data;
+        final user = response.data is String
+            ? json.decode(response.data)
+            : response.data;
         print('Parsed User: $user');
 
         // Simpan token jika ada
-        final token = user['Token'] ?? user['token'];
-        if (token != null) {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', token);
-          print('Token saved: $token');
-        }
+        final token = user['token'];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        print('Saved token: $token');
+        print('Token in prefs: ${prefs.getString('token')}'); // <-- Added line
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
           // Check account status
@@ -287,16 +288,13 @@ class _LoginState extends State<Login> {
 
           await prefs.setInt('id', user['Id'] as int);
           await prefs.setInt('idEmployee', idEmployee);
-          await prefs.setString('email', user['Email'] ?? email);
           await prefs.setString('employeeName',
               user['employeeName'] ?? employeeData['employeeName'] ?? '');
           await prefs.setString(
               'jobTitle', user['Role'] ?? employeeData['jobTitle'] ?? '');
           await prefs.setString(
               'telepon', user['telepon'] ?? employeeData['telepon'] ?? '');
-          await prefs.setString('livingArea', employeeData['livingArea'] ?? '');
-          await prefs.setString('employeeNo',
-              user['employeeNo'] ?? employeeData['employeeNo'] ?? '');
+          await prefs.setString('email', user['Email'] ?? email);
 
           if (employeeData['urlFoto'] != null) {
             await prefs.setString('urlFoto', employeeData['urlFoto']);
@@ -329,11 +327,15 @@ class _LoginState extends State<Login> {
       } else {
         String errorMessage = 'Akun tidak valid';
         try {
-          final responseBody = response.data is String ? json.decode(response.data) : response.data;
+          final responseBody = response.data is String
+              ? json.decode(response.data)
+              : response.data;
           errorMessage = responseBody['message'] ?? errorMessage;
         } catch (e) {
           errorMessage =
-              response.data != null && response.data.toString().isNotEmpty ? response.data.toString() : errorMessage;
+              response.data != null && response.data.toString().isNotEmpty
+                  ? response.data.toString()
+                  : errorMessage;
         }
         if (mounted) {
           _showErrorModal(errorMessage);

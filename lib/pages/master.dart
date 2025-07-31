@@ -227,7 +227,8 @@ class _MasterScreenState extends State<MasterScreen>
       );
 
       if (response.statusCode == 200) {
-        final data = response.data is String ? jsonDecode(response.data) : response.data;
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         final approvedRequests =
             data.cast<Map<String, dynamic>>().where((verif) {
           final matches =
@@ -479,7 +480,8 @@ class _MasterScreenState extends State<MasterScreen>
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           contentPadding: const EdgeInsets.all(20),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -506,12 +508,15 @@ class _MasterScreenState extends State<MasterScreen>
                 icon: const Icon(Icons.settings, color: Colors.white),
                 label: const Text(
                   "Aktifkan Izin",
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1572E8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                 ),
                 onPressed: () async {
                   Navigator.of(ctx).pop();
@@ -803,7 +808,8 @@ class _MasterContentState extends State<MasterContent> {
       _closeLoadingDialog();
 
       if (response.statusCode == 200) {
-        final data = response.data is String ? jsonDecode(response.data) : response.data;
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         setState(() {
           if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
             if (data['UrlFoto'].startsWith('/')) {
@@ -865,7 +871,8 @@ class _MasterContentState extends State<MasterContent> {
       _closeLoadingDialog();
 
       if (response.statusCode == 200) {
-        final data = response.data is String ? jsonDecode(response.data) : response.data;
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         setState(() {
           _employeeName = data['EmployeeName'] ?? "Nama Tidak Tersedia";
           _jobTitle = data['JobTitle'] ?? "Departemen Tidak Tersedia";
