@@ -14,6 +14,7 @@ import 'package:indocement_apk/pages/error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -77,6 +78,7 @@ class _MasterScreenState extends State<MasterScreen>
       curve: Curves.easeOut,
       reverseCurve: Curves.easeIn,
     );
+    _checkAndRequestAllPermissions();
     _loadEmployeeId();
     // Hapus: _checkProfileAndShowModal();
   }
@@ -448,6 +450,98 @@ class _MasterScreenState extends State<MasterScreen>
       _selectedIndex = index;
     });
     _animationController.forward().then((_) => _animationController.reverse());
+  }
+
+  Future<void> _checkAndRequestAllPermissions() async {
+    // Daftar permission yang umum untuk aplikasi HR/employee
+    final permissions = [
+      Permission.camera,
+      Permission.storage,
+      Permission.photos,
+      Permission.mediaLibrary,
+      Permission.microphone,
+      Permission.location,
+      Permission.notification,
+      Permission.contacts,
+      Permission.sms,
+      Permission.calendar,
+      Permission.sensors,
+      Permission.bluetooth,
+      Permission.accessMediaLocation,
+      Permission.manageExternalStorage,
+      Permission.activityRecognition,
+      Permission.ignoreBatteryOptimizations,
+      Permission.appTrackingTransparency,
+      Permission.accessNotificationPolicy,
+    ];
+
+    List<Permission> notGranted = [];
+    for (final perm in permissions) {
+      if (await perm.status != PermissionStatus.granted) {
+        notGranted.add(perm);
+      }
+    }
+
+    if (notGranted.isNotEmpty && mounted) {
+      // Tampilkan dialog permintaan izin
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: const EdgeInsets.all(20),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.privacy_tip, color: Colors.orange, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                "Izin Aplikasi Diperlukan",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Agar aplikasi berjalan optimal, mohon aktifkan semua izin yang diperlukan.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.settings, color: Colors.white),
+                label: const Text(
+                  "Aktifkan Izin",
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1572E8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                ),
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  // Request semua izin yang belum aktif
+                  for (final perm in notGranted) {
+                    await perm.request();
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text("Lewati"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   @override
