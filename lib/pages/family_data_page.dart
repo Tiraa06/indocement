@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class FamilyDataPage extends StatefulWidget {
   const FamilyDataPage({super.key});
@@ -49,19 +50,19 @@ class _FamilyDataPageState extends State<FamilyDataPage> {
   Future<void> _fetchFamilyData() async {
     try {
       final stopwatch = Stopwatch()..start();
-      final response = await http.get(
-        Uri.parse(
-            'http://103.31.237.5555/api/FamilyEmployees?IdEmployee=$_employeeId'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/FamilyEmployees',
+        params: {'IdEmployee': _employeeId},
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       stopwatch.stop();
       print('Fetch Family Data took ${stopwatch.elapsedMilliseconds}ms');
       print('Fetch Family Data Status: ${response.statusCode}');
-      print('Fetch Family Data Body: ${response.body}');
+      print('Fetch Family Data Body: ${response.data}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is String ? jsonDecode(response.data) : response.data;
         List<dynamic> familyData = [];
 
         // Handle different response formats

@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class MasterScreen extends StatefulWidget {
   const MasterScreen({super.key});
@@ -219,14 +220,14 @@ class _MasterScreenState extends State<MasterScreen>
     });
 
     try {
-      final response = await http.get(
-        Uri.parse(
-            'http://103.31.235.237:5555/api/VerifData/requests?employeeId=$_employeeId'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/VerifData/requests',
+        params: {'employeeId': _employeeId},
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
+        final data = response.data is String ? jsonDecode(response.data) : response.data;
         final approvedRequests =
             data.cast<Map<String, dynamic>>().where((verif) {
           final matches =
@@ -364,10 +365,10 @@ class _MasterScreenState extends State<MasterScreen>
         return false;
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees',
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 3));
+      );
       print('Network check response: ${response.statusCode}');
       return response.statusCode == 200;
     } catch (e) {
@@ -709,10 +710,10 @@ class _MasterContentState extends State<MasterContent> {
         return false;
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees',
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 3));
+      );
       print('Network check response: ${response.statusCode}');
       return response.statusCode == 200;
     } catch (e) {
@@ -814,15 +815,15 @@ class _MasterContentState extends State<MasterContent> {
         return;
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$employeeId',
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       _closeLoadingDialog();
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is String ? jsonDecode(response.data) : response.data;
         setState(() {
           if (data['UrlFoto'] != null && data['UrlFoto'].isNotEmpty) {
             if (data['UrlFoto'].startsWith('/')) {
@@ -876,15 +877,15 @@ class _MasterContentState extends State<MasterContent> {
         return;
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$employeeId'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$employeeId',
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       _closeLoadingDialog();
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is String ? jsonDecode(response.data) : response.data;
         setState(() {
           _employeeName = data['EmployeeName'] ?? "Nama Tidak Tersedia";
           _jobTitle = data['JobTitle'] ?? "Departemen Tidak Tersedia";

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 int? _lastKnownId; // Simpan ID terakhir yang sudah dikirim notif
 
@@ -77,10 +78,11 @@ Future<void> uploadBpjsDocumentAsPdf({
   }
 }
 
+// Contoh refactor uploadBpjsDocumentCompressed agar pakai ApiService (token otomatis)
 Future<void> uploadBpjsDocumentCompressed({
   required int idEmployee,
   required String anggotaBpjs,
-  required String fieldName, // contoh: urlKk atau urlSuratNikah
+  required String fieldName,
   required File file,
 }) async {
   try {
@@ -88,33 +90,31 @@ Future<void> uploadBpjsDocumentCompressed({
     final compressedImage = await _compressImage(file);
     final compressedFile = File(compressedImage.path);
 
-    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload');
-    var request = http.MultipartRequest('POST', uri);
-    request.fields['idEmployee'] = idEmployee.toString();
-    request.fields['anggotaBpjs'] = anggotaBpjs;
-    request.fields['fieldName'] = fieldName;
+    final formData = FormData.fromMap({
+      'idEmployee': idEmployee.toString(),
+      'anggotaBpjs': anggotaBpjs,
+      'fieldName': fieldName,
+      'Files': await MultipartFile.fromFile(compressedFile.path, filename: basename(compressedFile.path)),
+      'FileTypes': fieldName,
+    });
 
-    // Kirim file gambar langsung (bukan PDF)
-    request.files
-        .add(await http.MultipartFile.fromPath('Files', compressedFile.path));
-    request.fields['FileTypes'] = fieldName;
+    final response = await ApiService.post(
+      'http://103.31.235.237:5555/api/Bpjs/upload',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    );
 
-    print("Fields: ${request.fields}");
-    print("Files: ${request.files.map((f) => f.filename).toList()}");
-
-    var response = await request.send();
-
-    final responseBody = await response.stream.bytesToString();
     if (response.statusCode == 200) {
       print("✅ Upload berhasil!");
-
       // Ambil ID BPJS terbaru untuk idSource
-      final bpjsResp = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Bpjs?idEmployee=$idEmployee'),
+      final bpjsResp = await ApiService.get(
+        'http://103.31.235.237:5555/api/Bpjs',
+        params: {'idEmployee': idEmployee},
       );
       if (bpjsResp.statusCode == 200) {
-        final List<dynamic> bpjsData = jsonDecode(bpjsResp.body);
-        // Cari entry terbaru berdasarkan anggotaBpjs dan fieldName (jika perlu)
+        final List<dynamic> bpjsData = bpjsResp.data;
         final matchingEntry = bpjsData.lastWhere(
           (item) =>
               item['IdEmployee'] == idEmployee &&
@@ -131,8 +131,8 @@ Future<void> uploadBpjsDocumentCompressed({
       }
     } else {
       print("❌ Gagal upload: ${response.statusCode}");
-      print("Respons: $responseBody");
-      throw Exception("Gagal upload: $responseBody");
+      print("Respons: ${response.data}");
+      throw Exception("Gagal upload: ${response.data}");
     }
   } catch (e) {
     print("❌ Terjadi kesalahan: $e");
@@ -203,12 +203,13 @@ Future<void> uploadBpjsDocuments({
 }) async {
   try {
     // Ambil data dari API untuk mendapatkan ID yang sesuai
-    final response = await http.get(
-      Uri.parse('http://103.31.235.237:5555/api/Bpjs?idEmployee=$idEmployee'),
+    final response = await ApiService.get(
+      'http://103.31.235.237:5555/api/Bpjs',
+      params: {'idEmployee': idEmployee},
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final List<dynamic> data = response.data;
 
       // Cari ID yang sesuai dengan AnggotaBpjs dan AnakKe (jika ada)
       final matchingEntry = data.firstWhere(
@@ -227,40 +228,40 @@ Future<void> uploadBpjsDocuments({
       final matchingId = matchingEntry['Id']; // Ambil ID yang sesuai
 
       // Siapkan data untuk dikirim ke API
-      var request = http.MultipartRequest(
-        'PUT',
-        Uri.parse('http://103.31.235.237:5555/api/Bpjs/upload/$matchingId'),
-      );
-
-      // Tambahkan dokumen ke request
+      final formData = FormData();
       for (var doc in documents) {
-        request.files.add(await http.MultipartFile.fromPath(
+        formData.files.add(MapEntry(
           doc['fieldName'],
-          (doc['file'] as File).path,
+          await MultipartFile.fromFile(
+            (doc['file'] as File).path,
+            filename: basename((doc['file'] as File).path),
+          ),
         ));
       }
-
-      // Tambahkan field tambahan
-      request.fields['idEmployee'] = idEmployee.toString();
-      request.fields['anggotaBpjs'] = anggotaBpjs;
+      formData.fields.add(MapEntry('idEmployee', idEmployee.toString()));
+      formData.fields.add(MapEntry('anggotaBpjs', anggotaBpjs));
       if (anakKe != null) {
-        request.fields['anakKe'] = anakKe;
+        formData.fields.add(MapEntry('anakKe', anakKe));
       }
 
-      // Kirim data ke API
-      final uploadResponse = await request.send();
+      // Kirim data ke API dengan endpoint dinamis
+      final uploadResponse = await ApiService.put(
+        'http://103.31.235.237:5555/api/Bpjs/upload/$matchingId',
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      );
 
       if (uploadResponse.statusCode == 200) {
         print("✅ Dokumen berhasil diunggah ke ID $matchingId");
-        // Kirim notifikasi setelah upload berhasil
         await sendBpjsNotification(
           idEmployee: idEmployee,
           idSource: matchingId,
         );
       } else {
-        final responseBody = await uploadResponse.stream.bytesToString();
         throw Exception(
-            "Gagal upload: ${uploadResponse.statusCode}, Respons: $responseBody");
+            "Gagal upload: ${uploadResponse.statusCode}, Respons: ${uploadResponse.data}");
       }
     } else {
       throw Exception('Gagal memuat data dari API: ${response.statusCode}');

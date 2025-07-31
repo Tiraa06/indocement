@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class BeasiswaPage extends StatefulWidget {
   const BeasiswaPage({super.key});
@@ -82,35 +83,39 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
 
       _showLoading(this.context);
 
-      // Fetch employee data
-      final employeeResponse = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
+      // Fetch employee data pakai ApiService
+      final employeeResponse = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      );
 
       print('Employee API Response Status: ${employeeResponse.statusCode}');
-      print('Employee API Response Body: ${employeeResponse.body}');
+      print('Employee API Response Body: ${employeeResponse.data}');
 
       if (employeeResponse.statusCode == 200) {
-        _employeeData = jsonDecode(employeeResponse.body);
+        _employeeData = employeeResponse.data is String
+            ? jsonDecode(employeeResponse.data)
+            : employeeResponse.data;
         final idSection = _employeeData['IdSection'] != null
             ? int.tryParse(_employeeData['IdSection'].toString())
             : null;
         print('IdSection: $idSection');
 
-        // Fetch unit data
-        final unitResponse = await http.get(
-          Uri.parse('http://103.31.235.237:5555/api/Units'),
+        // Fetch unit data pakai ApiService
+        final unitResponse = await ApiService.get(
+          'http://103.31.235.237:5555/api/Units',
           headers: {'Content-Type': 'application/json'},
-        ).timeout(const Duration(seconds: 10));
+        );
 
         print('Units API Response Status: ${unitResponse.statusCode}');
-        print('Units API Response Body: ${unitResponse.body}');
+        print('Units API Response Body: ${unitResponse.data}');
 
         Navigator.pop(this.context); // Close loading dialog
 
         if (unitResponse.statusCode == 200) {
-          final units = jsonDecode(unitResponse.body) as List;
+          final units = unitResponse.data is String
+              ? jsonDecode(unitResponse.data)
+              : unitResponse.data as List;
           String namaUnit = '';
           String namaPlantDivision = '';
           String namaDepartement = '';
@@ -416,17 +421,17 @@ void _showLoading(BuildContext context) {
 
         _showLoading(this.context);
 
-        final response = await http.post(
-          Uri.parse('http://103.31.235.237:5555/api/Beasiswa'),
+        final response = await ApiService.post(
+          'http://103.31.235.237:5555/api/Beasiswa',
+          data: jsonEncode(data),
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode(data),
-        ).timeout(const Duration(seconds: 15));
+        );
 
         print('Beasiswa API Response Status: ${response.statusCode}');
-        print('Beasiswa API Response Body: ${response.body}');
+        print('Beasiswa API Response Body: ${response.data}');
 
         Navigator.pop(this.context); // Close loading dialog
 
@@ -443,7 +448,7 @@ void _showLoading(BuildContext context) {
         } else {
           print('Failed to submit beasiswa: ${response.statusCode}');
           throw Exception(
-              'Gagal mengirim data: ${response.statusCode} - ${response.body}');
+              'Gagal mengirim data: ${response.statusCode} - ${response.data}');
         }
       } catch (e) {
         print('Error submitting beasiswa: $e');

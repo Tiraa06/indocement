@@ -4,6 +4,7 @@ import 'bpjs_karyawan.dart'; // Import the BPJSKaryawanPage
 import 'bpjs_tambahan.dart'; // Import the BPJSTambahanPage
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:indocement_apk/service/api_service.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -374,11 +375,11 @@ class _MenuPageState extends State<MenuPage>
 
 Future<bool> checkBpjsData(int idEmployee) async {
   try {
-    final uri = Uri.parse('http://103.31.235.237:5555/api/Bpjs/$idEmployee');
-    final response = await http.get(uri);
-
+    final response = await ApiService.get('http://103.31.235.237:5555/api/Bpjs/$idEmployee');
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      final data = response.data is String
+          ? jsonDecode(response.data)
+          : response.data;
 
       // Periksa apakah UrlKk dan UrlSuratNikah sudah ada
       if (data['UrlKk'] != null && data['UrlSuratNikah'] != null) {

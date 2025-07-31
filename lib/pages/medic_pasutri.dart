@@ -9,6 +9,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 // Tambahkan di bagian import jika belum
 import 'package:file_picker/file_picker.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class MedicPasutriPage extends StatefulWidget {
   const MedicPasutriPage({super.key});
@@ -73,13 +74,23 @@ class _MedicPasutriPageState extends State<MedicPasutriPage> {
         },
       );
 
-      final url =
-          'http://103.31.235.237:5555/api/Medical/generate-medical-document/$idEmployee';
+final url = 'http://103.31.235.237:5555/api/Medical/generate-medical-document/$idEmployee';
 
-      final response = await dio.post(
-        url,
-        options: Options(responseType: ResponseType.bytes),
-      );
+// Define the data to be sent in the request body
+final Map<String, dynamic> data = {
+  "idEmployee": idEmployee,
+  // Add other required fields here if needed
+};
+
+final response = await ApiService.post(
+  url,
+  data: data,
+  headers: {
+    'accept': '*/*',
+    'Content-Type': 'application/json',
+    // Tidak perlu responseType, ApiService akan handle response.data
+  },
+);
 
       Navigator.of(this.context).pop(); // Tutup popup setelah selesai
 
@@ -219,7 +230,6 @@ Future<void> uploadSuratMedic(String jenisSurat) async {
     if (idEmployee == null) {
       throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
     }
-    final dio = Dio();
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(
         uploadedFile!.path,
@@ -228,15 +238,12 @@ Future<void> uploadSuratMedic(String jenisSurat) async {
       'idEmployee': idEmployee,
       'jenisSurat': jenisSurat,
     });
-    final response = await dio.post(
+    final response = await ApiService.post(
       'http://103.31.235.237:5555/api/Medical/upload',
       data: formData,
-      options: Options(
-        headers: {
-          'accept': '*/*',
-          'Content-Type': 'multipart/form-data',
-        },
-      ),
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     );
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(this.context).showSnackBar(
@@ -281,9 +288,10 @@ Future<void> uploadSuratMedic(String jenisSurat) async {
   Future<void> fetchAndSaveIdEmployee() async {
     try {
       // Panggil API untuk mendapatkan idEmployee
-      final response = await Dio().get(
-        'http://103.31.235.237:5555/api/Employee/get-id', // Ganti dengan endpoint API yang sesuai
-      );
+final response = await ApiService.get(
+  'http://103.31.235.237:5555/api/Employees/get-id',
+  headers: {'accept': 'application/json'},
+);
 
       print('Response data: ${response.data}');
 
@@ -319,9 +327,10 @@ Future<void> uploadSuratMedic(String jenisSurat) async {
   Future<void> fetchAndSaveIdEmployeeFromMedical() async {
     try {
       // Panggil API untuk mendapatkan data Medical
-      final response = await Dio().get(
-        'http://103.31.235.237:5555/api/Medical',
-      );
+      final response = await ApiService.get(
+  'http://103.31.235.237:5555/api/Medical',
+  headers: {'accept': 'application/json'},
+);
 
       if (response.statusCode == 200) {
         // Periksa apakah respons adalah array
@@ -365,10 +374,10 @@ Future<void> uploadSuratMedic(String jenisSurat) async {
       if (idEmployee == null) return;
 
       // Ambil semua data employee
-      final response = await Dio().get(
-        'http://103.31.235.237:5555/api/Employees',
-        options: Options(headers: {'accept': 'text/plain'}),
-      );
+      final response = await ApiService.get(
+  'http://103.31.235.237:5555/api/Employees/',
+  headers: {'accept': 'application/json'},
+);
 
       if (response.statusCode == 200 && response.data is List) {
         final List employees = response.data;
@@ -415,10 +424,10 @@ Future<void> uploadSuratMedic(String jenisSurat) async {
       final idEmployee = prefs.getInt('idEmployee');
       if (idEmployee == null) return;
 
-      final response = await Dio().get(
-        'http://103.31.235.237:5555/api/Employees/$idEmployee',
-        options: Options(headers: {'accept': 'text/plain'}),
-      );
+final response = await ApiService.get(
+  'http://103.31.235.237:5555/api/Employees/$idEmployee',
+  headers: {'accept': 'application/json'},
+);
 
       if (response.statusCode == 200 && response.data != null) {
         final List familyEmployees = response.data['FamilyEmployees'] ?? [];
@@ -2438,93 +2447,89 @@ Card(
               ),
               elevation: 2,
             ),
-            onPressed: isUploading
-                ? null
-                : () async {
-                    if (uploadedFile == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Silakan pilih file terlebih dahulu')),
-                      );
-                      return;
-                    }
-                    if (selectedJenisSuratUpload == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pilih jenis surat terlebih dahulu')),
-                      );
-                      return;
-                    }
-                    setState(() {
-                      isUploading = true;
-                    });
-                    try {
-                      final idEmployee = await getIdEmployee();
-                      if (idEmployee == null) {
-                        throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
-                      }
-                      final dio = Dio();
-                      final formData = FormData.fromMap({
-                        'file': await MultipartFile.fromFile(
-                          uploadedFile!.path,
-                          filename: basename(uploadedFile!.path),
-                        ),
-                        'idEmployee': idEmployee,
-                        'jenisSurat': selectedJenisSuratUpload,
-                      });
-                      final response = await dio.post(
-                        'http://103.31.235.237:5555/api/Medical/upload',
-                        data: formData,
-                        options: Options(
-                          headers: {
-                            'accept': '*/*',
-                            'Content-Type': 'multipart/form-data',
-                          },
-                        ),
-                      );
-                      if (response.statusCode == 200) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            title: Column(
-                              children: const [
-                                Icon(Icons.check_circle, color: Colors.green, size: 48),
-                                SizedBox(height: 8),
-                                Text('Upload Berhasil'),
-                              ],
-                            ),
-                            content: const Text(
-                              'File berhasil diupload!',
-                              textAlign: TextAlign.center,
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
-                        setState(() {
-                          uploadedFile = null;
-                          selectedJenisSuratUpload = null;
-                        });
-                      } else {
-                        throw Exception('Gagal mengunggah file: ${response.statusCode}');
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Gagal upload file: $e')),
-                      );
-                    } finally {
-                      setState(() {
-                        isUploading = false;
-                      });
-                    }
-                  },
+onPressed: isUploading
+    ? null
+    : () async {
+        if (uploadedFile == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Silakan pilih file terlebih dahulu')),
+          );
+          return;
+        }
+        if (selectedJenisSuratUpload == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pilih jenis surat terlebih dahulu')),
+          );
+          return;
+        }
+        setState(() {
+          isUploading = true;
+        });
+        try {
+          final idEmployee = await getIdEmployee();
+          if (idEmployee == null) {
+            throw Exception('ID Employee tidak ditemukan. Harap login ulang.');
+          }
+          final formData = FormData.fromMap({
+            'file': await MultipartFile.fromFile(
+              uploadedFile!.path,
+              filename: basename(uploadedFile!.path),
+            ),
+            'idEmployee': idEmployee,
+            'jenisSurat': selectedJenisSuratUpload,
+          });
+          final response = await ApiService.post(
+            'http://103.31.235.237:5555/api/Medical/upload',
+            data: formData,
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          );
+          if (response.statusCode == 200) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                title: Column(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.green, size: 48),
+                    SizedBox(height: 8),
+                    Text('Upload Berhasil'),
+                  ],
+                ),
+                content: const Text(
+                  'File berhasil diupload!',
+                  textAlign: TextAlign.center,
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            setState(() {
+              uploadedFile = null;
+              selectedJenisSuratUpload = null;
+            });
+          } else {
+            throw Exception('Gagal mengunggah file: ${response.statusCode}');
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal upload file: $e')),
+          );
+        } finally {
+          setState(() {
+            isUploading = false;
+          });
+        }
+      },
           ),
         ),
       ],

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:indocement_apk/service/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,19 +40,26 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
 
   Future<void> _fetchLowongan() async {
     setState(() => _isLoading = true);
-    final response = await http.get(
-      Uri.parse('http://103.31.235.237:5555/api/Recruitment/lowongan'),
-      headers: {'accept': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        _lowongan = json.decode(response.body);
-        _isLoading = false;
-      });
-    } else {
+    try {
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Recruitment/lowongan',
+        headers: {'accept': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          _lowongan = response.data is String ? json.decode(response.data) : response.data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat lowongan')),
+        );
+      }
+    } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat lowongan')),
+        SnackBar(content: Text('Gagal memuat lowongan: $e')),
       );
     }
   }
@@ -157,28 +165,35 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
     }
 
     final l = formData['Lowongan'];
-    final response = await http.post(
-      Uri.parse('http://103.31.235.237:5555/api/Recruitment/form-pendaftaran'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "IdLowongan": l['Id'],
-        "IdEmployee": idEmployee,
-        "NamaLengkap": formData['NamaLengkap'],
-        "PlantAsal": formData['PlantAsal'],
-        "DivisiAsal": formData['DivisiAsal'],
-        "AlasanPindah": formData['AlasanPindah'],
-        "SuratIjinAtasanUrl": formData['SuratIzinAtasan'] ?? "",
-        "TanggalDaftar": formData['TanggalDaftar'],
-      }),
-    );
-    Navigator.pop(context); // Tutup loading
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      _showSuccessModal(context);
-      _fetchPengumuman();
-      _fetchJadwalWawancara();
-    } else {
+    try {
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/Recruitment/form-pendaftaran',
+        data: jsonEncode({
+          "IdLowongan": l['Id'],
+          "IdEmployee": idEmployee,
+          "NamaLengkap": formData['NamaLengkap'],
+          "PlantAsal": formData['PlantAsal'],
+          "DivisiAsal": formData['DivisiAsal'],
+          "AlasanPindah": formData['AlasanPindah'],
+          "SuratIjinAtasanUrl": formData['SuratIzinAtasan'] ?? "",
+          "TanggalDaftar": formData['TanggalDaftar'],
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+      Navigator.pop(context); // Tutup loading
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSuccessModal(context);
+        _fetchPengumuman();
+        _fetchJadwalWawancara();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal daftar: ${response.data}')),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal daftar: ${response.body}')),
+        SnackBar(content: Text('Gagal daftar: $e')),
       );
     }
   }
@@ -188,34 +203,36 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
     final idEmployee = prefs.getInt('idEmployee');
     if (idEmployee == null) return;
 
-    final response = await http.get(
-      Uri.parse('http://103.31.235.237:5555/api/Recruitment/pengumuman-seleksi'),
-      headers: {'accept': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
-      setState(() {
-        if (decoded is List && decoded.isNotEmpty) {
-          // Cari pengumuman dengan IdEmployee yang sama di FormPendaftaran
-          final pengumumanUser = decoded.firstWhere(
-            (item) =>
-              item['FormPendaftaran'] != null &&
-              item['FormPendaftaran']['IdEmployee'] == idEmployee,
-            orElse: () => null,
-          );
-          if (pengumumanUser != null) {
-            // Tampilkan status lolos, catatan, dan tanggal pengumuman
-            _pengumuman =
-              "Status: ${pengumumanUser['StatusLolos'] ?? '-'}\n"
-              "Catatan: ${pengumumanUser['Catatan'] ?? '-'}\n"
-              "Tanggal: ${pengumumanUser['TanggalPengumuman'] ?? '-'}";
+    try {
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Recruitment/pengumuman-seleksi',
+        headers: {'accept': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final decoded = response.data is String ? json.decode(response.data) : response.data;
+        setState(() {
+          if (decoded is List && decoded.isNotEmpty) {
+            final pengumumanUser = decoded.firstWhere(
+              (item) =>
+                  item['FormPendaftaran'] != null &&
+                  item['FormPendaftaran']['IdEmployee'] == idEmployee,
+              orElse: () => null,
+            );
+            if (pengumumanUser != null) {
+              _pengumuman =
+                  "Status: ${pengumumanUser['StatusLolos'] ?? '-'}\n"
+                  "Catatan: ${pengumumanUser['Catatan'] ?? '-'}\n"
+                  "Tanggal: ${pengumumanUser['TanggalPengumuman'] ?? '-'}";
+            } else {
+              _pengumuman = null;
+            }
           } else {
             _pengumuman = null;
           }
-        } else {
-          _pengumuman = null;
-        }
-      });
+        });
+      }
+    } catch (e) {
+      // Optional: tampilkan error jika perlu
     }
   }
 
@@ -224,34 +241,36 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
     final idEmployee = prefs.getInt('idEmployee');
     if (idEmployee == null) return;
 
-    final response = await http.get(
-      Uri.parse('http://103.31.235.237:5555/api/Recruitment/jadwal-wawancara'),
-      headers: {'accept': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        final decoded = json.decode(response.body);
-        if (decoded is List && decoded.isNotEmpty) {
-          // Cari jadwal dengan IdEmployee yang sama di FormPendaftaran
-          final jadwalUser = decoded.firstWhere(
-            (item) =>
-              item['FormPendaftaran'] != null &&
-              item['FormPendaftaran']['IdEmployee'] == idEmployee,
-            orElse: () => null,
-          );
-          if (jadwalUser != null) {
-            // Tampilkan detail jadwal wawancara di card
-            _jadwalWawancara =
-                "Tanggal: ${jadwalUser['TanggalWawancara'] ?? '-'}\n"
-                "Lokasi: ${jadwalUser['Lokasi'] ?? '-'}\n"
-                "User Wawancara: ${jadwalUser['UserWawancara'] ?? '-'}";
+    try {
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Recruitment/jadwal-wawancara',
+        headers: {'accept': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final decoded = response.data is String ? json.decode(response.data) : response.data;
+        setState(() {
+          if (decoded is List && decoded.isNotEmpty) {
+            final jadwalUser = decoded.firstWhere(
+              (item) =>
+                  item['FormPendaftaran'] != null &&
+                  item['FormPendaftaran']['IdEmployee'] == idEmployee,
+              orElse: () => null,
+            );
+            if (jadwalUser != null) {
+              _jadwalWawancara =
+                  "Tanggal: ${jadwalUser['TanggalWawancara'] ?? '-'}\n"
+                  "Lokasi: ${jadwalUser['Lokasi'] ?? '-'}\n"
+                  "User Wawancara: ${jadwalUser['UserWawancara'] ?? '-'}";
+            } else {
+              _jadwalWawancara = null;
+            }
           } else {
             _jadwalWawancara = null;
           }
-        } else {
-          _jadwalWawancara = null;
-        }
-      });
+        });
+      }
+    } catch (e) {
+      // Optional: tampilkan error jika perlu
     }
   }
 

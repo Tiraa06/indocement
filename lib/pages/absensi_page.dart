@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/absensi_lapangan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:indocement_apk/service/api_service.dart';
 // Import halaman AbsensiLapanganScreen
 
 class EventMenuPage extends StatefulWidget {
@@ -56,12 +57,14 @@ class _EventMenuPageState extends State<EventMenuPage> {
   }
 
   Future<List<Map<String, dynamic>>> fetchEvents(int idEmployee) async {
-    final response = await http.get(
-      Uri.parse('http://103.31.235.237:5555/api/Event'),
+    final response = await ApiService.get(
+      'http://103.31.235.237:5555/api/Event',
       headers: {'accept': 'text/plain'},
     );
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
+      final List<dynamic> data = response.data is String
+          ? json.decode(response.data)
+          : response.data;
       final today = DateTime.now();
       return data.where((event) {
         final employees = event['Employees'] as List<dynamic>?;

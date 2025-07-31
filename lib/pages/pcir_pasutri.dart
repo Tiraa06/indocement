@@ -7,6 +7,7 @@ import 'package:path/path.dart'; // Untuk mendapatkan nama file utama
 import 'package:dio/dio.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class TambahDataPasutriPage extends StatefulWidget {
   const TambahDataPasutriPage({super.key});
@@ -45,9 +46,9 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
     });
 
     try {
-      final response = await Dio().get(
+      final response = await ApiService.get(
         'http://103.31.235.237:5555/api/Bpjs',
-        queryParameters: {'idEmployee': idEmployee},
+        params: {'idEmployee': idEmployee},
       );
 
       if (response.statusCode == 200) {
@@ -200,14 +201,12 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
       ]);
 
       // Kirim data ke API dengan metode PUT
-      final uploadResponse = await Dio().put(
+      final uploadResponse = await ApiService.put(
         'http://103.31.235.237:5555/api/Bpjs/upload/$id',
         data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        ),
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       );
 
       if (uploadResponse.statusCode == 200) {

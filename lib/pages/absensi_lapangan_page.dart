@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -12,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as imageLib;
 import 'package:geocoding/geocoding.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class AbsensiLapanganScreen extends StatefulWidget {
   final double kantorLat;
@@ -86,9 +88,9 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
 
   Future<void> _fetchEmployeeData(int id) async {
     try {
-      final response = await http.get(Uri.parse('http://103.31.235.237:5555/api/Employees'));
+      final response = await ApiService.get('http://103.31.235.237:5555/api/Employees');
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = response.data;
         final emp = data.firstWhere(
           (e) => e['Id'] == id,
           orElse: () => null,
@@ -282,9 +284,9 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
     if (idSection == null) return;
 
     try {
-      final response = await http.get(Uri.parse('http://103.31.235.237:5555/api/Units'));
+      final response = await ApiService.get('http://103.31.235.237:5555/api/Units');
       if (response.statusCode == 200) {
-        final List<dynamic> units = json.decode(response.body);
+        final List<dynamic> units = response.data;
 
         Map<String, dynamic>? foundUnit;
         for (var unit in units) {
@@ -312,12 +314,12 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
 
   Future<bool> _sudahAbsenHariIni() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Absensi'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Absensi',
         headers: {'accept': 'text/plain'},
       );
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = response.data;
         final now = DateTime.now();
         for (var absen in data) {
           if (absen['IdEmployee'] == _idEmployee) {
@@ -435,30 +437,34 @@ class _AbsensiLapanganScreenState extends State<AbsensiLapanganScreen> {
       _isUploading = true;
     });
 
-    final uri = Uri.parse('http://103.31.235.237:5555/api/Absensi/upload');
-    final request = http.MultipartRequest('POST', uri);
-
-    // Pastikan tipe data sesuai spesifikasi API
-    request.fields['IdEmployee'] = (_idEmployee?.toString() ?? '');
-    request.fields['Jarak'] = _jarak!.toString(); // double
-    request.fields['Status'] = (_jarak! <= radiusZona)
-        ? 'Berada di lingkungan Event'
-        : 'Di luar lingkungan Event';
-    request.fields['EventId'] = eventId.toString(); // int
-
-    // File foto
-    request.files.add(
-      await http.MultipartFile.fromPath('UrlFoto', _imageFile!.path),
-    );
-
     try {
-      final response = await request.send();
-      final respStr = await response.stream.bytesToString();
-      print('Upload response: ${response.statusCode} $respStr');
+      final token = await ApiService.getToken();
+      final dio = Dio();
+      final formData = FormData.fromMap({
+        'IdEmployee': _idEmployee.toString(),
+        'Jarak': _jarak.toString(),
+        'Status': (_jarak! <= radiusZona)
+            ? 'Berada di lingkungan Event'
+            : 'Di luar lingkungan Event',
+        'EventId': eventId.toString(),
+        'UrlFoto': await MultipartFile.fromFile(_imageFile!.path, filename: _imageFile!.path.split('/').last),
+      });
+
+      final response = await dio.post(
+        'http://103.31.235.237:5555/api/Absensi/upload',
+        data: formData,
+        options: Options(
+          headers: {
+            'accept': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+        ),
+      );
 
       setState(() {
         _isUploading = false;
       });
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         showDialog(
           context: context,

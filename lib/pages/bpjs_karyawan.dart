@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart'; // Tambahkan ini untuk mendapatkan nama file utama
 import 'bpjs_upload_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class BPJSKaryawanPage extends StatefulWidget {
   const BPJSKaryawanPage({super.key});
@@ -255,9 +256,9 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
       await Future.delayed(const Duration(seconds: 2));
 
       // Ambil data employee dari API
-      final empResponse = await Dio().get(
+      final empResponse = await ApiService.get(
         'http://103.31.235.237:5555/api/Employees',
-        queryParameters: {'id': idEmployee},
+        params: {'id': idEmployee},
       );
       int? idSection;
       if (empResponse.statusCode == 200 &&
@@ -275,9 +276,9 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
       // Ambil BPJS terbaru sesuai IdSection
       int? latestBpjsId;
       if (idSection != null) {
-        final bpjsResponse = await Dio().get(
+        final bpjsResponse = await ApiService.get(
           'http://103.31.235.237:5555/api/Bpjs',
-          queryParameters: {'idSection': idSection},
+          params: {'idSection': idSection},
         );
         if (bpjsResponse.statusCode == 200 &&
             bpjsResponse.data is List &&
@@ -325,9 +326,9 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
 
     try {
       // Ambil data dari API untuk mendapatkan ID yang sesuai
-      final response = await Dio().get(
+      final response = await ApiService.get(
         'http://103.31.235.237:5555/api/Bpjs',
-        queryParameters: {'idEmployee': idEmployee},
+        params: {'idEmployee': idEmployee},
       );
 
       if (response.statusCode == 200) {
@@ -359,9 +360,12 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         });
 
         // Kirim data ke API dengan endpoint dinamis
-        final uploadResponse = await Dio().put(
+        final uploadResponse = await ApiService.put(
           'http://103.31.235.237:5555/api/Bpjs/upload/$matchingId',
           data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         );
 
         if (uploadResponse.statusCode == 200) {
@@ -376,9 +380,9 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
           await Future.delayed(const Duration(seconds: 2));
 
           // Ambil data employee dari API
-          final empResponse = await Dio().get(
+          final empResponse = await ApiService.get(
             'http://103.31.235.237:5555/api/Employees',
-            queryParameters: {'id': idEmployee},
+            params: {'id': idEmployee},
           );
           int? idSection;
           if (empResponse.statusCode == 200 &&
@@ -396,9 +400,9 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
           // Ambil BPJS terbaru sesuai IdSection
           int? latestBpjsId;
           if (idSection != null) {
-            final bpjsResponse = await Dio().get(
+            final bpjsResponse = await ApiService.get(
               'http://103.31.235.237:5555/api/Bpjs',
-              queryParameters: {'idSection': idSection},
+              params: {'idSection': idSection},
             );
             if (bpjsResponse.statusCode == 200 &&
                 bpjsResponse.data is List &&

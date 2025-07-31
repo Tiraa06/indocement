@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:indocement_apk/service/api_service.dart';
+import 'package:dio/dio.dart';
 
 class TambahDataPendidikanPage extends StatefulWidget {
   const TambahDataPendidikanPage({super.key});
@@ -203,27 +205,21 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
     showLoadingDialog(this.context);
 
     try {
-      var request = http.MultipartRequest(
-        'PUT',
-        Uri.parse(
-            'http://103.31.235.237:5555/api/Employees/$idEmployee/UrlIjazahTerbaru'),
-      );
-
-      request.headers['Accept'] = '*/*';
-      // Placeholder for authentication, replace with actual token if required
-      request.headers['Authorization'] = 'Bearer YOUR_AUTH_TOKEN_HERE';
-
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file', // Changed to 'file' to test server compatibility
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
           selectedIjazah!.path,
           filename:
               'UrlIjazahTerbaru_${idEmployee}_${DateTime.now().millisecondsSinceEpoch}${extension(selectedIjazah!.path)}',
         ),
-      );
+      });
 
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
+      final response = await ApiService.put(
+        'http://103.31.235.237:5555/api/Employees/$idEmployee/UrlIjazahTerbaru',
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      );
 
       Navigator.of(this.context).pop();
 
@@ -237,7 +233,7 @@ class _TambahDataPendidikanPageState extends State<TambahDataPendidikanPage> {
         _showGagalKirimModal(
           title: 'Gagal',
           message:
-              'Gagal mengunggah Ijazah: ${response.statusCode} - $responseBody',
+              'Gagal mengunggah Ijazah: ${response.statusCode} - ${response.data}',
         );
       }
     } catch (e) {

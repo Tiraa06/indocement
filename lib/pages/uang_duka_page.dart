@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:dio/dio.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class UangDukaPage extends StatefulWidget {
   const UangDukaPage({super.key});
@@ -41,9 +42,9 @@ class _UangDukaPageState extends State<UangDukaPage> {
 
   Future<void> _fetchEmployeeData(int id) async {
     try {
-      final response = await http.get(Uri.parse('http://103.31.235.237:5555/api/Employees'));
+      final response = await ApiService.get('http://103.31.235.237:5555/api/Employees');
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = response.data is String ? jsonDecode(response.data) : response.data;
         final emp = data.firstWhere(
           (e) => e['Id'] == id,
           orElse: () => null,
@@ -256,14 +257,12 @@ class _UangDukaPageState extends State<UangDukaPage> {
         ),
       });
 
-      final response = await Dio().post(
+      final response = await ApiService.post(
         'http://103.31.235.237:5555/api/UangDuka/upload',
         data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        ),
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       );
 
       Navigator.of(this.context).pop(); // Tutup loading

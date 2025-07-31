@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:open_file/open_file.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class BPJSTambahanPage extends StatefulWidget {
   const BPJSTambahanPage({super.key});
@@ -116,13 +117,13 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         formData.fields.add(MapEntry("FileTypes", "UrlSuratPotongGaji"));
       }
 
-      final dio = Dio();
-      final response = await dio.post(
+      // Pakai ApiService.post agar otomatis pakai token
+      final response = await ApiService.post(
         "http://103.31.235.237:5555/api/Bpjs/upload",
         data: formData,
-        options: Options(
-          headers: {"Content-Type": "multipart/form-data"},
-        ),
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       );
 
       if (response.statusCode == 200) {
@@ -329,7 +330,6 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       return;
     }
 
-    final dio = Dio();
     final String fileUrl =
         'http://103.31.235.237:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship';
 
@@ -352,9 +352,9 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         },
       );
 
-      final response = await dio.get(
+      final response = await ApiService.get(
         fileUrl,
-        options: Options(responseType: ResponseType.bytes),
+        headers: {"accept": "application/pdf"},
       );
 
       Navigator.of(this.context).pop();
@@ -367,7 +367,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         final filePath =
             '${directory.path}/salary_deduction_${idEmployee}_$selectedRelationship.pdf';
         final file = File(filePath);
-        await file.writeAsBytes(response.data!);
+        await file.writeAsBytes(response.data);
 
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('File berhasil didownload ke $filePath')),

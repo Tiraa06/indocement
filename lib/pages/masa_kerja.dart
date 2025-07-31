@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:indocement_apk/service/api_service.dart';
 
 // Tambahkan warna biru khusus di halaman ini
 const Color customBlue = Color(0xFF1572E8);
@@ -46,13 +47,13 @@ class _MasaKerjaPageState extends State<MasaKerjaPage> {
         return;
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees',
         headers: {'accept': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final List data = response.data is String ? jsonDecode(response.data) : response.data;
         final user = data.firstWhere(
           (e) => e['Id'] == idEmployee,
           orElse: () => null,
@@ -113,13 +114,13 @@ class _MasaKerjaPageState extends State<MasaKerjaPage> {
         return;
       }
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Notifications/Anniversary'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Notifications/Anniversary',
         headers: {'accept': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final List data = response.data is String ? jsonDecode(response.data) : response.data;
         final item = data.firstWhere(
           (e) => e['EmployeeId'] == idEmployee,
           orElse: () => null,

@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/Chat.dart'; // Import halaman chat Anda
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import 'package:indocement_apk/service/api_service.dart';
 
 class BPJSKetenagakerjaanPage extends StatefulWidget {
   const BPJSKetenagakerjaanPage({super.key});
@@ -27,20 +30,14 @@ class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
     int? idSection;
     int? idEsl;
 
-    // Ambil data user login dari API, simpan IdSection & IdEsl ke SharedPreferences
     try {
-      final response =
-          await Dio().get('http://103.31.235.237:5555/api/Employees');
+      // Pakai ApiService.get agar otomatis pakai token
+      final response = await ApiService.get('http://103.31.235.237:5555/api/Employees');
       if (response.statusCode == 200) {
-        final List data = response.data;
+        final List data = response.data is String ? List<Map<String, dynamic>>.from(jsonDecode(response.data)) : response.data;
 
-        // --- Ganti logika ini sesuai identitas user login Anda ---
-        // Contoh: ambil user pertama sebagai user login (seharusnya pakai id login sebenarnya)
         final user = data.firstWhere(
-          (e) =>
-              e['Id'] ==
-              prefs.getInt(
-                  'idEmployee'), // pastikan idEmployee sudah diset saat login
+          (e) => e['Id'] == prefs.getInt('idEmployee'),
           orElse: () => null,
         );
         if (user != null) {
@@ -49,12 +46,10 @@ class _BPJSKetenagakerjaanPageState extends State<BPJSKetenagakerjaanPage> {
           await prefs.setInt('idSection', idSection!);
           await prefs.setInt('idEsl', idEsl!);
         } else {
-          // fallback: ambil dari shared preferences jika sudah pernah disimpan
           idSection = prefs.getInt('idSection');
           idEsl = prefs.getInt('idEsl');
         }
 
-        // Cari atasan di section yang sama dan IdEsl == 3
         final atasan = data.firstWhere(
           (e) => e['IdSection'] == idSection && e['IdEsl'] == 3,
           orElse: () => null,

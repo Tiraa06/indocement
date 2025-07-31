@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/pcir_pasutri.dart';
 import 'package:indocement_apk/pages/pcir_pendidikan.dart';
 import 'package:indocement_apk/pages/family_data_page.dart';
-import 'package:indocement_apk/utils/network_helper.dart'; // Tambahkan import ini
+import 'package:indocement_apk/service/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -45,21 +45,24 @@ class _PCIRPageState extends State<PCIRPage>
     setState(() {
       _isLoading = true;
     });
-    final response = await safeRequest(
-      context,
-      () => http.get(
-        Uri.parse('http://103.31.235.237:5555/api/FamilyData'),
+    try {
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/FamilyData',
         headers: {'Content-Type': 'application/json'},
-      ),
-    );
-    if (response == null) return;
-    if (response.statusCode == 200) {
-      if (!mounted) return;
-      setState(() {
-        _familyData = jsonDecode(response.body);
-        _isLoading = false;
-      });
-    } else {
+      );
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        setState(() {
+          _familyData = response.data is String ? jsonDecode(response.data) : response.data;
+          _isLoading = false;
+        });
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
