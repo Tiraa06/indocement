@@ -224,7 +224,12 @@ class _LoginState extends State<Login> {
         print('Parsed User: $user');
 
         // Simpan token jika ada
-        final token = user['token'];
+        final token = user['Token'] ?? user['token'];
+        if (token == null || token is! String || token.isEmpty) {
+          print('Error: token not found or invalid in response!');
+          // Tampilkan error atau return
+          return;
+        }
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
         print('Saved token: $token');
@@ -288,12 +293,9 @@ class _LoginState extends State<Login> {
 
           await prefs.setInt('id', user['Id'] as int);
           await prefs.setInt('idEmployee', idEmployee);
-          await prefs.setString('employeeName',
-              user['employeeName'] ?? employeeData['employeeName'] ?? '');
-          await prefs.setString(
-              'jobTitle', user['Role'] ?? employeeData['jobTitle'] ?? '');
-          await prefs.setString(
-              'telepon', user['telepon'] ?? employeeData['telepon'] ?? '');
+          await prefs.setString('employeeName', user['EmployeeName'] ?? '');
+          await prefs.setString('jobTitle', user['Role'] ?? '');
+          await prefs.setString('telepon', user['Telepon'] ?? '');
           await prefs.setString('email', user['Email'] ?? email);
 
           if (employeeData['urlFoto'] != null) {

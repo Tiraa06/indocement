@@ -41,27 +41,11 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadProfileData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final employeeId = prefs.getInt('idEmployee');
-
-    print(
-        'SharedPreferences: ${prefs.getKeys().map((k) => "$k=${prefs.get(k)}").join(", ")}');
-
-    setState(() {
-      _employeeName = prefs.getString('employeeName') ?? "Nama Tidak Tersedia";
-      _employeeId = employeeId;
-      _email = prefs.getString('email') ?? "";
-      _telepon = prefs.getString('telepon') ?? "";
-      _urlFoto = prefs.getString('urlFoto');
-      _jobTitle = prefs.getString('jobTitle') ?? "";
-    });
+    final token = prefs.getString('token');
+    print('ProfilePage: employeeId=$employeeId, token=$token');
 
     if (employeeId == null || employeeId <= 0) {
-      print('Invalid or missing employeeId: $employeeId');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('ID karyawan tidak valid, silakan login ulang')),
-        );
-      }
+      // Tampilkan error
       return;
     }
 
@@ -70,10 +54,11 @@ class _ProfilePageState extends State<ProfilePage> {
         'http://103.31.235.237:5555/api/Employees/$employeeId',
         headers: {'Content-Type': 'application/json'},
       );
+      print('ProfilePage: response status=${response.statusCode}');
       if (response.statusCode == 200) {
         final data =
             response.data is String ? jsonDecode(response.data) : response.data;
-        print('Employee Data Keys: ${data.keys}');
+        print('ProfilePage: employee data keys=${data.keys}');
         setState(() {
           _employeeName = data['EmployeeName']?.isNotEmpty == true
               ? data['EmployeeName']
