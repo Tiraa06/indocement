@@ -46,7 +46,6 @@ class _MasterScreenState extends State<MasterScreen>
     final requiredFields = [
       'employeeName',
       'jobTitle',
-      'employeeNo',
       'birthDate',
       'gender',
       'education',
@@ -272,14 +271,17 @@ class _MasterScreenState extends State<MasterScreen>
     });
   }
 
-  void _closeLoadingDialog() {
-    if (_isLoadingDialogVisible && mounted && Navigator.canPop(context)) {
-      Navigator.pop(context);
-      setState(() {
-        _isLoadingDialogVisible = false;
-      });
-    }
+void _closeLoadingDialog() {
+  if (_isLoadingDialogVisible && mounted && Navigator.canPop(context)) {
+    Navigator.pop(context);
+    setState(() {
+      _isLoadingDialogVisible = false;
+    });
+  } else {
+    _isLoadingDialogVisible = false;
   }
+}
+
 
   Future<void> _showVerificationApprovedModal(
       String fieldName, String verifId) async {
@@ -422,26 +424,22 @@ class _MasterScreenState extends State<MasterScreen>
     });
   }
 
-  void _onItemTapped(int index) async {
-    if (_selectedIndex == index) return;
-
-    _showLoading(context);
-    final hasNetwork = await _checkNetwork();
-    _closeLoadingDialog();
-
-    if (!hasNetwork) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Error404Screen()),
-      );
-      return;
-    }
-
-    setState(() {
-      _selectedIndex = index;
-    });
-    _animationController.forward().then((_) => _animationController.reverse());
+void _onItemTapped(int index) async {
+  if (_selectedIndex == index) return;
+  final hasNetwork = await _checkNetwork();
+  if (!hasNetwork) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const Error404Screen()),
+    );
+    return;
   }
+  setState(() {
+    _selectedIndex = index;
+  });
+  _animationController.forward().then((_) => _animationController.reverse());
+}
+
 
   Future<void> _checkAndRequestAllPermissions() async {
     // Daftar permission yang umum untuk aplikasi HR/employee
@@ -467,20 +465,26 @@ class _MasterScreenState extends State<MasterScreen>
     ];
 
     List<Permission> notGranted = [];
+    bool anyGranted = false;
     for (final perm in permissions) {
-      if (await perm.status != PermissionStatus.granted) {
+      final status = await perm.status;
+      if (status == PermissionStatus.granted) {
+        anyGranted = true;
+      } else {
         notGranted.add(perm);
       }
     }
 
+    // Jika sudah ada yang diizinkan, jangan tampilkan dialog lagi
+    if (anyGranted || notGranted.isEmpty) return;
+
+    // Tampilkan dialog permintaan izin jika semua belum diizinkan
     if (notGranted.isNotEmpty && mounted) {
-      // Tampilkan dialog permintaan izin
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           contentPadding: const EdgeInsets.all(20),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -693,6 +697,7 @@ class _MasterContentState extends State<MasterContent> {
   @override
   void initState() {
     super.initState();
+    // Jangan panggil _showLoading(context) di sini!
     _loadProfileData();
   }
 
@@ -841,7 +846,6 @@ class _MasterContentState extends State<MasterContent> {
       final employeeId = prefs.getInt('idEmployee');
 
       if (employeeId == null || employeeId <= 0) {
-        print('Invalid or missing employeeId: $employeeId');
         setState(() {
           _employeeName = "Nama Tidak Tersedia";
           _jobTitle = "Departemen Tidak Tersedia";
@@ -851,7 +855,10 @@ class _MasterContentState extends State<MasterContent> {
         return;
       }
 
-      _showLoading(context);
+      // Tampilkan loading hanya jika data belum ada
+      if (_employeeName == null) {
+        _showLoading(context);
+      }
       final hasNetwork = await _checkNetwork();
       if (!hasNetwork) {
         _closeLoadingDialog();
@@ -884,7 +891,6 @@ class _MasterContentState extends State<MasterContent> {
           _telepon = data['Telepon'] ?? "Telepon Tidak Tersedia";
         });
       } else {
-        print('Failed to fetch profile data: ${response.statusCode}');
         setState(() {
           _employeeName = "Nama Tidak Tersedia";
           _jobTitle = "Departemen Tidak Tersedia";
@@ -893,7 +899,6 @@ class _MasterContentState extends State<MasterContent> {
         });
       }
     } catch (e) {
-      print('Error fetching profile data: $e');
       _closeLoadingDialog();
       setState(() {
         _employeeName = "Nama Tidak Tersedia";
@@ -1285,17 +1290,17 @@ class Categories extends StatelessWidget {
                   final masterScreenState =
                       context.findAncestorStateOfType<_MasterScreenState>();
                   masterScreenState?._showLoading(context);
-                  final hasNetwork = await checkNetwork();
-                  masterScreenState?._closeLoadingDialog();
-                  if (!hasNetwork) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const Error404Screen()),
-                    );
-                    return;
-                  }
-                  if (category["text"] == "BPJS") {
+final hasNetwork = await checkNetwork();
+if (!hasNetwork) {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const Error404Screen()),
+  );
+  return;
+}
+if (category["text"] == "BPJS") {
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(

@@ -231,12 +231,33 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
     showLoadingDialog(context);
 
     try {
-      await uploadBpjsDocumentsCompressed(
-        idEmployee: idEmployee!,
-        anggotaBpjs: anggotaBpjs,
-        fieldNames: fieldNames,
-        files: files,
-        anakKe: anakKe,
+      final formData = FormData();
+
+      for (int i = 0; i < files.length; i++) {
+        formData.files.add(MapEntry(
+          'Files',
+          await MultipartFile.fromFile(
+            files[i].path,
+            filename: basename(files[i].path),
+          ),
+        ));
+        formData.fields.add(MapEntry('FileTypes', fieldNames[i]));
+      }
+
+      formData.fields.add(MapEntry('idEmployee', idEmployee.toString()));
+      formData.fields.add(MapEntry('AnggotaBpjs', anggotaBpjs.toLowerCase())); // lowercase!
+      if (anakKe != null) {
+        formData.fields.add(MapEntry('AnakKe', anakKe));
+      }
+
+      print('=== FormData yang akan dikirim ===');
+      formData.fields.forEach((f) => print('Field: ${f.key}, Value: ${f.value}'));
+      formData.files.forEach((f) => print('File Field: ${f.key}, Filename: ${f.value.filename}'));
+      print('=================================');
+
+      final uploadResponse = await ApiService.post(
+        'http://103.31.235.237:5555/api/Bpjs/upload',
+        data: formData,
       );
 
       Navigator.of(context).pop();
@@ -352,22 +373,25 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
         final matchingId = matchingEntry['Id']; // Ambil ID yang sesuai
 
         // Siapkan data untuk dikirim ke API
-        final formData = FormData.fromMap({
-          for (var doc in documents)
-            doc['fieldName']: await MultipartFile.fromFile(
-              (doc['file'] as File).path,
-              filename: basename((doc['file'] as File).path),
+        final formData = FormData();
+
+        for (int i = 0; i < documents.length; i++) {
+          formData.files.add(MapEntry(
+            documents[i]['fieldName'],
+            await MultipartFile.fromFile(
+              (documents[i]['file'] as File).path,
+              filename: basename((documents[i]['file'] as File).path),
             ),
-        });
+          ));
+        }
 
         // Kirim data ke API dengan endpoint dinamis
-        final uploadResponse = await ApiService.put(
-          'http://103.31.235.237:5555/api/Bpjs/upload/$matchingId',
+        final uploadResponse = await ApiService.post(
+          'http://103.31.235.237:5555/api/Bpjs/upload',
           data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
         );
+
+        print('Headers: ${uploadResponse.requestOptions.headers}');
 
         if (uploadResponse.statusCode == 200) {
           Navigator.of(context).pop();

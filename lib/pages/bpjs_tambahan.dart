@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -121,9 +122,6 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
       final response = await ApiService.post(
         "http://103.31.235.237:5555/api/Bpjs/upload",
         data: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
       );
 
       if (response.statusCode == 200) {
@@ -352,22 +350,23 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
         },
       );
 
-      final response = await ApiService.get(
-        fileUrl,
-        headers: {"accept": "application/pdf"},
-      );
+final response = await ApiService.get(
+  'http://103.31.235.237:5555/api/Bpjs/generate-salary-deduction/$idEmployee/$selectedRelationship',
+  headers: {
+    "accept": "/", // sesuai cURL
+  },
+  responseType: ResponseType.bytes,  // ← Tambahkan baris ini
+);
+
 
       Navigator.of(this.context).pop();
 
       if (response.statusCode == 200) {
-        final directory = Directory('/storage/emulated/0/Download');
-        if (!directory.existsSync()) {
-          directory.createSync(recursive: true);
-        }
-        final filePath =
-            '${directory.path}/salary_deduction_${idEmployee}_$selectedRelationship.pdf';
-        final file = File(filePath);
-        await file.writeAsBytes(response.data);
+        // Simpan file ke storage
+   final directory = await getApplicationDocumentsDirectory(); // Folder app sendiri
+final filePath = '${directory.path}/salary_deduction_${idEmployee}_$selectedRelationship.pdf';
+final file = File(filePath);
+await file.writeAsBytes(response.data);  // Ini pasti berhasil semua android
 
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('File berhasil didownload ke $filePath')),

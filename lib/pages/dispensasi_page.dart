@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indocement_apk/service/api_service.dart';
 import 'package:path/path.dart' as path;
+import 'package:indocement_apk/pages/layanan_menu.dart'; // pastikan import ini ada
 
 class DispensasiPage extends StatefulWidget {
   const DispensasiPage({super.key});
@@ -185,7 +186,11 @@ class _DispensasiPageState extends State<DispensasiPage> {
                     ),
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Navigator.pop(context); // Return to previous screen
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const LayananMenuPage()),
+                      ); // Return to previous screen
                     },
                     child: Text(
                       'OK',
@@ -364,7 +369,10 @@ class _DispensasiPageState extends State<DispensasiPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LayananMenuPage()),
+            );
           },
         ),
         title: Text(

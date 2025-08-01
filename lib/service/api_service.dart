@@ -11,15 +11,15 @@ class ApiService {
   }
 
   /// GET request dengan token
-  static Future<Response> get(
+  static Future get(
     String url, {
     Map<String, dynamic>? params,
     Map<String, dynamic>? headers,
-    ResponseType? responseType,
+    ResponseType? responseType, // Sudah ada
   }) async {
     final token = await getToken();
     final combinedHeaders = {
-      'Accept': 'application/json',
+      'accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
       ...?headers,
     };
@@ -28,13 +28,13 @@ class ApiService {
       queryParameters: params,
       options: Options(
         headers: combinedHeaders,
-        responseType: responseType ?? ResponseType.json,
+        responseType: responseType ?? ResponseType.json, // Sudah benar
       ),
     );
   }
 
   /// POST request dengan token
-  static Future<Response> post(
+static Future<Response> post(
     String url, {
     dynamic data,
     Map<String, dynamic>? headers,
@@ -66,7 +66,7 @@ class ApiService {
   }) async {
     final token = await getToken();
     final combinedHeaders = {
-      'Accept': 'application/json',
+      'accept': 'application/json',
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
       ...?headers,
@@ -86,7 +86,7 @@ class ApiService {
   }) async {
     final token = await getToken();
     final combinedHeaders = {
-      'Accept': 'application/json',
+      'accept': 'application/json',
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
       ...?headers,

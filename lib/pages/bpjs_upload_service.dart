@@ -353,7 +353,6 @@ Future<void> updateBpjsDocuments({
 
     final response = await http.put(
       uri,
-      headers: {"Content-Type": "application/json"},
       body: jsonEncode(body),
     );
 
@@ -433,7 +432,6 @@ Future<void> sendBpjsNotification({
         Uri.parse('http://103.31.235.237:5555/api/Notifications'),
         headers: {
           'accept': 'text/plain',
-          'Content-Type': 'application/json',
         },
         body: notifBody,
       );
@@ -520,7 +518,6 @@ Future<void> sendBpjsNotificationWatcher(Map data) async {
         Uri.parse('http://103.31.235.237:5555/api/Notifications'),
         headers: {
           'accept': 'text/plain',
-          'Content-Type': 'application/json',
         },
         body: notifBody,
       );
@@ -629,13 +626,11 @@ Future<String> uploadBpjsDokumenUniversal({
         ? dio.post(url, data: formData, options: Options(
             headers: {
               'accept': 'application/json',
-              'Content-Type': 'multipart/form-data',
             },
           ))
         : dio.put(url, data: formData, options: Options(
             headers: {
               'accept': 'application/json',
-              'Content-Type': 'multipart/form-data',
             },
           )));
 

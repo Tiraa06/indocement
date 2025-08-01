@@ -1,14 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
-import 'package:indocement_apk/service/api_service.dart';
+import 'package:dio/dio.dart'; // For FormData
+import 'package:indocement_apk/service/api_service.dart'; // Import ApiService
+import 'package:mime/mime.dart'; // For determining file MIME type
+import 'package:path/path.dart' as path; // For handling file names
 
 class EditProfilePage extends StatefulWidget {
   final String employeeName;
@@ -31,7 +33,7 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   bool isEditing = false;
   File? _selectedImage;
-  File? _ktpImage;
+  File? _supportingDocument; // Supports any file type
   String? _photoUrl;
   final bool _isUploading = false;
   final OutlineInputBorder inputBorder = OutlineInputBorder(
@@ -120,13 +122,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
 
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Sections/$idSection'),
-        headers: {'Content-Type': 'application/json'},
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Sections/$idSection',
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        final sectionData = jsonDecode(response.body);
+        final sectionData =
+            response.data is String ? jsonDecode(response.data) : response.data;
         return sectionData['NamaSection']?.toString() ?? 'Tidak Tersedia';
       } else {
         return 'Tidak Tersedia';
@@ -137,94 +139,96 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _fetchVerifData() async {
-    final employeeId = widget.employeeId;
+    final employeeId = widget.employeeId ??
+        (await SharedPreferences.getInstance()).getInt('idEmployee');
     if (employeeId == null) return;
 
     try {
-      final response = await http.get(
-        Uri.parse(
-            'http://103.31.235.237:5555/api/VerifData/requests?employeeId=$employeeId'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/VerifData/requests',
+        params: {'employeeId': employeeId},
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         final verifData = data
             .cast<Map<String, dynamic>>()
             .where((verif) =>
                 verif['EmployeeId']?.toString() == employeeId.toString() &&
-                (verif['Status'] == 'Pending' || verif['Status'] == 'Approved'))
+                verif['Status'] == 'Approved') // Only process Approved status
             .toList();
 
         for (var verif in verifData) {
           final fieldName = verif['FieldName']?.toString();
           final newValueRaw = verif['NewValue']?.toString();
           final status = verif['Status']?.toString();
-          if (fieldName != null && newValueRaw != null && status != null) {
+          if (fieldName != null &&
+              newValueRaw != null &&
+              status == 'Approved') {
             String? newValue = newValueRaw;
             if (fieldName == 'BirthDate' || fieldName == 'ServiceDate') {
               newValue = _formatDateOnly(newValueRaw);
             }
 
             setState(() {
-              if (status == 'Approved') {
-                switch (fieldName) {
-                  case 'EmployeeName':
-                    _employeeNameController.text = newValue ?? '';
-                    fullData['EmployeeName'] = newValue;
-                    break;
-                  case 'BirthDate':
-                    _birthDateController.text = newValue ?? '';
-                    fullData['BirthDate'] = newValue;
-                    break;
-                  case 'Gender':
-                    _selectedGender = _mapGenderFromApi(newValue);
-                    fullData['Gender'] = newValue;
-                    break;
-                  case 'Education':
-                    _selectedEducation = _mapEducationFromApi(newValue);
-                    fullData['Education'] = newValue;
-                    break;
-                  case 'EmployeeNo':
-                    _employeeNoController.text = newValue ?? '';
-                    fullData['EmployeeNo'] = newValue;
-                    break;
-                  case 'JobTitle':
-                    _jobTitleController.text = newValue ?? '';
-                    fullData['JobTitle'] = newValue;
-                    break;
-                  case 'ServiceDate':
-                    _serviceDateController.text = newValue ?? '';
-                    fullData['ServiceDate'] = newValue;
-                    break;
-                  case 'NoBpjs':
-                    _noBpjsController.text = newValue ?? '';
-                    fullData['NoBpjs'] = newValue;
-                    break;
-                  case 'WorkLocation':
-                    _workLocationController.text = newValue ?? '';
-                    fullData['WorkLocation'] = newValue;
-                    break;
-                  case 'Section':
-                    _sectionController.text = newValue ?? '';
-                    fullData['Section'] = newValue;
-                    break;
-                  case 'Telepon':
-                    _phoneController.text = newValue ?? '';
-                    fullData['Telepon'] = newValue;
-                    break;
-                  case 'Email':
-                    _emailController.text = newValue ?? '';
-                    fullData['Email'] = newValue;
-                    break;
-                  case 'LivingArea':
-                    _livingAreaController.text = newValue ?? '';
-                    fullData['LivingArea'] = newValue;
-                    break;
-                }
-                final prefs = SharedPreferences.getInstance();
-                prefs.then((p) =>
-                    p.setString(fieldName.toLowerCase(), newValue ?? ''));
+              switch (fieldName) {
+                case 'EmployeeName':
+                  _employeeNameController.text = newValue ?? '';
+                  fullData['EmployeeName'] = newValue;
+                  break;
+                case 'BirthDate':
+                  _birthDateController.text = newValue ?? '';
+                  fullData['BirthDate'] = newValue;
+                  break;
+                case 'Gender':
+                  _selectedGender = _mapGenderFromApi(newValue);
+                  fullData['Gender'] = newValue;
+                  break;
+                case 'Education':
+                  _selectedEducation = _mapEducationFromApi(newValue);
+                  fullData['Education'] = newValue;
+                  break;
+                case 'EmployeeNo':
+                  _employeeNoController.text = newValue ?? '';
+                  fullData['EmployeeNo'] = newValue;
+                  break;
+                case 'JobTitle':
+                  _jobTitleController.text = newValue ?? '';
+                  fullData['JobTitle'] = newValue;
+                  break;
+                case 'ServiceDate':
+                  _serviceDateController.text = newValue ?? '';
+                  fullData['ServiceDate'] = newValue;
+                  break;
+                case 'NoBpjs':
+                  _noBpjsController.text = newValue ?? '';
+                  fullData['NoBpjs'] = newValue;
+                  break;
+                case 'WorkLocation':
+                  _workLocationController.text = newValue ?? '';
+                  fullData['WorkLocation'] = newValue;
+                  break;
+                case 'Section':
+                  _sectionController.text = newValue ?? '';
+                  fullData['Section'] = newValue;
+                  break;
+                case 'Telepon':
+                  _phoneController.text = newValue ?? '';
+                  fullData['Telepon'] = newValue;
+                  break;
+                case 'Email':
+                  _emailController.text = newValue ?? '';
+                  fullData['Email'] = newValue;
+                  break;
+                case 'LivingArea':
+                  _livingAreaController.text = newValue ?? '';
+                  fullData['LivingArea'] = newValue;
+                  break;
               }
+              final prefs = SharedPreferences.getInstance();
+              prefs.then(
+                  (p) => p.setString(fieldName.toLowerCase(), newValue ?? ''));
             });
           }
         }
@@ -239,6 +243,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final employeeId = widget.employeeId ?? prefs.getInt('idEmployee');
     final userId = prefs.getInt('id');
 
+    if (employeeId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('ID karyawan tidak ditemukan, silakan login ulang')),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
     setState(() {
       _userId = userId;
       _employeeNameController.text =
@@ -250,28 +263,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _photoUrl = widget.urlFoto ?? prefs.getString('urlFoto');
     });
 
-    if (employeeId == null || employeeId <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('ID karyawan tidak valid, silakan login ulang')),
-      );
-      return;
-    }
-
     await _fetchVerifData();
 
     try {
       final response = await ApiService.get(
         'http://103.31.235.237:5555/api/Employees/$employeeId',
-        headers: {'Content-Type': 'application/json'},
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        // Perbaikan parsing response
-        final employee = response.data is String
-            ? jsonDecode(response.data)
-            : response.data;
-
+        final employee =
+            response.data is String ? jsonDecode(response.data) : response.data;
         final idSection = employee['IdSection'] != null
             ? int.tryParse(employee['IdSection'].toString())
             : null;
@@ -422,11 +423,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _submitChangeRequests() async {
-    final employeeId = widget.employeeId;
-    if (employeeId == null || _ktpImage == null) {
+    final employeeId = widget.employeeId ??
+        (await SharedPreferences.getInstance()).getInt('idEmployee');
+    if (employeeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('ID karyawan atau foto KTP tidak ditemukan')),
+            content: Text('ID karyawan tidak ditemukan, silakan login ulang')),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    if (_supportingDocument == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Harap unggah dokumen pendukung terlebih dahulu')),
       );
       return;
     }
@@ -440,43 +451,41 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final oldValue = fullData[fieldName] ?? '';
 
       try {
-        final request = http.MultipartRequest(
-          'POST',
-          Uri.parse('http://103.31.235.237:5555/api/VerifData/request'),
-        );
-        request.fields['EmployeeId'] = employeeId.toString();
-        request.fields['FieldName'] = fieldName;
-        request.fields['OldValue'] = oldValue.toString();
-        request.fields['NewValue'] = newValue;
-        request.files.add(await http.MultipartFile.fromPath(
-          'SupportingDocumentPath',
-          _ktpImage!.path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
-        request.headers.addAll({
-          'accept': '*/*',
-          'Content-Type': 'multipart/form-data',
+        // Determine MIME type dynamically
+        final mimeType = lookupMimeType(_supportingDocument!.path) ??
+            'application/octet-stream';
+        final mimeParts = mimeType.split('/');
+        final formData = FormData.fromMap({
+          'EmployeeId': employeeId.toString(),
+          'FieldName': fieldName,
+          'OldValue': oldValue.toString(),
+          'NewValue': newValue,
+          'SupportingDocumentPath': await MultipartFile.fromFile(
+            _supportingDocument!.path,
+            contentType: MediaType(mimeParts[0], mimeParts[1]),
+          ),
         });
 
-        final response =
-            await request.send().timeout(const Duration(seconds: 10));
-        final responseBody =
-            await response.stream.bytesToString().catchError((e) {
-          print('Error reading response stream: $e');
-          return '';
-        });
+        final response = await ApiService.post(
+          'http://103.31.235.237:5555/api/VerifData/request',
+          data: formData,
+          headers: {
+            'accept': '*/*',
+            'Content-Type': 'multipart/form-data',
+          },
+        ).timeout(const Duration(seconds: 10));
 
         print('Response status for $fieldName: ${response.statusCode}');
-        print('Response body for $fieldName: $responseBody');
+        print('Response body for $fieldName: ${response.data}');
 
-        if (response.statusCode >= 200 && response.statusCode <= 204) {
+        if (response.statusCode != null &&
+            response.statusCode! >= 200 &&
+            response.statusCode! <= 204) {
           atLeastOneSuccess = true;
-          await _fetchVerifData();
-          await _fetchInitialData();
         } else {
           failedFields.add(fieldName);
           print(
-              'Failed to submit $fieldName: ${response.statusCode} - $responseBody');
+              'Failed to submit $fieldName: ${response.statusCode} - ${response.data}');
         }
       } catch (e) {
         failedFields.add(fieldName);
@@ -486,8 +495,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     setState(() {
       isEditing = false;
-      _ktpImage = null;
+      _supportingDocument = null;
       _changedFields.clear();
+      // Reset text controllers to original values
+      _employeeNameController.text = fullData['EmployeeName'] ?? '';
+      _jobTitleController.text = fullData['JobTitle'] ?? '';
+      _livingAreaController.text = fullData['LivingArea'] ?? '';
+      _birthDateController.text = _formatDateOnly(fullData['BirthDate']) ?? '';
+      _employeeNoController.text = fullData['EmployeeNo'] ?? '';
+      _serviceDateController.text =
+          _formatDateOnly(fullData['ServiceDate']) ?? '';
+      _noBpjsController.text = fullData['NoBpjs'] ?? '';
+      _selectedGender = _mapGenderFromApi(fullData['Gender']);
+      _selectedEducation = _mapEducationFromApi(fullData['Education']);
+      _workLocationController.text = fullData['WorkLocation'] ?? '';
+      _phoneController.text = fullData['Telepon'] ?? '';
+      _emailController.text = fullData['Email'] ?? '';
+      // Section is fetched separately, so we don't reset it here
     });
 
     if (atLeastOneSuccess) {
@@ -514,39 +538,46 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  Future<void> _pickKtpImage() async {
+  Future<void> _pickSupportingDocument() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? file =
+        await picker.pickMedia(); // Allows picking any file type
 
-    if (image != null) {
+    if (file != null) {
       setState(() {
-        _ktpImage = File(image.path);
+        _supportingDocument = File(file.path);
       });
-      _showKtpConfirmationPopup(File(image.path));
+      _showDocumentConfirmationPopup(File(file.path));
     }
   }
 
   Future<void> _uploadImage(File image) async {
-    final employeeId = widget.employeeId;
-    if (employeeId == null) return;
+    final employeeId = widget.employeeId ??
+        (await SharedPreferences.getInstance()).getInt('idEmployee');
+    if (employeeId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID karyawan tidak ditemukan')),
+      );
+      return;
+    }
 
     try {
-      final request = http.MultipartRequest(
-        'PUT',
-        Uri.parse(
-            'http://103.31.235.237:5555/api/Employees/$employeeId/UrlFoto'),
-      );
-      request.files.add(await http.MultipartFile.fromPath(
-        'File',
-        image.path,
-        contentType: MediaType('image', 'jpeg'),
-      ));
-      request.headers.addAll({
-        'accept': '*/*',
-        'Content-Type': 'multipart/form-data',
+      final formData = FormData.fromMap({
+        'File': await MultipartFile.fromFile(
+          image.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
       });
 
-      final response = await request.send();
+      final response = await ApiService.put(
+        'http://103.31.235.237:5555/api/Employees/$employeeId/UrlFoto',
+        data: formData,
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'multipart/form-data',
+        },
+      );
+
       if (response.statusCode == 204) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gambar berhasil diunggah')),
@@ -624,7 +655,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _showKtpConfirmationPopup(File image) {
+  void _showDocumentConfirmationPopup(File document) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -637,16 +668,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(image,
-                      width: 200, height: 200, fit: BoxFit.cover),
-                ),
+                const Icon(Icons.description, color: Colors.blue, size: 48),
                 const SizedBox(height: 16),
-                const Text(
-                  "Apakah Anda yakin ingin menggunakan foto KTP ini?",
+                Text(
+                  "Apakah Anda yakin ingin menggunakan dokumen ${path.basename(document.path)}?",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87),
@@ -668,7 +695,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       onPressed: () {
                         Navigator.of(context).pop();
                         setState(() {
-                          _ktpImage = null;
+                          _supportingDocument = null;
                         });
                       },
                     ),
@@ -733,6 +760,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   void _showRequestConfirmationPopup() {
+    if (_supportingDocument == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Harap unggah dokumen pendukung terlebih dahulu')),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -768,34 +803,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     );
                   }),
-                  if (_ktpImage == null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      "Silakan unggah foto KTP terlebih dahulu.",
-                      textAlign: TextAlign.center,
-                      style:
-                          GoogleFonts.poppins(fontSize: 14, color: Colors.red),
-                    ),
-                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    "Dokumen Pendukung: ${_supportingDocument != null ? path.basename(_supportingDocument!.path) : 'Tidak ada'}",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        icon: Icon(
-                          Icons.check_circle,
-                          color: _ktpImage != null ? Colors.green : Colors.grey,
-                          size: 32,
-                        ),
-                        onPressed: _ktpImage != null
-                            ? () {
-                                Navigator.of(context).pop();
-                                _submitChangeRequests();
-                              }
-                            : null,
-                        tooltip: _ktpImage == null
-                            ? 'Unggah foto KTP terlebih dahulu'
-                            : 'Konfirmasi perubahan',
+                        icon: const Icon(Icons.check_circle,
+                            color: Colors.green, size: 32),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _submitChangeRequests();
+                        },
                       ),
                       IconButton(
                         icon: const Icon(Icons.cancel,
@@ -963,58 +987,93 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildKtpUploadCard() {
-    return GestureDetector(
-      onTap: isEditing ? _pickKtpImage : null,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 6,
-                offset: const Offset(0, 3))
-          ],
+  Widget uploadDokumenBox({
+    required String title,
+    required File? file,
+    required VoidCallback onPick,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: file != null ? Colors.green : Colors.grey[400]!,
+          width: 1.2,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                  color: const Color(0xFF1572E8),
-                  borderRadius: BorderRadius.circular(8)),
-              child:
-                  const Icon(Icons.upload_file, color: Colors.white, size: 24),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: file != null ? Colors.green : Colors.grey[300]!,
+                width: 1.0,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey[100],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Upload KTP',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isEditing ? Colors.black87 : Colors.grey,
+            child: file != null
+                ? (file.path.endsWith('.pdf')
+                    ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.file(file, fit: BoxFit.cover),
+                      ))
+                : const Icon(Icons.insert_drive_file, color: Colors.grey, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  file != null ? file.path.split('/').last : "File belum dipilih",
+                  style: TextStyle(
+                    color: file != null ? Colors.green[700] : Colors.grey[500],
+                    fontWeight: file != null ? FontWeight.w600 : FontWeight.normal,
+                    fontSize: 12.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.upload_file, color: Colors.blue, size: 18),
+                  label: Text(
+                    file != null ? "Ganti File" : "Pilih File",
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
                     ),
                   ),
-                  Text(
-                    _ktpImage == null
-                        ? 'Belum ada file yang dipilih'
-                        : _ktpImage!.path.split('/').last,
-                    style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: isEditing ? Colors.black54 : Colors.grey),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.blue, width: 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                ],
-              ),
+                  onPressed: onPick,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1037,7 +1096,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ? () => setState(() {
                       isEditing = false;
                       _changedFields.clear();
-                      _ktpImage = null;
+                      _supportingDocument = null;
+                      // Reset text controllers to original values
+                      _employeeNameController.text =
+                          fullData['EmployeeName'] ?? '';
+                      _jobTitleController.text = fullData['JobTitle'] ?? '';
+                      _livingAreaController.text = fullData['LivingArea'] ?? '';
+                      _birthDateController.text =
+                          _formatDateOnly(fullData['BirthDate']) ?? '';
+                      _employeeNoController.text = fullData['EmployeeNo'] ?? '';
+                      _serviceDateController.text =
+                          _formatDateOnly(fullData['ServiceDate']) ?? '';
+                      _noBpjsController.text = fullData['NoBpjs'] ?? '';
+                      _selectedGender = _mapGenderFromApi(fullData['Gender']);
+                      _selectedEducation =
+                          _mapEducationFromApi(fullData['Education']);
+                      _workLocationController.text =
+                          fullData['WorkLocation'] ?? '';
+                      _phoneController.text = fullData['Telepon'] ?? '';
+                      _emailController.text = fullData['Email'] ?? '';
                     })
                 : _showEditConfirmationPopup,
           ),
@@ -1188,18 +1265,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ]),
             const SizedBox(height: 16),
-            _buildKtpUploadCard(),
+            uploadDokumenBox(
+              title: 'Upload Dokumen Pendukung',
+              file: _supportingDocument,
+              onPick: isEditing ? _pickSupportingDocument : () {},
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed:
-                  isEditing && _ktpImage != null && _changedFields.isNotEmpty
-                      ? _showRequestConfirmationPopup
-                      : null,
+              onPressed: isEditing &&
+                      _supportingDocument != null &&
+                      _changedFields.isNotEmpty
+                  ? _showRequestConfirmationPopup
+                  : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isEditing && _ktpImage != null && _changedFields.isNotEmpty
-                        ? const Color(0xFF1572E8)
-                        : Colors.grey,
+                backgroundColor: isEditing &&
+                        _supportingDocument != null &&
+                        _changedFields.isNotEmpty
+                    ? const Color(0xFF1572E8)
+                    : Colors.grey,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding:

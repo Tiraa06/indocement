@@ -1387,143 +1387,76 @@ final response = await ApiService.get(
                                               ),
                                             );
 
-                                            final response = await Dio().post(
-                                              'http://103.31.235.237:5555/api/Medical/generate-medical-document?jenisSurat=keterangan',
-                                              options: Options(
-                                                headers: {
-                                                  'accept': '*/*',
-                                                  'Content-Type':
-                                                      'application/json',
-                                                },
-                                                responseType:
-                                                    ResponseType.bytes,
-                                              ),
-                                              data: {
-                                                "{{id_employee}}":
-                                                    idEmployee.toString(),
-                                                "{{nama_pemberi_keterangan}}":
-                                                    namaAtasanController.text,
-                                                "{{jabatan_pemberi_keterangan}}":
-                                                    jabatanAtasanController
-                                                        .text,
-                                                "{{nama_perusahaan}}":
-                                                    namaPerusahaanController
-                                                        .text,
-                                                "{{alamat_perusahaan}}":
-                                                    alamatPerusahaanController
-                                                        .text,
-                                                "{{nama_pegawai}}":
-                                                    namaKaryawanController.text,
-                                                "{{tempat_lahir_pegawai}}":
-                                                    tempatLahirKaryawanController
-                                                        .text,
-                                                "{{tanggal_lahir_pegawai}}":
-                                                    tanggalLahirKaryawanController
-                                                        .text,
-                                                "{{alamat_pegawai}}":
-                                                    alamatKaryawanController
-                                                        .text,
-                                                "{{tanggal_mulai_kerja}}":
-                                                    tglMulaiKerjaController
-                                                        .text,
-                                                "{{jabatan_terakhir}}":
-                                                    jabatanTerakhirController
-                                                        .text,
-                                                "{{section}}":
-                                                    sectionController.text,
-                                                "{{status_pasangan}}":
-                                                    statusPasanganController
-                                                        .text,
-                                                "{{nama_suami}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? ""
-                                                        : namaPasanganController
-                                                            .text,
-                                                "{{ttl_suami}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? ""
-                                                        : tanggalLahirPasanganController
-                                                            .text,
-                                                "{{nama_pasangan}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? namaPasanganController
-                                                            .text
-                                                        : "",
-                                                "{{ttl_pasangan}}":
-                                                    statusPasanganController
-                                                                .text
-                                                                .toLowerCase() ==
-                                                            "istri"
-                                                        ? tanggalLahirPasanganController
-                                                            .text
-                                                        : "",
-                                                "{{nama_anak1}}":
-                                                    namaAnak1Controller.text,
-                                                "{{ttl_anak1}}":
-                                                    ttlAnak1Controller.text,
-                                                "{{nama_anak2}}":
-                                                    namaAnak2Controller.text,
-                                                "{{ttl_anak2}}":
-                                                    ttlAnak2Controller.text,
-                                                "{{nama_anak3}}":
-                                                    namaAnak3Controller.text,
-                                                "{{ttl_anak3}}":
-                                                    ttlAnak3Controller.text,
-                                                "{{Unit}}": unitController.text,
-                                                "{{departement}}":
-                                                    sectionController.text,
-                                              },
-                                            );
+final response = await ApiService.post(
+  'http://103.31.235.237:5555/api/Medical/generate-medical-document?jenisSurat=keterangan',
+  data: {
+    "{{id_employee}}": idEmployee.toString(),
+    "{{nama_pemberi_keterangan}}": namaAtasanController.text,
+    "{{jabatan_pemberi_keterangan}}": jabatanAtasanController.text,
+    "{{nama_perusahaan}}": namaPerusahaanController.text,
+    "{{alamat_perusahaan}}": alamatPerusahaanController.text,
+    "{{nama_pegawai}}": namaKaryawanController.text,
+    "{{tempat_lahir_pegawai}}": tempatLahirKaryawanController.text,
+    "{{tanggal_lahir_pegawai}}": tanggalLahirKaryawanController.text,
+    "{{alamat_pegawai}}": alamatKaryawanController.text,
+    "{{tanggal_mulai_kerja}}": tglMulaiKerjaController.text,
+    "{{jabatan_terakhir}}": jabatanTerakhirController.text,
+    "{{section}}": sectionController.text,
+    "{{status_pasangan}}": statusPasanganController.text,
+    "{{nama_suami}}": statusPasanganController.text.toLowerCase() == "istri" ? "" : namaPasanganController.text,
+    "{{ttl_suami}}": statusPasanganController.text.toLowerCase() == "istri" ? "" : tanggalLahirPasanganController.text,
+    "{{nama_pasangan}}": statusPasanganController.text.toLowerCase() == "istri" ? namaPasanganController.text : "",
+    "{{ttl_pasangan}}": statusPasanganController.text.toLowerCase() == "istri" ? tanggalLahirPasanganController.text : "",
+    "{{nama_anak1}}": namaAnak1Controller.text,
+    "{{ttl_anak1}}": ttlAnak1Controller.text,
+    "{{nama_anak2}}": namaAnak2Controller.text,
+    "{{ttl_anak2}}": ttlAnak2Controller.text,
+    "{{nama_anak3}}": namaAnak3Controller.text,
+    "{{ttl_anak3}}": ttlAnak3Controller.text,
+    "{{Unit}}": unitController.text,
+    "{{departement}}": sectionController.text,
+  },
+  headers: {
+    'accept': '*/*',
+    'Content-Type': 'application/json',
+  },
+  responseType: ResponseType.bytes,
+);
 
                                             Navigator.of(context)
                                                 .pop(); // Tutup dialog loading
 
-                                            if (response.statusCode == 200) {
-                                              final directory = Directory(
-                                                  '/storage/emulated/0/Download');
-                                              if (!directory.existsSync()) {
-                                                directory.createSync(
-                                                    recursive: true);
-                                              }
-                                              final filePath =
-                                                  '${directory.path}/medical_$idEmployee.pdf';
-                                              final file = File(filePath);
-                                              await file
-                                                  .writeAsBytes(response.data!);
+if (response.statusCode == 200) {
+  // Gunakan nama file unik, misal: medical_{idEmployee}_{timestamp}.pdf
+  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  final fileName = 'medical_${idEmployee}_$timestamp.pdf';
 
-                                              setState(() {
-                                                isDownloaded = true;
-                                                isLoadingDownload = false;
-                                                isDownloadEnabled = true;
-                                              });
+  // Gunakan path_provider agar aman di Android 13-15
+  final directory = Directory('/storage/emulated/0/Download');
+  if (!directory.existsSync()) {
+    directory.createSync(recursive: true);
+  }
+  final filePath = '${directory.path}/$fileName';
+  final file = File(filePath);
+  await file.writeAsBytes(response.data!);
 
-                                              // Tutup dropdown jika masih terbuka
-                                              FocusScope.of(context).unfocus();
+  setState(() {
+    isDownloaded = true;
+    isLoadingDownload = false;
+    isDownloadEnabled = true;
+  });
 
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                    content: Text(
-                                                        'File berhasil didownload ke $filePath')),
-                                              );
+  FocusScope.of(context).unfocus();
 
-                                              // Reload halaman setelah download selesai
-                                              Navigator.of(context)
-                                                  .pushReplacement(
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      const MedicPasutriPage(),
-                                                ),
-                                              );
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('File berhasil didownload ke $filePath')),
+  );
+
+  Navigator.of(context).pushReplacement(
+    MaterialPageRoute(
+      builder: (context) => const MedicPasutriPage(),
+    ),
+  );
                                             } else {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(
@@ -2144,20 +2077,15 @@ if (jenisSurat == 'pernyataan') {
   };
 }
 
-
-                                            final response = await Dio().post(
-                                              url,
-                                              options: Options(
-                                                headers: {
-                                                  'accept': '*/*',
-                                                  'Content-Type':
-                                                      'application/json',
-                                                },
-                                                responseType:
-                                                    ResponseType.bytes,
-                                              ),
-                                              data: data,
-                                            );
+final response = await ApiService.post(
+  url,
+  data: data,
+  headers: {
+    'accept': '*/*',
+    'Content-Type': 'application/json',
+  },
+  responseType: ResponseType.bytes, // <-- Tambahkan ini
+);
 
                                             Navigator.of(context)
                                                 .pop(); // Tutup dialog loading

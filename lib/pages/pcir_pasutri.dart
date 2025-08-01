@@ -56,7 +56,7 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
 
         // Cari data berdasarkan AnggotaBpjs = "Pasangan"
         final data = dataList.firstWhere(
-          (item) => item['AnggotaBpjs'] == 'Pasangan',
+          (item) => (item['AnggotaBpjs']?.toString().toLowerCase() ?? '') == 'pasangan',
           orElse: () => null,
         );
 
@@ -68,8 +68,8 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
           await prefs.setString('AnggotaBpjs', data['AnggotaBpjs']);
 
           setState(() {
-            urlKk = data['UrlKk'];
-            urlSuratNikah = data['UrlSuratNikah'];
+            urlKk = data['UrlKk'] ?? data['urlKk'] ?? data['url_kk'];
+            urlSuratNikah = data['UrlSuratNikah'] ?? data['urlSuratNikah'] ?? data['url_surat_nikah'];
           });
         } else {
           // Jika data tidak ditemukan, tampilkan popup
@@ -210,6 +210,7 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
       );
 
       if (uploadResponse.statusCode == 200) {
+        await _fetchUploadedData(); // Refresh data dari API
         _showPopup(
           title: 'Berhasil',
           message: 'File berhasil diunggah.',
@@ -313,6 +314,8 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
     if (url == null) {
       return const SizedBox.shrink();
     }
+    // Jika url hanya path, tambahkan base URL
+    final fullUrl = url.startsWith('http') ? url : 'http://103.31.235.237:5555$url';
 
     return Card(
       elevation: 4,
@@ -338,7 +341,7 @@ class _TambahDataPasutriPageState extends State<TambahDataPasutriPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    url.split('/').last,
+                    fullUrl.split('/').last,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],

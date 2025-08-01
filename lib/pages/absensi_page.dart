@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/absensi_lapangan_page.dart';
+import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:indocement_apk/service/api_service.dart';
@@ -62,6 +63,7 @@ class _EventMenuPageState extends State<EventMenuPage> {
       'http://103.31.235.237:5555/api/Event',
       headers: {'accept': 'text/plain'},
     );
+    print('Data event dari API: ${response.data}');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data is String
           ? json.decode(response.data)
@@ -70,13 +72,19 @@ class _EventMenuPageState extends State<EventMenuPage> {
       return data.where((event) {
         final employees = event['Employees'] as List<dynamic>?;
         if (employees == null) return false;
-        // Filter event yang tanggal selesai >= hari ini
+
+        // Samakan tipe data
+        final employeeIds = employees.map((e) => e.toString()).toList();
+        if (!employeeIds.contains(idEmployee.toString())) return false;
+
+        // Filter tanggal selesai >= hari ini
         final tglSelesaiStr = event['TanggalSelesai']?.toString();
         if (tglSelesaiStr == null) return false;
-        final tglSelesai = DateTime.tryParse(tglSelesaiStr);
+        final tglSelesai = DateTime.tryParse(tglSelesaiStr.split('T').first);
         if (tglSelesai == null) return false;
         if (tglSelesai.isBefore(DateTime(today.year, today.month, today.day))) return false;
-        return employees.contains(idEmployee);
+
+        return true;
       }).map<Map<String, dynamic>>((event) => {
         'id': event['Id'],
         'nama': event['NamaEvent'],
@@ -132,7 +140,10 @@ class _EventMenuPageState extends State<EventMenuPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LayananMenuPage()),
+            );
           },
         ),
         elevation: 0,

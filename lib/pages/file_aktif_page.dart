@@ -12,6 +12,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:indocement_apk/service/api_service.dart';
 import 'package:dio/dio.dart';
+import 'package:indocement_apk/pages/layanan_menu.dart';
 
 class FileAktifPage extends StatefulWidget {
   const FileAktifPage({super.key});
@@ -496,36 +497,154 @@ class _FileAktifPageState extends State<FileAktifPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: _selectedFile == null
-                        ? const Text("Ketuk untuk memilih file")
-                        : Text(path.basename(_selectedFile!.path)),
-                  ),
-                ),
+              uploadDokumenBoxModern(
+                title: "File (PDF/Gambar)",
+                file: _selectedFile,
+                onPick: () async {
+                  final picked = await showModalBottomSheet<XFile?>(
+                    context: context,
+                    builder: (ctx) => SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.image),
+                            title: const Text('Pilih Gambar'),
+                            onTap: () async {
+                              final img = await ImagePicker()
+                                  .pickImage(source: ImageSource.gallery);
+                              Navigator.pop(ctx, img);
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.picture_as_pdf),
+                            title: const Text('Pilih PDF'),
+                            onTap: () async {
+                              final pdf = await ImagePicker().pickImage(
+                                source: ImageSource.gallery,
+                                preferredCameraDevice: CameraDevice.rear,
+                              );
+                              // Ganti dengan file picker jika ingin PDF saja
+                              Navigator.pop(ctx, pdf);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (picked != null) setState(() => _selectedFile = picked);
+                },
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _submitForm,
-                icon: const Icon(Icons.send),
-                label: const Text("Ajukan"),
+                icon: const Icon(Icons.send, color: Colors.white),
+                label: const Text("Ajukan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1572E8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
+                  elevation: 2,
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget uploadDokumenBoxModern({
+    required String title,
+    required XFile? file,
+    required VoidCallback onPick,
+    bool allowPdf = true,
+  }) {
+    final bool uploaded = file != null;
+    final bool isPdf = uploaded && file!.path.toLowerCase().endsWith('.pdf');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: uploaded ? Colors.green : Colors.grey[400]!,
+          width: 1.2,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: uploaded ? Colors.green : Colors.grey[300]!,
+                width: 1.0,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey[100],
+            ),
+            child: uploaded
+                ? (isPdf
+                    ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.file(File(file!.path), fit: BoxFit.cover),
+                      ))
+                : const Icon(Icons.insert_drive_file, color: Colors.grey, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  uploaded ? file!.path.split('/').last : "File belum dipilih",
+                  style: TextStyle(
+                    color: uploaded ? Colors.green[700] : Colors.grey[500],
+                    fontWeight: uploaded ? FontWeight.w600 : FontWeight.normal,
+                    fontSize: 12.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.upload_file, color: Colors.blue, size: 18),
+                  label: Text(
+                    uploaded ? "Ganti File" : "Pilih File",
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.blue, width: 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: onPick,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -541,6 +660,15 @@ class _FileAktifPageState extends State<FileAktifPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LayananMenuPage()),
+            );
+          },
+        ),
         title: const Text('File Aktif', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1572E8),
       ),

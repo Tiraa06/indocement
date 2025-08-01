@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:dio/dio.dart';
 import 'package:path/path.dart';
 import 'package:indocement_apk/service/api_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -1141,22 +1141,17 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
                                           ),
                                         ),
                                       );
+final response = await ApiService.post(
+  'http://103.31.235.237:5555/api/Beasiswa/generate-document',
+  data: data,
+  headers: {
+    'accept': '*/*',
+    'Content-Type': 'application/json',
+  },
+  responseType: ResponseType.bytes,
+);
 
-                                      final dio = Dio();
-                                      final response = await dio.post(
-                                        'http://103.31.235.237:5555/api/Beasiswa/generate-document',
-                                        data: data,
-                                        options: Options(
-                                          headers: {
-                                            'accept': '*/*',
-                                            'Content-Type': 'application/json',
-                                          },
-                                          responseType: ResponseType.bytes,
-                                        ),
-                                      );
-
-                                      Navigator.of(context)
-                                          .pop(); // Tutup dialog loading
+Navigator.of(context).pop(); 
 
                                       if (response.statusCode == 200) {
                                         // Simpan file ke Download
@@ -1541,17 +1536,14 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
                                           'ID karyawan tidak ditemukan. Harap login ulang.');
                                     }
 
-                                    final dio = Dio();
-                                    final formData = FormData.fromMap({
-                                      "IdEmployee": idEmployee,
-                                      "Status": "Diajukan",
-                                      "UrlDokumen":
-                                          await MultipartFile.fromFile(
-                                        fileUploadBeasiswa!.path,
-                                        filename:
-                                            basename(fileUploadBeasiswa!.path),
-                                      ),
-                                    });
+          final formData = FormData.fromMap({
+            "IdEmployee": idEmployee,
+            "Status": "Diajukan",
+            "UrlDokumen": await MultipartFile.fromFile(
+              fileUploadBeasiswa!.path,
+              filename: basename(fileUploadBeasiswa!.path),
+            ),
+          });
 
                                     showDialog(
                                       context: context,
@@ -1577,271 +1569,225 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
                                       ),
                                     );
 
-                                    final response = await dio.post(
-                                      'http://103.31.235.237:5555/api/Beasiswa',
-                                      data: formData,
-                                      options: Options(
-                                        headers: {
-                                          'accept': '*/*',
-                                        },
-                                      ),
-                                    );
+          final response = await ApiService.post(
+            'http://103.31.235.237:5555/api/Beasiswa',
+            data: formData,
+            headers: {
+              'accept': '*/*',
+            },
+          );
 
                                     Navigator.of(context)
                                         .pop(); // tutup loading
 
-                                    if (response.statusCode == 200 ||
-                                        response.statusCode == 201) {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (context) => Dialog(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 24, vertical: 28),
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                    Icons
-                                                        .check_circle_outline_rounded,
-                                                    color: Color(0xFF1572E8),
-                                                    size: 54),
-                                                const SizedBox(height: 18),
-                                                const Text(
-                                                  'Pengajuan Berhasil',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w900,
-                                                    fontSize: 22,
-                                                    color: Color(0xFF1572E8),
-                                                    letterSpacing: 0.2,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                const SizedBox(height: 12),
-                                                const Text(
-                                                  'Dokumen pengajuan beasiswa berhasil dikirim.',
-                                                  style: TextStyle(
-                                                    fontSize: 16.5,
-                                                    color: Colors.black87,
-                                                    height: 1.5,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                const SizedBox(height: 28),
-                                                SizedBox(
-                                                  width: double.infinity,
-                                                  child: ElevatedButton(
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xFF1572E8),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12)),
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 15),
-                                                    ),
-                                                    onPressed: () {
-                                                      Navigator.of(context)
-                                                          .pop();
-                                                    },
-                                                    child: const Text(
-                                                      'OK',
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white,
-                                                        fontSize: 16.5,
-                                                        letterSpacing: 0.2,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                      setState(() {
-                                        fileUploadBeasiswa = null;
-                                      });
-                                    } else {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (context) => Dialog(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 24, vertical: 28),
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.cancel_rounded,
-                                                    color: Colors.red,
-                                                    size: 54),
-                                                const SizedBox(height: 18),
-                                                const Text(
-                                                  'Gagal Mengirim',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w900,
-                                                    fontSize: 22,
-                                                    color: Colors.red,
-                                                    letterSpacing: 0.2,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                const SizedBox(height: 12),
-                                                Text(
-                                                  'Gagal mengirim dokumen: ${response.statusCode}',
-                                                  style: const TextStyle(
-                                                    fontSize: 16.5,
-                                                    color: Colors.black87,
-                                                    height: 1.5,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                const SizedBox(height: 28),
-                                                SizedBox(
-                                                  width: double.infinity,
-                                                  child: ElevatedButton(
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          Colors.red,
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12)),
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 15),
-                                                    ),
-                                                    onPressed: () {
-                                                      Navigator.of(context)
-                                                          .pop();
-                                                    },
-                                                    child: const Text(
-                                                      'OK',
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white,
-                                                        fontSize: 16.5,
-                                                        letterSpacing: 0.2,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    Navigator.of(context)
-                                        .pop(); // pastikan loading tertutup
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => Dialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 24, vertical: 28),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(Icons.cancel_rounded,
-                                                  color: Colors.red, size: 54),
-                                              const SizedBox(height: 18),
-                                              const Text(
-                                                'Gagal Mengirim',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w900,
-                                                  fontSize: 22,
-                                                  color: Colors.red,
-                                                  letterSpacing: 0.2,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Text(
-                                                'Terjadi kesalahan: $e',
-                                                style: const TextStyle(
-                                                  fontSize: 16.5,
-                                                  color: Colors.black87,
-                                                  height: 1.5,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              const SizedBox(height: 28),
-                                              SizedBox(
-                                                width: double.infinity,
-                                                child: ElevatedButton(
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12)),
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        vertical: 15),
-                                                  ),
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: const Text(
-                                                    'OK',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white,
-                                                      fontSize: 16.5,
-                                                      letterSpacing: 0.2,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  } finally {
-                                    setState(() {
-                                      isSendingUpload = false;
-                                    });
-                                  }
-                                },
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1572E8), size: 54),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Pengajuan Berhasil',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 22,
+                          color: Color(0xFF1572E8),
+                          letterSpacing: 0.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Dokumen pengajuan beasiswa berhasil dikirim.',
+                        style: TextStyle(
+                          fontSize: 16.5,
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1572E8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 16.5,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
+            );
+            setState(() {
+              fileUploadBeasiswa = null;
+            });
+          } else {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Gagal Mengirim',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 22,
+                          color: Colors.red,
+                          letterSpacing: 0.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Gagal mengirim dokumen: ${response.statusCode}',
+                        style: const TextStyle(
+                          fontSize: 16.5,
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 16.5,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          Navigator.of(context).pop(); // pastikan loading tertutup
+          showDialog(
+            context: context,
+            builder: (context) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Gagal Mengirim',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        color: Colors.red,
+                        letterSpacing: 0.2,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Terjadi kesalahan: $e',
+                      style: const TextStyle(
+                        fontSize: 16.5,
+                        color: Colors.black87,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text(
+                          'OK',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 16.5,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } finally {
+          setState(() {
+            isSendingUpload = false;
+          });
+        }
+      },
+          ),
+        ),
+      ],
+    ),
+  ),
+),
             ],
           ),
         ),
@@ -1850,194 +1796,119 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
   }
 
   Future<void> uploadBeasiswaDocument(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    final idEmployee = prefs.getInt('idEmployee');
-    if (idEmployee == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('ID karyawan tidak ditemukan. Harap login ulang.')),
-      );
-      return;
-    }
-    if (fileUploadBeasiswa == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Silakan upload dokumen pengajuan beasiswa terlebih dahulu.')),
-      );
-      return;
-    }
+  final prefs = await SharedPreferences.getInstance();
+  final idEmployee = prefs.getInt('idEmployee');
+  if (idEmployee == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('ID karyawan tidak ditemukan. Harap login ulang.')),
+    );
+    return;
+  }
+  if (fileUploadBeasiswa == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Silakan upload dokumen pengajuan beasiswa terlebih dahulu.')),
+    );
+    return;
+  }
 
-    final formData = FormData.fromMap({
-      "IdEmployee": idEmployee,
-      "Status": "Diajukan",
-      "UrlDokumen": await MultipartFile.fromFile(
-        fileUploadBeasiswa!.path,
-        filename: basename(fileUploadBeasiswa!.path),
-      ),
-    });
+  final formData = FormData.fromMap({
+    "IdEmployee": idEmployee,
+    "Status": "Diajukan",
+    "UrlDokumen": await MultipartFile.fromFile(
+      fileUploadBeasiswa!.path,
+      filename: basename(fileUploadBeasiswa!.path),
+    ),
+  });
 
-    print('=== FormData yang akan dikirim (Beasiswa) ===');
-    for (var f in formData.fields) {
-      print('Field: ${f.key}, Value: ${f.value}');
-    }
-    for (var f in formData.files) {
-      print('File Field: ${f.key}, Filename: ${f.value.filename}');
-    }
-    print('=================================');
+  print('=== FormData yang akan dikirim (Beasiswa) ===');
+  formData.fields.forEach((f) => print('Field: ${f.key}, Value: ${f.value}'));
+  formData.files.forEach((f) => print('File Field: ${f.key}, Filename: ${f.value.filename}'));
+  print('=================================');
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final response = await ApiService.post(
+      'http://103.31.235.237:5555/api/Beasiswa',
+      data: formData,
     );
 
-    try {
-      final response = await ApiService.post(
-        'http://103.31.235.237:5555/api/Beasiswa',
-        data: formData,
-      );
+    Navigator.of(context).pop(); // Tutup loading
 
-      Navigator.of(context).pop(); // Tutup loading
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Dialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle_outline_rounded,
-                      color: Color(0xFF1572E8), size: 54),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Pengajuan Berhasil',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                      color: Color(0xFF1572E8),
-                      letterSpacing: 0.2,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Dokumen pengajuan beasiswa berhasil dikirim.',
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      color: Colors.black87,
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1572E8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 16.5,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-        setState(() {
-          fileUploadBeasiswa = null;
-        });
-      } else {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Dialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Gagal Mengirim',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                      color: Colors.red,
-                      letterSpacing: 0.2,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Gagal mengirim dokumen: ${response.statusCode}',
-                    style: const TextStyle(
-                      fontSize: 16.5,
-                      color: Colors.black87,
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 16.5,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.of(context).pop(); // pastikan loading tertutup
+    if (response.statusCode == 200 || response.statusCode == 201) {
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (context) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1572E8), size: 54),
+                const SizedBox(height: 18),
+                const Text(
+                  'Pengajuan Berhasil',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Color(0xFF1572E8),
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Dokumen pengajuan beasiswa berhasil dikirim.',
+                  style: TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1572E8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      setState(() {
+        fileUploadBeasiswa = null;
+      });
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
@@ -2057,7 +1928,7 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Terjadi kesalahan: $e',
+                  'Gagal mengirim dokumen: ${response.statusCode}',
                   style: const TextStyle(
                     fontSize: 16.5,
                     color: Colors.black87,
@@ -2071,8 +1942,7 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                     onPressed: () {
@@ -2095,5 +1965,66 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
         ),
       );
     }
+  } catch (e) {
+    Navigator.of(context).pop(); // pastikan loading tertutup
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+              const SizedBox(height: 18),
+              const Text(
+                'Gagal Mengirim',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                  color: Colors.red,
+                  letterSpacing: 0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Terjadi kesalahan: $e',
+                style: const TextStyle(
+                  fontSize: 16.5,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 16.5,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-}
+}}

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:indocement_apk/pages/layanan_menu.dart' show LayananMenuPage;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:indocement_apk/service/api_service.dart';
+ 
 
 // Tambahkan warna biru khusus di halaman ini
 const Color customBlue = Color(0xFF1572E8);
@@ -340,6 +342,15 @@ class _MasaKerjaPageState extends State<MasaKerjaPage> {
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => LayananMenuPage()),
+            );
+          },
+        ),
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Padding(

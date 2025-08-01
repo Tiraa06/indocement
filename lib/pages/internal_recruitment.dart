@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:indocement_apk/pages/layanan_menu.dart' show LayananMenuPage;
 import 'package:indocement_apk/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -46,7 +49,19 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
       );
       if (response.statusCode == 200) {
         setState(() {
-          _lowongan = response.data is String ? json.decode(response.data) : response.data;
+          final now = DateTime.now();
+          final allLowongan = response.data is String ? json.decode(response.data) : response.data;
+          _lowongan = allLowongan.where((l) {
+            final tglSelesai = l['TanggalSelesai'];
+            if (tglSelesai == null) return false;
+            try {
+              final selesai = DateTime.parse(tglSelesai);
+              // Tampilkan jika tanggal selesai >= hari ini (tanpa jam)
+              return selesai.isAfter(DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1)));
+            } catch (_) {
+              return false;
+            }
+          }).toList();
           _isLoading = false;
         });
       } else {
@@ -165,19 +180,33 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
 
     final l = formData['Lowongan'];
     try {
+      // Cek apakah ada file surat izin
+      MultipartFile? suratIzinFile;
+      if (formData['SuratIzinAtasan'] != null && formData['SuratIzinAtasan'].toString().isNotEmpty) {
+        suratIzinFile = await MultipartFile.fromFile(
+          formData['SuratIzinAtasan'],
+          filename: formData['SuratIzinAtasan'].split('/').last,
+        );
+      }
+
+      final formDataToSend = FormData.fromMap({
+        "IdLowongan": l['Id'],
+        "IdEmployee": idEmployee,
+        "NamaLengkap": formData['NamaLengkap'],
+        "PlantAsal": formData['PlantAsal'],
+        "DivisiAsal": formData['DivisiAsal'],
+        "AlasanPindah": formData['AlasanPindah'],
+        "TanggalDaftar": formData['TanggalDaftar'],
+        if (suratIzinFile != null) "SuratIjinAtasan": suratIzinFile,
+      });
+
       final response = await ApiService.post(
-        'http://103.31.235.237:5555/api/Recruitment/form-pendaftaran',
-        data: jsonEncode({
-          "IdLowongan": l['Id'],
-          "IdEmployee": idEmployee,
-          "NamaLengkap": formData['NamaLengkap'],
-          "PlantAsal": formData['PlantAsal'],
-          "DivisiAsal": formData['DivisiAsal'],
-          "AlasanPindah": formData['AlasanPindah'],
-          "SuratIjinAtasanUrl": formData['SuratIzinAtasan'] ?? "",
-          "TanggalDaftar": formData['TanggalDaftar'],
-        }),
-        headers: {'Content-Type': 'application/json'},
+        'http://103.31.235.237:5555/api/Recruitment/upload',
+        data: formDataToSend,
+        headers: {
+          'accept': '*/*',
+          // Jangan set Content-Type, biarkan Dio mengatur multipart otomatis!
+        },
       );
       Navigator.pop(context); // Tutup loading
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -280,175 +309,187 @@ class _InternalRecruitmentPageState extends State<InternalRecruitmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/master');
-          },
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LayananMenuPage()),
+        );
+        return false; // cegah pop default
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1976D2),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LayananMenuPage()),
+              );
+            },
+          ),
+          title: const Text(
+            'Internal Recruitment',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          elevation: 2,
         ),
-        title: const Text(
-          'Internal Recruitment',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        elevation: 2,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Card Lowongan - dengan icon dan warna biru
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              color: const Color(0xFFE3F2FD),
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.work_outline, color: Color(0xFF1976D2), size: 28),
-                        SizedBox(width: 10),
-                        Text(
-                          'Lowongan Tersedia',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19, color: Color(0xFF1976D2)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(thickness: 1.5, color: Color(0xFF1976D2)), // Batas visual antara judul card dan daftar lowongan
-                    const SizedBox(height: 12),
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _lowongan.isEmpty
-                            ? const Text('Tidak ada lowongan tersedia.', style: TextStyle(color: Colors.black54))
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _lowongan.length,
-                                separatorBuilder: (_, __) => const Divider(),
-                                itemBuilder: (context, i) {
-                                  final l = _lowongan[i];
-                                  return RecruitmentDropdownForm(
-                                    lowongan: l,
-                                    onSubmit: (formData) => _daftarLowongan(formData),
-                                  );
-                                },
-                              ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            // Card Pengumuman Seleksi - layout modern mirip Lowongan Tersedia
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              color: const Color(0xFFE8F5E9),
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.announcement_outlined, color: Color(0xFF388E3C), size: 28),
-                        SizedBox(width: 10),
-                        Text(
-                          'Pengumuman Seleksi',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19, color: Color(0xFF388E3C)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(thickness: 1.5, color: Color(0xFF388E3C)),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Color(0xFF388E3C), width: 1),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.info_outline, color: Color(0xFF388E3C), size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _pengumuman != null
-                              ? _pengumumanWidget(_pengumuman!)
-                              : const Text(
-                                  'Belum ada pengumuman seleksi.',
-                                  style: TextStyle(fontSize: 16, color: Color(0xFF388E3C)),
-                                ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Card Lowongan - dengan icon dan warna biru
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: const Color(0xFFE3F2FD),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.work_outline, color: Color(0xFF1976D2), size: 28),
+                          SizedBox(width: 10),
+                          Text(
+                            'Lowongan Tersedia',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19, color: Color(0xFF1976D2)),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      const Divider(thickness: 1.5, color: Color(0xFF1976D2)), // Batas visual antara judul card dan daftar lowongan
+                      const SizedBox(height: 12),
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _lowongan.isEmpty
+                              ? const Text('Tidak ada lowongan tersedia.', style: TextStyle(color: Colors.black54))
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: _lowongan.length,
+                                  separatorBuilder: (_, __) => const Divider(),
+                                  itemBuilder: (context, i) {
+                                    final l = _lowongan[i];
+                                    return RecruitmentDropdownForm(
+                                      lowongan: l,
+                                      onSubmit: (formData) => _daftarLowongan(formData),
+                                    );
+                                  },
+                                ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 22),
-            // Card Jadwal Wawancara - layout modern mirip Lowongan Tersedia
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              color: const Color(0xFFFFF3E0),
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.schedule, color: Color(0xFFF57C00), size: 28),
-                        SizedBox(width: 10),
-                        Text(
-                          'Jadwal Wawancara',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19, color: Color(0xFFF57C00)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(thickness: 1.5, color: Color(0xFFF57C00)),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Color(0xFFF57C00), width: 1),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.event_available, color: Color(0xFFF57C00), size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _jadwalWawancara != null
-                              ? _jadwalWawancaraWidget(_jadwalWawancara!)
-                              : const Text(
-                                  'Belum ada jadwal wawancara.',
-                                  style: TextStyle(fontSize: 16, color: Color(0xFFF57C00)),
-                                ),
+              const SizedBox(height: 22),
+              // Card Pengumuman Seleksi - layout modern mirip Lowongan Tersedia
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: const Color(0xFFE8F5E9),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.announcement_outlined, color: Color(0xFF388E3C), size: 28),
+                          SizedBox(width: 10),
+                          Text(
+                            'Pengumuman Seleksi',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19, color: Color(0xFF388E3C)),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      const Divider(thickness: 1.5, color: Color(0xFF388E3C)),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Color(0xFF388E3C), width: 1),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline, color: Color(0xFF388E3C), size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _pengumuman != null
+                                ? _pengumumanWidget(_pengumuman!)
+                                : const Text(
+                                    'Belum ada pengumuman seleksi.',
+                                    style: TextStyle(fontSize: 16, color: Color(0xFF388E3C)),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 22),
+              // Card Jadwal Wawancara - layout modern mirip Lowongan Tersedia
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: const Color(0xFFFFF3E0),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.schedule, color: Color(0xFFF57C00), size: 28),
+                          SizedBox(width: 10),
+                          Text(
+                            'Jadwal Wawancara',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19, color: Color(0xFFF57C00)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(thickness: 1.5, color: Color(0xFFF57C00)),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Color(0xFFF57C00), width: 1),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.event_available, color: Color(0xFFF57C00), size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _jadwalWawancara != null
+                                ? _jadwalWawancaraWidget(_jadwalWawancara!)
+                                : const Text(
+                                    'Belum ada jadwal wawancara.',
+                                    style: TextStyle(fontSize: 16, color: Color(0xFFF57C00)),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

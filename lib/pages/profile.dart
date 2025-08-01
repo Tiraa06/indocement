@@ -232,11 +232,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               MenuItem(
-                icon: 'assets/icons/setting.svg',
-                title: 'Pengaturan',
-                onTap: () {},
-              ),
-              MenuItem(
                 icon: 'assets/icons/faq.svg',
                 title: 'FAQ',
                 onTap: () {

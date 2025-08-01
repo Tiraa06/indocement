@@ -519,7 +519,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Pilih tanggal shift yang valid (hari ini atau masa depan).',
+              'Pilih tanggal shift yang valid (anda harus mengajukan minimal satu hari sebelum tanggal tukar shift).',
               style: GoogleFonts.poppins(),
             ),
           ),

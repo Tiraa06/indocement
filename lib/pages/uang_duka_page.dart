@@ -398,16 +398,15 @@ class _UangDukaPageState extends State<UangDukaPage> {
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                             ),
                             const SizedBox(height: 24),
-                            _buildBox(
+                            uploadDokumenBox(
                               title: 'Kartu Keluarga (KK)',
-                              isKK: true,
                               file: _kkFile,
+                              onPick: () => _pickFile(true),
                             ),
-                            const SizedBox(height: 20),
-                            _buildBox(
+                            uploadDokumenBox(
                               title: 'Surat Keterangan Kematian',
-                              isKK: false,
                               file: _skkFile,
+                              onPick: () => _pickFile(false),
                             ),
                             const SizedBox(height: 28),
                             ElevatedButton.icon(
@@ -485,4 +484,94 @@ class _UangDukaPageState extends State<UangDukaPage> {
       ),
     );
   }
-}
+
+  Widget uploadDokumenBox({
+  required String title,
+  required File? file,
+  required VoidCallback onPick,
+}) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(
+        color: file != null ? Colors.green : Colors.grey[400]!,
+        width: 1.2,
+      ),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: file != null ? Colors.green : Colors.grey[300]!,
+              width: 1.0,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey[100],
+          ),
+          child: file != null
+              ? (file.path.endsWith('.pdf')
+                  ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.file(file, fit: BoxFit.cover),
+                    ))
+              : const Icon(Icons.insert_drive_file, color: Colors.grey, size: 26),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                file != null ? file.path.split('/').last : "File belum dipilih",
+                style: TextStyle(
+                  color: file != null ? Colors.green[700] : Colors.grey[500],
+                  fontWeight: file != null ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.upload_file, color: Colors.blue, size: 18),
+                label: Text(
+                  file != null ? "Ganti File" : "Pilih File",
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.blue, width: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                  backgroundColor: Colors.white,
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: onPick,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}}
