@@ -34,6 +34,7 @@ class _ChatPageState extends State<ChatPage> {
   Timer? _reconnectTimer;
   bool _isDisposed = false;
   bool _showConnectedMessage = false;
+  bool _firstRoomLoad = true;
 
   @override
   void initState() {
@@ -129,8 +130,11 @@ class _ChatPageState extends State<ChatPage> {
         print('SignalR invocation canceled, falling back to HTTP...');
         await _joinRoomViaHttp();
       } else if (mounted && !_isDisposed) {
-        setState(
-            () => _errorMessage = 'Gagal menghubungkan ke server SignalR: $e');
+        // Jangan tampilkan error modal jika _firstRoomLoad masih true
+        if (!_firstRoomLoad) {
+          setState(() =>
+              _errorMessage = 'Gagal menghubungkan ke server SignalR: $e');
+        }
         _scheduleReconnect();
       }
     } finally {
@@ -478,10 +482,16 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted && !_isDisposed) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Gagal memuat room chat. Silakan coba lagi.';
+          if (!_firstRoomLoad) {
+            _errorMessage = 'Gagal memuat room chat. Silakan coba lagi.';
+          }
+          // Jika _firstRoomLoad true, biarkan loading spinner saja
         });
       }
     }
+    setState(() {
+      _firstRoomLoad = false;
+    });
   }
 
   /// Verifies if the chat room exists.
@@ -970,7 +980,9 @@ class _ChatPageState extends State<ChatPage> {
         );
         print(
             'Sending message via HTTP: Status: ${response.statusCode}, Body: ${response.data}');
-        if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        if (response.statusCode != null &&
+            response.statusCode! >= 200 &&
+            response.statusCode! < 300) {
           sentSuccessfully = true;
           if (mounted && !_isDisposed) {
             setState(() {
@@ -1098,14 +1110,16 @@ class _ChatPageState extends State<ChatPage> {
         title: Row(
           children: [
             CircleAvatar(
+              radius: 22,
               backgroundColor: Colors.grey[300],
-              child: opponent != null && opponent!['ProfilePhoto'] != null
-                  ? Image.network(
-                      'http://103.31.235.237:5555${opponent!['ProfilePhoto']}',
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.person, color: Colors.grey),
-                    )
-                  : const Icon(Icons.person, color: Colors.grey),
+              backgroundImage: (opponent != null &&
+                      opponent!['ProfilePhoto'] != null)
+                  ? NetworkImage(
+                      'http://103.31.235.237:5555${opponent!['ProfilePhoto']}')
+                  : null,
+              child: (opponent == null || opponent!['ProfilePhoto'] == null)
+                  ? const Icon(Icons.person, color: Colors.grey, size: 28)
+                  : null,
             ),
             const SizedBox(width: 10),
             Flexible(
