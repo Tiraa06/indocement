@@ -3,14 +3,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
-import 'package:indocement_apk/utils/network_helper.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:indocement_apk/service/api_service.dart';
+import 'package:dio/dio.dart';
 
 class SkkFormPage extends StatefulWidget {
   const SkkFormPage({super.key});
@@ -85,20 +85,16 @@ class _SkkFormPageState extends State<SkkFormPage> {
     });
 
     try {
-      final response = await safeRequest(
-        context,
-        () => http.get(
-          Uri.parse('$baseUrl/api/Employees/$employeeId'),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
+      final response = await ApiService.get(
+        '$baseUrl/api/Employees/$employeeId',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       );
-      if (response == null) return;
 
       if (response.statusCode == 200 && mounted) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         setState(() {
           employeeName =
               data['EmployeeName']?.toString() ?? 'Nama Tidak Diketahui';
@@ -168,13 +164,13 @@ class _SkkFormPageState extends State<SkkFormPage> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/skk?IdEmployee=$idEmployee'),
+      final response = await ApiService.get(
+        '$baseUrl/api/skk?IdEmployee=$idEmployee',
         headers: {'Accept': 'application/json'},
       );
 
       if (response.statusCode == 200 && mounted) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         if (data is List) {
           setState(() {
             skkData = List<Map<String, dynamic>>.from(data)
@@ -392,17 +388,17 @@ class _SkkFormPageState extends State<SkkFormPage> {
     _showLoading(context);
 
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/skk'),
+      final response = await ApiService.post(
+        '$baseUrl/api/skk',
+        data: {
+          'IdEmployee': idEmployee,
+          'Keperluan': _keperluanController.text,
+          'TempatLahir': _tempatLahirController.text,
+        },
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'IdEmployee': idEmployee,
-          'Keperluan': _keperluanController.text,
-          'TempatLahir': _tempatLahirController.text,
-        }),
       );
 
       Navigator.pop(context); // Close loading dialog
@@ -417,7 +413,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
       } else {
         if (mounted) {
           _showErrorModal(
-              'Gagal mengirim pengajuan: ${response.statusCode} - ${response.body}');
+              'Gagal mengirim pengajuan: ${response.statusCode} - ${response.data}');
         }
       }
     } catch (e) {
@@ -564,44 +560,73 @@ class _SkkFormPageState extends State<SkkFormPage> {
     _showLoading(context);
 
     try {
-      final response = await http.get(Uri.parse(fullUrl));
+      final response = await ApiService.get(
+        fullUrl,
+        responseType: ResponseType.bytes, // Specify binary response
+      );
+
       Navigator.pop(context); // Close loading dialog
-      if (response.statusCode != 200) {
-        if (mounted) {
-          _showErrorModal(
-              'File tidak ditemukan di server: ${response.statusCode}');
-        }
-        return;
-      }
 
-      Directory dir;
-      if (Platform.isAndroid) {
-        dir = await getExternalStorageDirectory() ??
-            await getTemporaryDirectory();
+      if (response.statusCode == 200) {
+        if (response.data is List<int>) {
+          Directory dir;
+          if (Platform.isAndroid) {
+            dir = await getExternalStorageDirectory() ??
+                await getTemporaryDirectory();
+          } else {
+            dir = await getApplicationDocumentsDirectory();
+          }
+
+          String ext = '.pdf';
+          if (urlSkk.contains('.')) {
+            ext = urlSkk.substring(urlSkk.lastIndexOf('.'));
+          }
+
+          final filePath = '${dir.path}/skk-$noSkk$ext';
+          final file = File(filePath);
+
+          await file.writeAsBytes(response.data as List<int>);
+
+          final result = await OpenFile.open(filePath);
+          if (result.type != ResultType.done) {
+            if (mounted) {
+              _showErrorModal('Tidak dapat membuka file: ${result.message}');
+            }
+            return;
+          }
+
+          if (mounted) {
+            _showSuccessModal('File berhasil diunduh ke:\n$filePath');
+          }
+        } else {
+          String errorMessage =
+              'Format data tidak valid: Diharapkan byte array, diterima ${response.data.runtimeType}';
+          if (response.data is String) {
+            try {
+              final jsonError = jsonDecode(response.data);
+              errorMessage = jsonError['error'] ?? response.data;
+            } catch (_) {
+              errorMessage = response.data;
+            }
+          }
+          if (mounted) {
+            _showErrorModal('Gagal mengunduh: $errorMessage');
+          }
+        }
       } else {
-        dir = await getApplicationDocumentsDirectory();
-      }
-
-      String ext = '.pdf';
-      if (urlSkk.contains('.')) {
-        ext = urlSkk.substring(urlSkk.lastIndexOf('.'));
-      }
-
-      final filePath = '${dir.path}/skk-$noSkk$ext';
-      final file = File(filePath);
-
-      await file.writeAsBytes(response.bodyBytes);
-
-      final result = await OpenFile.open(filePath);
-      if (result.type != ResultType.done) {
-        if (mounted) {
-          _showErrorModal('Tidak dapat membuka file: ${result.message}');
+        String errorMessage =
+            'File tidak ditemukan di server: ${response.statusCode}';
+        if (response.data is String) {
+          try {
+            final jsonError = jsonDecode(response.data);
+            errorMessage = jsonError['error'] ?? response.data;
+          } catch (_) {
+            errorMessage = response.data;
+          }
         }
-        return;
-      }
-
-      if (mounted) {
-        _showSuccessModal('File berhasil diunduh ke:\n$filePath');
+        if (mounted) {
+          _showErrorModal(errorMessage);
+        }
       }
     } catch (e) {
       Navigator.pop(context); // Close loading dialog
@@ -610,7 +635,7 @@ class _SkkFormPageState extends State<SkkFormPage> {
       }
     }
   }
-
+  
   void _showReturnModal(BuildContext context, String keperluan) {
     showDialog(
       context: context,

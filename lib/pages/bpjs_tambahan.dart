@@ -186,7 +186,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
               color: Colors.grey[100],
             ),
             child: uploaded
-                ? (isImage && (file!.path.endsWith('.jpg') || file.path.endsWith('.jpeg') || file.path.endsWith('.png'))
+                ? (isImage && (file.path.endsWith('.jpg') || file.path.endsWith('.jpeg') || file.path.endsWith('.png'))
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.file(file, fit: BoxFit.cover),
@@ -209,7 +209,7 @@ class _BPJSTambahanPageState extends State<BPJSTambahanPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  uploaded ? basename(file!.path) : "File belum dikirim",
+                  uploaded ? basename(file.path) : "File belum dikirim",
                   style: TextStyle(
                     color: uploaded ? Colors.green[700] : Colors.grey[500],
                     fontWeight: uploaded ? FontWeight.w600 : FontWeight.normal,

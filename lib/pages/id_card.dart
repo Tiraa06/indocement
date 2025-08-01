@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
@@ -10,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:indocement_apk/service/api_service.dart'; 
+import 'package:dio/dio.dart';
 
 class IdCardUploadPage extends StatefulWidget {
   const IdCardUploadPage({super.key});
@@ -117,140 +118,75 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
 
   Future<void> submitForm(BuildContext dialogContext) async {
     if (idEmployee == null) {
-      showDialog(
-        context: dialogContext,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content:
-              const Text('ID karyawan tidak ditemukan. Silakan login ulang.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      _showPopup(
+        title: 'Error',
+        message: 'ID karyawan tidak ditemukan. Silakan login ulang.',
       );
       return;
     }
 
     // Validasi
     if (fotoBaru == null) {
-      showDialog(
-        context: dialogContext,
-        builder: (context) => AlertDialog(
-          title: const Text('Validasi Gagal'),
-          content: const Text('Mohon upload foto terbaru.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      _showPopup(
+        title: 'Validasi Gagal',
+        message: 'Mohon upload foto terbaru.',
       );
       return;
     }
     if (_selectedStatus == 'Rusak' && fotoRusak == null) {
-      showDialog(
-        context: dialogContext,
-        builder: (context) => AlertDialog(
-          title: const Text('Validasi Gagal'),
-          content: const Text('Mohon upload foto ID card rusak.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      _showPopup(
+        title: 'Validasi Gagal',
+        message: 'Mohon upload foto ID card rusak.',
       );
       return;
     }
     if (_selectedStatus == 'Hilang' && suratKehilangan == null) {
-      showDialog(
-        context: dialogContext,
-        builder: (context) => AlertDialog(
-          title: const Text('Validasi Gagal'),
-          content: const Text('Mohon upload surat kehilangan.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    if (!isDateFormattingInitialized) {
-      showDialog(
-        context: dialogContext,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: const Text(
-              'Data format tanggal sedang diinisialisasi. Coba lagi sebentar.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      _showPopup(
+        title: 'Validasi Gagal',
+        message: 'Mohon upload surat kehilangan.',
       );
       return;
     }
 
     setState(() => isLoading = true);
 
-    var uri = Uri.parse('http://103.31.235.237:5555/api/IdCards/upload');
-    var request = http.MultipartRequest('POST', uri);
-    request.headers['accept'] = 'text/plain';
-
-    request.fields['IdEmployee'] = idEmployee.toString();
-    request.fields['StatusPengajuan'] = _selectedStatus;
-
-    final fotoBaruMimeType = lookupMimeType(fotoBaru!.path) ?? 'image/png';
-    final fotoBaruMimeTypeData = fotoBaruMimeType.split('/');
-    request.files.add(await http.MultipartFile.fromPath(
-      'UrlFotoTerbaru',
-      fotoBaru!.path,
-      contentType: MediaType(fotoBaruMimeTypeData[0], fotoBaruMimeTypeData[1]),
-    ));
-
-    if (_selectedStatus == 'Rusak' && fotoRusak != null) {
-      final fotoRusakMimeType = lookupMimeType(fotoRusak!.path) ?? 'image/png';
-      final fotoRusakMimeTypeData = fotoRusakMimeType.split('/');
-      request.files.add(await http.MultipartFile.fromPath(
-        'UrlCardRusak',
-        fotoRusak!.path,
-        contentType:
-            MediaType(fotoRusakMimeTypeData[0], fotoRusakMimeTypeData[1]),
-      ));
-    }
-
-    if (_selectedStatus == 'Hilang' && suratKehilangan != null) {
-      final suratMimeType =
-          lookupMimeType(suratKehilangan!.path) ?? 'application/pdf';
-      final suratMimeTypeData = suratMimeType.split('/');
-      request.files.add(await http.MultipartFile.fromPath(
-        'UrlSuratKehilangan',
-        suratKehilangan!.path,
-        contentType: MediaType(suratMimeTypeData[0], suratMimeTypeData[1]),
-      ));
-    }
-
     try {
-      print('Fields: ${request.fields}');
-      print('Files: ${request.files.map((f) => f.filename).toList()}');
-      var response = await request.send();
-      final responseBody = await response.stream.bytesToString();
+      final formData = FormData.fromMap({
+        'IdEmployee': idEmployee.toString(),
+        'StatusPengajuan': _selectedStatus,
+        'UrlFotoTerbaru': await MultipartFile.fromFile(
+          fotoBaru!.path,
+          filename: path.basename(fotoBaru!.path),
+          contentType:
+              MediaType.parse(lookupMimeType(fotoBaru!.path) ?? 'image/png'),
+        ),
+        if (_selectedStatus == 'Rusak' && fotoRusak != null)
+          'UrlCardRusak': await MultipartFile.fromFile(
+            fotoRusak!.path,
+            filename: path.basename(fotoRusak!.path),
+            contentType:
+                MediaType.parse(lookupMimeType(fotoRusak!.path) ?? 'image/png'),
+          ),
+        if (_selectedStatus == 'Hilang' && suratKehilangan != null)
+          'UrlSuratKehilangan': await MultipartFile.fromFile(
+            suratKehilangan!.path,
+            filename: path.basename(suratKehilangan!.path),
+            contentType: MediaType.parse(
+                lookupMimeType(suratKehilangan!.path) ?? 'application/pdf'),
+          ),
+      });
+
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/IdCards/upload',
+        data: formData,
+        headers: {'accept': 'text/plain'},
+      );
 
       setState(() => isLoading = false);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = jsonDecode(responseBody);
+        final responseData =
+            response.data is String ? jsonDecode(response.data) : response.data;
         final tglPengajuan = responseData['TglPengajuan'];
         String formattedDate = 'Tanggal tidak tersedia';
         if (tglPengajuan != null) {
@@ -292,22 +228,27 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     String buttonText = 'OK',
     VoidCallback? onPressed,
   }) {
-    final bool isError = title.toLowerCase().contains('gagal') || title.toLowerCase().contains('error');
+    final bool isError = title.toLowerCase().contains('gagal') ||
+        title.toLowerCase().contains('error');
     final Color mainColor = isError ? Colors.red : const Color(0xFF1572E8);
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                  isError
+                      ? Icons.error_outline_rounded
+                      : Icons.check_circle_outline_rounded,
                   color: mainColor,
                   size: 54,
                 ),
@@ -338,7 +279,8 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: mainColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                     onPressed: () {
@@ -364,7 +306,8 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     );
   }
 
-  Future<void> pickFileModern(Function(File) onPicked, {bool allowPdf = false}) async {
+  Future<void> pickFileModern(Function(File) onPicked,
+      {bool allowPdf = false}) async {
     final result = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -396,7 +339,8 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
         onPicked(File(picked.files.single.path!));
       }
     } else if (result == 'image') {
-      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      final picked =
+          await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
       if (picked != null) {
         onPicked(File(picked.path));
       }
@@ -489,9 +433,11 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
     );
   }
 
-  Widget buildUploadSectionModern(String label, File? file, Function(File) onPicked, {bool allowPdf = false}) {
+  Widget buildUploadSectionModern(
+      String label, File? file, Function(File) onPicked,
+      {bool allowPdf = false}) {
     final bool uploaded = file != null;
-    final bool isPdf = uploaded && file!.path.toLowerCase().endsWith('.pdf');
+    final bool isPdf = uploaded && file.path.toLowerCase().endsWith('.pdf');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -530,12 +476,14 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                   ),
                   child: uploaded
                       ? (isPdf
-                          ? const Icon(Icons.picture_as_pdf, color: Colors.white, size: 36)
+                          ? const Icon(Icons.picture_as_pdf,
+                              color: Colors.white, size: 36)
                           : ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.file(file!, fit: BoxFit.cover),
+                              child: Image.file(file, fit: BoxFit.cover),
                             ))
-                      : const Icon(Icons.upload_file, size: 30, color: Colors.white),
+                      : const Icon(Icons.upload_file,
+                          size: 30, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -551,11 +499,14 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        uploaded ? path.basename(file!.path) : 'Belum ada file yang dipilih',
+                        uploaded
+                            ? path.basename(file.path)
+                            : 'Belum ada file yang dipilih',
                         style: TextStyle(
                           fontSize: 14,
                           color: uploaded ? Colors.green[700] : Colors.grey,
-                          fontWeight: uploaded ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              uploaded ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ],
@@ -642,11 +593,17 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                   ),
                   const SizedBox(height: 24),
                   // Upload Foto
-                  buildUploadSectionModern('Foto Terbaru', fotoBaru, (f) => setState(() => fotoBaru = f)),
+                  buildUploadSectionModern('Foto Terbaru', fotoBaru,
+                      (f) => setState(() => fotoBaru = f)),
                   if (_selectedStatus == 'Rusak')
-                    buildUploadSectionModern('Foto ID Card Rusak', fotoRusak, (f) => setState(() => fotoRusak = f)),
+                    buildUploadSectionModern('Foto ID Card Rusak', fotoRusak,
+                        (f) => setState(() => fotoRusak = f)),
                   if (_selectedStatus == 'Hilang')
-                    buildUploadSectionModern('Surat Kehilangan', suratKehilangan, (f) => setState(() => suratKehilangan = f), allowPdf: true),
+                    buildUploadSectionModern(
+                        'Surat Kehilangan',
+                        suratKehilangan,
+                        (f) => setState(() => suratKehilangan = f),
+                        allowPdf: true),
 
                   // Tombol Submit
                   const SizedBox(height: 20),
@@ -671,11 +628,14 @@ class _IdCardUploadPageState extends State<IdCardUploadPage> {
                               : () async {
                                   // Validasi data jika perlu
                                   if (fotoBaru == null ||
-                                      (_selectedStatus == 'Rusak' && fotoRusak == null) ||
-                                      (_selectedStatus == 'Hilang' && suratKehilangan == null)) {
+                                      (_selectedStatus == 'Rusak' &&
+                                          fotoRusak == null) ||
+                                      (_selectedStatus == 'Hilang' &&
+                                          suratKehilangan == null)) {
                                     _showPopup(
                                       title: 'Gagal',
-                                      message: 'Silakan lengkapi semua field yang wajib diisi!',
+                                      message:
+                                          'Silakan lengkapi semua field yang wajib diisi!',
                                     );
                                     return;
                                   }

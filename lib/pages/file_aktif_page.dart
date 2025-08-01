@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -11,6 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 import 'package:open_file/open_file.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:indocement_apk/service/api_service.dart';
+import 'package:dio/dio.dart';
 
 class FileAktifPage extends StatefulWidget {
   const FileAktifPage({super.key});
@@ -40,36 +41,69 @@ class _FileAktifPageState extends State<FileAktifPage> {
     await _fetchSubmissionHistory();
   }
 
+  Future<bool> _checkNetwork() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
+      if (mounted) {
+        _showErrorModal(
+            'Tidak ada koneksi internet. Silakan cek jaringan Anda.');
+      }
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _fetchEmployeeData() async {
+    if (!await _checkNetwork()) {
+      return;
+    }
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final int? idEmployee = prefs.getInt('idEmployee');
-    if (idEmployee == null) return;
+    if (idEmployee == null) {
+      setState(() =>
+          _errorMessage = 'ID karyawan tidak ditemukan. Silakan login ulang.');
+      return;
+    }
 
+    setState(() => _isLoading = true);
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
         headers: {'Accept': 'application/json'},
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
         setState(() {
           _idEmployee = idEmployee;
-          _employeeNameController.text = data['EmployeeName'] ?? '-';
+          _employeeNameController.text = response.data['EmployeeName'] ?? '-';
+          _errorMessage = null;
         });
+      } else {
+        setState(() =>
+            _errorMessage = 'Gagal memuat data karyawan: ${response.data}');
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Gagal memuat data karyawan: $e');
+      setState(() => _errorMessage = 'Terjadi kesalahan: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _fetchSubmissionHistory() async {
     if (_idEmployee == null) return;
+    if (!await _checkNetwork()) {
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/FileAktif'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/FileAktif',
+        headers: {'Accept': 'application/json'},
       );
-      final List data = jsonDecode(response.body);
+      final List data =
+          response.data is String ? jsonDecode(response.data) : response.data;
       final filtered = data
           .where((item) => item["IdEmployee"] == _idEmployee)
           .toList()
@@ -261,26 +295,35 @@ class _FileAktifPageState extends State<FileAktifPage> {
       return;
     }
 
+    if (!await _checkNetwork()) {
+      return;
+    }
+
     final String noFile = _noFileController.text;
     final String fileName = path.basename(_selectedFile!.path);
     setState(() => _isLoading = true);
     _showLoading(context);
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://103.31.235.237:5555/api/FileAktif/request'),
-      )
-        ..fields['IdEmployee'] = _idEmployee.toString()
-        ..fields['NoFileAktif'] = noFile
-        ..files.add(await http.MultipartFile.fromPath(
-          'file',
+      final formData = FormData.fromMap({
+        'IdEmployee': _idEmployee.toString(),
+        'NoFileAktif': noFile,
+        'file': await MultipartFile.fromFile(
           _selectedFile!.path,
           filename: fileName,
-        ));
+        ),
+      });
 
-      final response = await request.send();
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/FileAktif/request',
+        data: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+        contentType: 'multipart/form-data',
+      );
+
       Navigator.pop(context); // Close loading dialog
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
           _showSuccessModal('Pengajuan berhasil dikirim.');
         }
@@ -288,8 +331,16 @@ class _FileAktifPageState extends State<FileAktifPage> {
         setState(() => _selectedFile = null);
         await _fetchSubmissionHistory();
       } else {
+        String errorMessage = 'Pengajuan gagal. Coba lagi.';
+        try {
+          errorMessage = response.data['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = response.data.toString().isNotEmpty
+              ? response.data.toString()
+              : errorMessage;
+        }
         if (mounted) {
-          _showErrorModal('Pengajuan gagal. Coba lagi.');
+          _showErrorModal(errorMessage);
         }
       }
     } catch (e) {
@@ -324,6 +375,10 @@ class _FileAktifPageState extends State<FileAktifPage> {
       return;
     }
 
+    if (!await _checkNetwork()) {
+      return;
+    }
+
     final String baseUrl = 'http://103.31.235.237:5555';
     final String fullUrl = '$baseUrl$urlPath';
 
@@ -338,37 +393,40 @@ class _FileAktifPageState extends State<FileAktifPage> {
     setState(() => _isLoading = true);
     _showLoading(context);
     try {
-      final response = await http.get(Uri.parse(fullUrl));
+      final response = await ApiService.get(
+        fullUrl,
+        headers: {'Accept': '*/*'},
+        responseType: ResponseType.bytes,
+      );
+
       Navigator.pop(context); // Close loading dialog
-      if (response.statusCode != 200) {
-        if (mounted) {
-          _showErrorModal('File tidak ditemukan di server.');
+      if (response.statusCode == 200) {
+        Directory dir;
+        if (Platform.isAndroid) {
+          dir = await getExternalStorageDirectory() ??
+              await getTemporaryDirectory();
+        } else {
+          dir = await getApplicationDocumentsDirectory();
         }
-        setState(() => _isLoading = false);
-        return;
-      }
 
-      Directory dir;
-      if (Platform.isAndroid) {
-        dir = await getExternalStorageDirectory() ??
-            await getTemporaryDirectory();
+        String ext = path.extension(urlPath);
+        if (ext.isEmpty) ext = '.pdf';
+
+        final filePath = path.join(dir.path, 'fileaktif-$noFile$ext');
+        final file = File(filePath);
+
+        await file.writeAsBytes(response.data);
+
+        if (mounted) {
+          _showSuccessModal('File berhasil diunduh ke:\n$filePath');
+        }
+
+        await OpenFile.open(file.path);
       } else {
-        dir = await getApplicationDocumentsDirectory();
+        if (mounted) {
+          _showErrorModal('File tidak ditemukan di server: ${response.data}');
+        }
       }
-
-      String ext = path.extension(urlPath);
-      if (ext.isEmpty) ext = '.pdf';
-
-      final filePath = path.join(dir.path, 'fileaktif-$noFile$ext');
-      final file = File(filePath);
-
-      await file.writeAsBytes(response.bodyBytes);
-
-      if (mounted) {
-        _showSuccessModal('File berhasil diunduh ke:\n$filePath');
-      }
-
-      await OpenFile.open(file.path);
     } catch (e) {
       Navigator.pop(context); // Close loading dialog
       if (mounted) {
@@ -456,7 +514,7 @@ class _FileAktifPageState extends State<FileAktifPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: _submitForm,
+                onPressed: _isLoading ? null : _submitForm,
                 icon: const Icon(Icons.send),
                 label: const Text("Ajukan"),
                 style: ElevatedButton.styleFrom(

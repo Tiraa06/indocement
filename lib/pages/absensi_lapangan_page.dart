@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 
@@ -9,7 +8,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:indocement_apk/pages/absensi_page.dart';
 import 'package:camera/camera.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as imageLib;
 import 'package:geocoding/geocoding.dart';

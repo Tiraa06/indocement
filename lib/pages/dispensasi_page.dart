@@ -1,13 +1,13 @@
-import 'dart:convert';
-
+import 'dart:io';
 import 'package:animate_do/animate_do.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:indocement_apk/service/api_service.dart';
+import 'package:path/path.dart' as path;
 
 class DispensasiPage extends StatefulWidget {
   const DispensasiPage({super.key});
@@ -19,10 +19,10 @@ class DispensasiPage extends StatefulWidget {
 class _DispensasiPageState extends State<DispensasiPage> {
   final _jenisDispensasiController = TextEditingController();
   final _keteranganController = TextEditingController();
-  PlatformFile? _suratKeteranganMeninggal;
-  PlatformFile? _ktp;
-  PlatformFile? _sim;
-  PlatformFile? _dokumenLain;
+  File? _suratKeteranganMeninggal;
+  File? _ktp;
+  File? _sim;
+  File? _dokumenLain;
   bool _isLoading = false;
 
   @override
@@ -33,30 +33,16 @@ class _DispensasiPageState extends State<DispensasiPage> {
   }
 
   Future<bool> _checkNetwork() async {
-    try {
-      var connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult.contains(ConnectivityResult.none)) {
-        print('No network connectivity');
-        if (mounted) {
-          _showErrorModal(
-              'Tidak ada koneksi internet. Silakan cek jaringan Anda.');
-        }
-        return false;
-      }
-
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 3));
-      print('Network check response: ${response.statusCode}');
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Network check failed: $e');
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
       if (mounted) {
-        _showErrorModal('Gagal memeriksa jaringan: $e');
+        _showErrorModal(
+            'Tidak ada koneksi internet. Silakan cek jaringan Anda.');
       }
       return false;
     }
+    return true;
   }
 
   void _showLoading(BuildContext context) {
@@ -227,20 +213,22 @@ class _DispensasiPageState extends State<DispensasiPage> {
         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
       );
 
-      if (result != null && result.files.isNotEmpty) {
+      if (result != null &&
+          result.files.isNotEmpty &&
+          result.files.first.path != null) {
         setState(() {
           switch (field) {
             case 'SuratKeteranganMeninggal':
-              _suratKeteranganMeninggal = result.files.first;
+              _suratKeteranganMeninggal = File(result.files.first.path!);
               break;
             case 'Ktp':
-              _ktp = result.files.first;
+              _ktp = File(result.files.first.path!);
               break;
             case 'Sim':
-              _sim = result.files.first;
+              _sim = File(result.files.first.path!);
               break;
             case 'DokumenLain':
-              _dokumenLain = result.files.first;
+              _dokumenLain = File(result.files.first.path!);
               break;
           }
         });
@@ -284,16 +272,14 @@ class _DispensasiPageState extends State<DispensasiPage> {
       return;
     }
 
+    if (!await _checkNetwork()) {
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final hasNetwork = await _checkNetwork();
-      if (!hasNetwork) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       final idEmployee = prefs.getInt('idEmployee');
       if (idEmployee == null || idEmployee <= 0) {
         if (mounted) {
@@ -303,53 +289,42 @@ class _DispensasiPageState extends State<DispensasiPage> {
         return;
       }
 
+      final formData = FormData.fromMap({
+        'IdEmployee': idEmployee.toString(),
+        'JenisDispensasi': _jenisDispensasiController.text.trim(),
+        'Keterangan': _keteranganController.text.trim(),
+        if (_suratKeteranganMeninggal != null)
+          'SuratKeteranganMeninggal': await MultipartFile.fromFile(
+            _suratKeteranganMeninggal!.path,
+            filename: path.basename(_suratKeteranganMeninggal!.path),
+          ),
+        if (_ktp != null)
+          'Ktp': await MultipartFile.fromFile(
+            _ktp!.path,
+            filename: path.basename(_ktp!.path),
+          ),
+        if (_sim != null)
+          'Sim': await MultipartFile.fromFile(
+            _sim!.path,
+            filename: path.basename(_sim!.path),
+          ),
+        if (_dokumenLain != null)
+          'DokumenLain': await MultipartFile.fromFile(
+            _dokumenLain!.path,
+            filename: path.basename(_dokumenLain!.path),
+          ),
+      });
+
       _showLoading(context);
 
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://103.31.235.237:5555/api/Dispensasi'),
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/Dispensasi',
+        data: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+        contentType: 'multipart/form-data',
       );
-
-      request.headers['accept'] = 'text/plain';
-      request.fields['IdEmployee'] = idEmployee.toString();
-      request.fields['JenisDispensasi'] =
-          _jenisDispensasiController.text.trim();
-      request.fields['Keterangan'] = _keteranganController.text.trim();
-
-      if (_suratKeteranganMeninggal != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'SuratKeteranganMeninggal',
-          _suratKeteranganMeninggal!.path!,
-          filename: path.basename(_suratKeteranganMeninggal!.path!),
-        ));
-      }
-      if (_ktp != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'Ktp',
-          _ktp!.path!,
-          filename: path.basename(_ktp!.path!),
-        ));
-      }
-      if (_sim != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'Sim',
-          _sim!.path!,
-          filename: path.basename(_sim!.path!),
-        ));
-      }
-      if (_dokumenLain != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'DokumenLain',
-          _dokumenLain!.path!,
-          filename: path.basename(_dokumenLain!.path!),
-        ));
-      }
-
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
-
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: $responseBody');
 
       Navigator.pop(context); // Close loading dialog
 
@@ -360,10 +335,11 @@ class _DispensasiPageState extends State<DispensasiPage> {
       } else {
         String errorMessage = 'Gagal mengajukan dispensasi';
         try {
-          final decoded = json.decode(responseBody);
-          errorMessage = decoded['message'] ?? errorMessage;
+          errorMessage = response.data['message'] ?? errorMessage;
         } catch (e) {
-          errorMessage = responseBody.isNotEmpty ? responseBody : errorMessage;
+          errorMessage = response.data.toString().isNotEmpty
+              ? response.data.toString()
+              : errorMessage;
         }
         if (mounted) {
           _showErrorModal(errorMessage);
@@ -375,9 +351,9 @@ class _DispensasiPageState extends State<DispensasiPage> {
       if (mounted) {
         _showErrorModal('Terjadi kesalahan: $e');
       }
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -521,7 +497,7 @@ class _DispensasiPageState extends State<DispensasiPage> {
   }
 
   Widget _buildFileField(String label, String field, int duration) {
-    PlatformFile? file;
+    File? file;
     switch (field) {
       case 'SuratKeteranganMeninggal':
         file = _suratKeteranganMeninggal;
@@ -564,7 +540,7 @@ class _DispensasiPageState extends State<DispensasiPage> {
                     Expanded(
                       child: Text(
                         file != null
-                            ? path.basename(file.path!)
+                            ? path.basename(file.path)
                             : 'Pilih file (JPG, PNG, PDF)',
                         style: GoogleFonts.poppins(
                           fontSize: 16,

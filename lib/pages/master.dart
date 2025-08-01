@@ -12,7 +12,6 @@ import 'package:indocement_apk/pages/skkmedic_page.dart';
 import 'package:indocement_apk/pages/inbox.dart';
 import 'package:indocement_apk/pages/error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:indocement_apk/service/api_service.dart';

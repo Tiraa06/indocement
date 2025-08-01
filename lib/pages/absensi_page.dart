@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/absensi_lapangan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geocoding/geocoding.dart';

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:dio/dio.dart';
 import 'package:indocement_apk/service/api_service.dart';

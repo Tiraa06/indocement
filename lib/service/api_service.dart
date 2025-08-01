@@ -15,17 +15,20 @@ class ApiService {
     String url, {
     Map<String, dynamic>? params,
     Map<String, dynamic>? headers,
+    ResponseType? responseType,
   }) async {
     final token = await getToken();
+    final combinedHeaders = {
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      ...?headers,
+    };
     return _dio.get(
       url,
       queryParameters: params,
       options: Options(
-        headers: {
-          'accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
+        headers: combinedHeaders,
+        responseType: responseType ?? ResponseType.json,
       ),
     );
   }
@@ -35,24 +38,23 @@ class ApiService {
     String url, {
     dynamic data,
     Map<String, dynamic>? headers,
+    String? contentType,
+    ResponseType? responseType,
   }) async {
     final token = await getToken();
-    final isFormData = data is FormData;
-    final allHeaders = <String, dynamic>{
-      'accept': 'application/json',
+    final combinedHeaders = {
+      'Accept': 'application/json',
+      if (contentType != null) 'Content-Type': contentType,
       if (token != null) 'Authorization': 'Bearer $token',
-      if (!isFormData) 'Content-Type': 'application/json',
       ...?headers,
     };
-    if (isFormData) {
-      allHeaders.remove('Content-Type');
-    }
-    print('Request $url');
-    print('Headers: $allHeaders');
     return _dio.post(
       url,
       data: data,
-      options: Options(headers: allHeaders),
+      options: Options(
+        headers: combinedHeaders,
+        responseType: responseType ?? ResponseType.json,
+      ),
     );
   }
 
@@ -63,16 +65,16 @@ class ApiService {
     Map<String, dynamic>? headers,
   }) async {
     final token = await getToken();
+    final combinedHeaders = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      ...?headers,
+    };
     return _dio.put(
       url,
       data: data,
-      options: Options(
-        headers: {
-          'accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-      ),
+      options: Options(headers: combinedHeaders),
     );
   }
 
@@ -83,20 +85,20 @@ class ApiService {
     Map<String, dynamic>? headers,
   }) async {
     final token = await getToken();
+    final combinedHeaders = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      ...?headers,
+    };
     return _dio.delete(
       url,
       data: data,
-      options: Options(
-        headers: {
-          'accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-      ),
+      options: Options(headers: combinedHeaders),
     );
   }
 
-  /// Mendapatkan headers dengan token
+  /// Mendapatkan headers dengan token (misal untuk upload, export, dst)
   static Future<Map<String, String>> getHeaders(
       {Map<String, String>? extra}) async {
     final prefs = await SharedPreferences.getInstance();

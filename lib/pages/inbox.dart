@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:indocement_apk/service/api_service.dart';
 import 'chat.dart';
 
 class InboxPage extends StatefulWidget {
@@ -61,6 +62,22 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
+  Future<bool> _checkNetwork() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      print('No network connectivity');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Tidak ada koneksi internet. Silakan cek jaringan Anda.')),
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _loadEmployeeId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -85,11 +102,16 @@ class _InboxPageState extends State<InboxPage> {
 
   Future<void> _fetchRooms() async {
     if (_employeeId == null || !mounted) return;
+    if (!await _checkNetwork()) return;
+
     try {
-      final url = Uri.parse('http://103.31.235.237:5555/api/ChatRooms');
-      final response = await http.get(url);
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/ChatRooms',
+        headers: {'Accept': 'application/json'},
+      );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         List<Map<String, dynamic>> rooms = [];
         if (data is List) {
           rooms = data.cast<Map<String, dynamic>>();
@@ -107,6 +129,8 @@ class _InboxPageState extends State<InboxPage> {
               .where((id) => id.isNotEmpty)
               .toList();
         });
+      } else {
+        print('Failed to fetch rooms: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching rooms: $e');
@@ -122,20 +146,28 @@ class _InboxPageState extends State<InboxPage> {
       return;
     }
 
+    if (!await _checkNetwork()) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Notifications'),
-        headers: {'accept': 'text/plain'},
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/Notifications',
+        headers: {'Accept': 'application/json'},
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         if (mounted) {
           setState(() {
-            _notifications = data
+            _notifications = (data as List)
                 .cast<Map<String, dynamic>>()
                 .where((notif) =>
                     notif['IdEmployee']?.toString() == _employeeId.toString())
@@ -199,12 +231,16 @@ class _InboxPageState extends State<InboxPage> {
 
   Future<void> _fetchKonsultasiDetails(String roomId) async {
     if (_employeeId == null || !mounted) return;
+    if (!await _checkNetwork()) return;
+
     try {
-      final url = Uri.parse(
-          'http://103.31.235.237:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId');
-      final response = await http.get(url);
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/ChatMessages/room/$roomId?currentUserId=$_employeeId',
+        headers: {'Accept': 'application/json'},
+      );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         if (data is Map<String, dynamic> && data['Messages'] is List) {
           final messages = data['Messages'].cast<Map<String, dynamic>>();
           if (mounted) {
@@ -236,16 +272,16 @@ class _InboxPageState extends State<InboxPage> {
   }
 
   Future<void> _updateServerStatus(String messageId, String status) async {
+    if (!await _checkNetwork()) return;
+
     try {
-      final url = Uri.parse(
-          'http://103.31.235.237:5555/api/ChatMessages/update-status/$messageId');
-      final response = await http.put(
-        url,
+      final response = await ApiService.put(
+        'http://103.31.235.237:5555/api/ChatMessages/update-status/$messageId',
+        data: {'status': status},
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'status': status}),
       );
       if (response.statusCode != 200) {
-        print('Failed to update server status: ${response.body}');
+        print('Failed to update server status: ${response.data}');
       }
     } catch (e) {
       print('Error updating server status: $e');
@@ -325,7 +361,7 @@ class _InboxPageState extends State<InboxPage> {
         title: Row(
           children: [
             Text(
-              "Iox",
+              "Inbox",
               style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 22,
@@ -399,10 +435,10 @@ class _InboxPageState extends State<InboxPage> {
                                     : tab == 'Keluhan'
                                         ? 'Permintaan Karyawan'
                                         : tab == 'IDCARD'
-                                        ? 'ID Card'
-                                        : tab == 'MEDICAL'
-                                            ? 'Medical'
-                                            : tab,
+                                            ? 'ID Card'
+                                            : tab == 'MEDICAL'
+                                                ? 'Medical'
+                                                : tab,
                             style: GoogleFonts.poppins(
                                 fontSize: fontSizeLabel * 0.9,
                                 fontWeight: FontWeight.w500),
@@ -541,8 +577,8 @@ class _InboxPageState extends State<InboxPage> {
                                             : source == 'Keluhan'
                                                 ? 'Permintaan Karyawan'
                                                 : source == 'VerifData'
-                                                ? 'Verifikasi Data'
-                                                : source,
+                                                    ? 'Verifikasi Data'
+                                                    : source,
                                         style: GoogleFonts.poppins(
                                           fontSize: fontSizeLabel,
                                           fontWeight: FontWeight.bold,

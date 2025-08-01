@@ -463,7 +463,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                 color: Colors.grey[100],
               ),
               child: uploaded
-                  ? (file!.path.endsWith('.pdf')
+                  ? (file.path.endsWith('.pdf')
                       ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
                       : ClipRRect(
                           borderRadius: BorderRadius.circular(6),
@@ -486,7 +486,7 @@ class _BPJSKaryawanPageState extends State<BPJSKaryawanPage> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    uploaded ? file!.path.split('/').last : "File belum dikirim",
+                    uploaded ? file.path.split('/').last : "File belum dikirim",
                     style: TextStyle(
                       color: uploaded ? Colors.green[700] : Colors.grey[500],
                       fontWeight: uploaded ? FontWeight.w600 : FontWeight.normal,

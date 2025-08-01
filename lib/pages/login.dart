@@ -223,17 +223,15 @@ class _LoginState extends State<Login> {
             : response.data;
         print('Parsed User: $user');
 
-        // Simpan token jika ada
-        final token = user['Token'] ?? user['token'];
-        if (token == null || token is! String || token.isEmpty) {
-          print('Error: token not found or invalid in response!');
-          // Tampilkan error atau return
-          return;
+        if (response.statusCode == 200) {
+          final token = user['Token'] ?? user['token'];
+          // Simpan token
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
+          print('SAVED token: $token');
         }
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
-        print('Saved token: $token');
-        print('Token in prefs: ${prefs.getString('token')}'); // <-- Added line
+
+
 
         if (user is Map<String, dynamic> && user['Id'] != null) {
           // Check account status
@@ -279,9 +277,15 @@ class _LoginState extends State<Login> {
           await prefs.remove('urlFoto');
           await prefs.remove('livingArea');
           await prefs.remove('employeeNo');
+          await prefs.remove('section'); // Hapus key lama yang bertipe int
+          await prefs.setString('section', employeeData['SectionName'] ?? user['SectionName'] ?? ''); // Simpan nama section (string)
 
           final int idEmployee =
               employeeData['idEmployee'] ?? user['IdEmployee'] ?? 0;
+          final int section = employeeData['section'] ??
+              user['section'] ??
+              0; // Tambahkan baris ini
+
           if (idEmployee <= 0) {
             if (mounted) {
               _showErrorModal(
@@ -291,8 +295,10 @@ class _LoginState extends State<Login> {
             return;
           }
 
+          // Simpan ke SharedPreferences
           await prefs.setInt('id', user['Id'] as int);
           await prefs.setInt('idEmployee', idEmployee);
+          await prefs.setInt('idSection', employeeData['IdSection'] ?? user['IdSection'] ?? 0); // Simpan IdSection (integer)
           await prefs.setString('employeeName', user['EmployeeName'] ?? '');
           await prefs.setString('jobTitle', user['Role'] ?? '');
           await prefs.setString('telepon', user['Telepon'] ?? '');

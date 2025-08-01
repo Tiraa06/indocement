@@ -1,12 +1,12 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/hr_menu.dart';
+import 'package:indocement_apk/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
 class KeluhanPage extends StatefulWidget {
   const KeluhanPage({super.key});
@@ -33,8 +33,7 @@ class _KeluhanPageState extends State<KeluhanPage> {
   @override
   void initState() {
     super.initState();
-    _loadProfileData()
-        .then((_) => _fetchEmployeeData().then((_) => _fetchSectionName()));
+    _loadProfileData();
     _messageController.addListener(_updateLinesAndWords);
   }
 
@@ -210,108 +209,16 @@ class _KeluhanPageState extends State<KeluhanPage> {
     final email = prefs.getString('email') ?? 'Unknown';
     final employeeId = prefs.getInt('idEmployee');
     final whatsappNumber = prefs.getString('telepon');
+    final sectionName = prefs.getString('section') ?? 'Unknown';
 
     setState(() {
       _nameController.text = employeeName;
       _emailController.text = email;
       _employeeId = employeeId;
       _whatsappNumber = whatsappNumber;
+      _sectionName = sectionName;
+      _sectionController.text = sectionName;
     });
-  }
-
-  Future<void> _fetchEmployeeData() async {
-    if (_employeeId == null) {
-      if (mounted) {
-        _showErrorModal('ID Karyawan tidak ditemukan. Silakan login kembali.');
-        setState(() {
-          _sectionController.text = 'Unknown';
-          _sectionName = 'Unknown';
-        });
-      }
-      return;
-    }
-
-    try {
-      _showLoading(context);
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/Employees/$_employeeId'),
-      );
-      Navigator.of(context).pop();
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _idSection = data['IdSection'] as int?;
-          });
-        }
-      } else {
-        if (mounted) {
-          _showErrorModal('Gagal memuat data karyawan.');
-          setState(() {
-            _sectionController.text = 'Unknown';
-            _sectionName = 'Unknown';
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorModal('Kesalahan saat memuat data karyawan: $e');
-        setState(() {
-          _sectionController.text = 'Unknown';
-          _sectionName = 'Unknown';
-        });
-      }
-      Navigator.of(context).pop();
-    }
-  }
-
-  Future<void> _fetchSectionName() async {
-    if (_idSection == null) {
-      if (mounted) {
-        _showErrorModal('ID Section tidak ditemukan.');
-        setState(() {
-          _sectionController.text = 'Unknown';
-          _sectionName = 'Unknown';
-        });
-      }
-      return;
-    }
-
-    try {
-      _showLoading(context);
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/sections/$_idSection'),
-      );
-      Navigator.of(context).pop();
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _sectionName = data['NamaSection'] as String? ?? 'Unknown';
-            _sectionController.text = _sectionName!;
-          });
-        }
-      } else {
-        if (mounted) {
-          _showErrorModal('Gagal memuat nama section.');
-          setState(() {
-            _sectionController.text = 'Unknown';
-            _sectionName = 'Unknown';
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorModal('Kesalahan saat memuat nama section: $e');
-        setState(() {
-          _sectionController.text = 'Unknown';
-          _sectionName = 'Unknown';
-        });
-      }
-      Navigator.of(context).pop();
-    }
   }
 
   void _updateLinesAndWords() {
@@ -407,23 +314,17 @@ class _KeluhanPageState extends State<KeluhanPage> {
       return;
     }
     if (_subjectController.text.isEmpty) {
-      if (mounted) {
-        _showErrorModal('Subjek harus diisi.');
-      }
+      if (mounted) _showErrorModal('Subjek harus diisi.');
       return;
     }
     if (_sectionName == null ||
         _sectionName!.isEmpty ||
         _sectionName == 'Unknown') {
-      if (mounted) {
-        _showErrorModal('Section harus diisi.');
-      }
+      if (mounted) _showErrorModal('Section harus diisi.');
       return;
     }
     if (_messageController.text.isEmpty) {
-      if (mounted) {
-        _showErrorModal('Pesan harus diisi.');
-      }
+      if (mounted) _showErrorModal('Pesan harus diisi.');
       return;
     }
 
@@ -437,77 +338,64 @@ class _KeluhanPageState extends State<KeluhanPage> {
 
     try {
       _showLoading(context);
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://103.31.235.237:5555/api/keluhans'),
-      );
 
-      print('Submitting complaint with the following data:');
-      print('IdEmployee: $_employeeId');
-      print('Keluhan: ${_messageController.text}');
-      print(
-        'TglKeluhan: ${DateTime.now().toUtc().add(const Duration(hours: 7)).toIso8601String()}',
-      );
-      print('Status: Terkirim');
-      print('Subject: ${_subjectController.text}');
-      print('Section: $_sectionName');
-
-      request.fields['IdEmployee'] = _employeeId.toString();
-      request.fields['Keluhan'] = _messageController.text;
-      request.fields['TglKeluhan'] = DateTime.now()
-          .toUtc()
-          .add(const Duration(hours: 7))
-          .toIso8601String();
-      request.fields['CreatedAt'] = DateTime.now()
-          .toUtc()
-          .add(const Duration(hours: 7))
-          .toIso8601String();
-      request.fields['UpdatedAt'] = DateTime.now()
-          .toUtc()
-          .add(const Duration(hours: 7))
-          .toIso8601String();
-      request.fields['Status'] = 'Terkirim';
-      request.fields['subject'] = _subjectController.text;
-      request.fields['NamaSection'] = _sectionName!;
+      // Siapkan FormData
+      final Map<String, dynamic> fields = {
+        'IdEmployee': _employeeId.toString(),
+        'Keluhan': _messageController.text,
+        'TglKeluhan': DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 7))
+            .toIso8601String(),
+        'CreatedAt': DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 7))
+            .toIso8601String(),
+        'UpdatedAt': DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 7))
+            .toIso8601String(),
+        'Status': 'Terkirim',
+        'subject': _subjectController.text,
+        'NamaSection': _sectionName!,
+      };
 
       if (_selectedFiles.isNotEmpty) {
         final fileNames = _selectedFiles.map((file) => file.name).join(',');
-        request.fields['NamaFile'] = fileNames;
-        print('NamaFile: $fileNames');
+        fields['NamaFile'] = fileNames;
       }
+
+      final formData = FormData();
+      fields.forEach((key, value) {
+        formData.fields.add(MapEntry(key, value));
+      });
 
       for (var file in _selectedFiles) {
-        var multipartFile = await http.MultipartFile.fromPath(
+        formData.files.add(MapEntry(
           'FotoKeluhan',
-          file.path,
-          filename: file.name,
-        );
-        request.files.add(multipartFile);
+          await MultipartFile.fromFile(file.path, filename: file.name),
+        ));
       }
 
-      var response = await request.send();
-      var responseBody = await http.Response.fromStream(response);
-
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${responseBody.body}');
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/keluhans',
+        data: formData,
+        headers: {'accept': 'application/json'},
+      );
 
       Navigator.of(context).pop();
 
-      if (response.statusCode == 201) {
-        if (mounted) {
-          _showSuccessModal();
-        }
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        if (mounted) _showSuccessModal();
       } else {
         if (mounted) {
           _showErrorModal(
-            'Gagal mengirim keluhan: ${response.statusCode} - ${responseBody.body}',
+            'Gagal mengirim keluhan: ${response.statusCode} - ${response.data}',
           );
         }
       }
     } catch (e) {
-      if (mounted) {
-        _showErrorModal('Kesalahan saat mengirim keluhan: $e');
-      }
+      if (mounted) _showErrorModal('Kesalahan saat mengirim keluhan: $e');
       Navigator.of(context).pop();
     }
   }

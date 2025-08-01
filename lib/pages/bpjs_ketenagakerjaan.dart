@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/Chat.dart'; // Import halaman chat Anda
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
 import 'package:indocement_apk/service/api_service.dart';
 
 class BPJSKetenagakerjaanPage extends StatefulWidget {

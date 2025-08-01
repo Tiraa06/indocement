@@ -3,7 +3,6 @@ import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'bpjs_karyawan.dart'; // Import the BPJSKaryawanPage
 import 'bpjs_tambahan.dart'; // Import the BPJSTambahanPage
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/service/api_service.dart';
 
 class MenuPage extends StatefulWidget {

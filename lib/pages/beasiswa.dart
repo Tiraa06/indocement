@@ -26,7 +26,8 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
   // Controller untuk data karyawan (dapat diedit)
   final TextEditingController namaKaryawanController = TextEditingController();
   final TextEditingController nikController = TextEditingController();
-  final TextEditingController divisiDeptSectionController = TextEditingController();
+  final TextEditingController divisiDeptSectionController =
+      TextEditingController();
   final TextEditingController noHpController = TextEditingController();
   final TextEditingController noRekeningController = TextEditingController();
   final TextEditingController atasNamaController = TextEditingController();
@@ -35,9 +36,12 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
 
   // Controller untuk data anak (diisi manual)
   final TextEditingController namaAnakController = TextEditingController();
-  final TextEditingController tempatLahirAnakController = TextEditingController();
-  final TextEditingController tanggalLahirAnakController = TextEditingController();
-  final TextEditingController namaPerguruanTinggiController = TextEditingController();
+  final TextEditingController tempatLahirAnakController =
+      TextEditingController();
+  final TextEditingController tanggalLahirAnakController =
+      TextEditingController();
+  final TextEditingController namaPerguruanTinggiController =
+      TextEditingController();
   final TextEditingController jurusanController = TextEditingController();
   final TextEditingController ipkController = TextEditingController();
   final TextEditingController semesterController = TextEditingController();
@@ -77,7 +81,8 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
       if (idEmployee == null || idEmployee <= 0) {
         print('Invalid idEmployee: $idEmployee');
         ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('ID karyawan tidak valid, silakan login ulang')),
+          const SnackBar(
+              content: Text('ID karyawan tidak valid, silakan login ulang')),
         );
         return;
       }
@@ -125,14 +130,17 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
           if (idSection != null) {
             for (var unit in units) {
               for (var plantDivision in (unit['PlantDivisions'] as List)) {
-                for (var departement in (plantDivision['Departements'] as List)) {
+                for (var departement
+                    in (plantDivision['Departements'] as List)) {
                   for (var section in (departement['Sections'] as List)) {
                     if (section['Id'] == idSection) {
                       namaUnit = unit['NamaUnit'] ?? '';
-                      namaPlantDivision = plantDivision['NamaPlantDivision'] ?? '';
+                      namaPlantDivision =
+                          plantDivision['NamaPlantDivision'] ?? '';
                       namaDepartement = departement['NamaDepartement'] ?? '';
                       namaSection = section['NamaSection'] ?? '';
-                      print('Found matching section: Unit=$namaUnit, Division=$namaPlantDivision, Dept=$namaDepartement, Section=$namaSection');
+                      print(
+                          'Found matching section: Unit=$namaUnit, Division=$namaPlantDivision, Dept=$namaDepartement, Section=$namaSection');
                       break;
                     }
                   }
@@ -147,20 +155,25 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
             divisiDeptSectionController.text =
                 '$namaPlantDivision - $namaDepartement - $namaSection';
             noHpController.text = _employeeData['Telepon'] ?? '';
-            noRekeningController.text = _employeeData['BankAccountNumber'] ?? '';
+            noRekeningController.text =
+                _employeeData['BankAccountNumber'] ?? '';
             atasNamaController.text = _employeeData['EmployeeName'] ?? '';
             unitController.text = namaUnit;
           });
         } else {
           Navigator.pop(this.context); // Close loading dialog
           ScaffoldMessenger.of(this.context).showSnackBar(
-            SnackBar(content: Text('Gagal memuat data unit: ${unitResponse.statusCode}')),
+            SnackBar(
+                content:
+                    Text('Gagal memuat data unit: ${unitResponse.statusCode}')),
           );
         }
       } else {
         Navigator.pop(this.context); // Close loading dialog
         ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data karyawan: ${employeeResponse.statusCode}')),
+          SnackBar(
+              content: Text(
+                  'Gagal memuat data karyawan: ${employeeResponse.statusCode}')),
         );
       }
     } catch (e) {
@@ -172,7 +185,7 @@ class _BeasiswaPageState extends State<BeasiswaPage> {
     }
   }
 
-void _showLoading(BuildContext context) {
+  void _showLoading(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -213,7 +226,8 @@ void _showLoading(BuildContext context) {
 
     if (tanggalLahirAnakController.text.isNotEmpty) {
       try {
-        initialDate = DateFormat('dd-MM-yy').parse(tanggalLahirAnakController.text);
+        initialDate =
+            DateFormat('dd-MM-yy').parse(tanggalLahirAnakController.text);
         if (initialDate.isBefore(firstDate)) {
           initialDate = firstDate;
         }
@@ -271,7 +285,8 @@ void _showLoading(BuildContext context) {
         onPicked(File(picked.files.single.path!));
       }
     } else if (result == 'image') {
-      final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+      final picked = await ImagePicker()
+          .pickImage(source: ImageSource.gallery, imageQuality: 85);
       if (picked != null) {
         onPicked(File(picked.path));
       }
@@ -296,7 +311,8 @@ void _showLoading(BuildContext context) {
             color: uploaded ? Colors.green : Colors.grey[400]!,
             width: 1.2,
           ),
-          borderRadius: BorderRadius.circular(10), // Sama seperti OutlineInputBorder
+          borderRadius:
+              BorderRadius.circular(10), // Sama seperti OutlineInputBorder
         ),
         child: Row(
           children: [
@@ -312,13 +328,15 @@ void _showLoading(BuildContext context) {
                 color: Colors.grey[100],
               ),
               child: uploaded
-                  ? (file!.path.endsWith('.pdf')
-                      ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
+                  ? (file.path.endsWith('.pdf')
+                      ? const Icon(Icons.picture_as_pdf,
+                          color: Colors.red, size: 28)
                       : ClipRRect(
                           borderRadius: BorderRadius.circular(6),
                           child: Image.file(file, fit: BoxFit.cover),
                         ))
-                  : const Icon(Icons.insert_drive_file, color: Colors.grey, size: 26),
+                  : const Icon(Icons.insert_drive_file,
+                      color: Colors.grey, size: 26),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -335,10 +353,13 @@ void _showLoading(BuildContext context) {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    uploaded ? file!.path.split('/').last : "File belum dikirim",
+                    uploaded
+                        ? file.path.split('/').last
+                        : "File belum dikirim",
                     style: TextStyle(
                       color: uploaded ? Colors.green[700] : Colors.grey[500],
-                      fontWeight: uploaded ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          uploaded ? FontWeight.w600 : FontWeight.normal,
                       fontSize: 12.5,
                     ),
                   ),
@@ -358,7 +379,8 @@ void _showLoading(BuildContext context) {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 6, horizontal: 10),
                       backgroundColor: Colors.white,
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -389,7 +411,8 @@ void _showLoading(BuildContext context) {
           throw Exception('ID karyawan tidak valid. Harap login ulang.');
         }
 
-        final tempatTanggalLahir = '${tempatLahirAnakController.text}, ${tanggalLahirAnakController.text}';
+        final tempatTanggalLahir =
+            '${tempatLahirAnakController.text}, ${tanggalLahirAnakController.text}';
         print('TempatTanggalLahirAnak: $tempatTanggalLahir');
 
         final data = {
@@ -404,14 +427,21 @@ void _showLoading(BuildContext context) {
           'NamaPerguruanTinggi': namaPerguruanTinggiController.text.isEmpty
               ? null
               : namaPerguruanTinggiController.text,
-          'Jurusan': jurusanController.text.isEmpty ? null : jurusanController.text,
+          'Jurusan':
+              jurusanController.text.isEmpty ? null : jurusanController.text,
           'IPK': ipkController.text.isEmpty ? null : ipkController.text,
-          'Semester': semesterController.text.isEmpty ? null : semesterController.text,
-          'NamaSekolah': namaSekolahController.text.isEmpty ? null : namaSekolahController.text,
+          'Semester':
+              semesterController.text.isEmpty ? null : semesterController.text,
+          'NamaSekolah': namaSekolahController.text.isEmpty
+              ? null
+              : namaSekolahController.text,
           'Kelas': kelasController.text.isEmpty ? null : kelasController.text,
-          'Ranking': rankingController.text.isEmpty ? null : rankingController.text,
-          'Bidang': bidangController.text.isEmpty ? null : bidangController.text,
-          'Tingkat': tingkatController.text.isEmpty ? null : tingkatController.text,
+          'Ranking':
+              rankingController.text.isEmpty ? null : rankingController.text,
+          'Bidang':
+              bidangController.text.isEmpty ? null : bidangController.text,
+          'Tingkat':
+              tingkatController.text.isEmpty ? null : tingkatController.text,
           'Unit': unitController.text,
           'Tanggal': DateTime.now().toIso8601String(),
           'Status': 'Diajukan',
@@ -439,7 +469,8 @@ void _showLoading(BuildContext context) {
         if (response.statusCode == 200 || response.statusCode == 201) {
           print('Beasiswa submitted successfully');
           ScaffoldMessenger.of(this.context).showSnackBar(
-            const SnackBar(content: Text('Pengajuan beasiswa berhasil dikirim!')),
+            const SnackBar(
+                content: Text('Pengajuan beasiswa berhasil dikirim!')),
           );
 
           Navigator.pushReplacement(
@@ -468,7 +499,8 @@ void _showLoading(BuildContext context) {
         context: this.context,
         builder: (context) => AlertDialog(
           title: const Text('Lengkapi Data'),
-          content: const Text('Silakan lengkapi semua data yang wajib diisi sebelum mengirim.'),
+          content: const Text(
+              'Silakan lengkapi semua data yang wajib diisi sebelum mengirim.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -574,7 +606,8 @@ void _showLoading(BuildContext context) {
               const SizedBox(height: 24),
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Form(
@@ -584,7 +617,8 @@ void _showLoading(BuildContext context) {
                       children: [
                         Row(
                           children: const [
-                            Icon(Icons.edit_document, color: Color(0xFF1572E8), size: 28),
+                            Icon(Icons.edit_document,
+                                color: Color(0xFF1572E8), size: 28),
                             SizedBox(width: 8),
                             Text(
                               'Form Pengajuan Beasiswa',
@@ -601,7 +635,8 @@ void _showLoading(BuildContext context) {
                         Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -609,7 +644,8 @@ void _showLoading(BuildContext context) {
                               children: [
                                 Row(
                                   children: const [
-                                    Icon(Icons.account_circle, color: Color(0xFF1572E8)),
+                                    Icon(Icons.account_circle,
+                                        color: Color(0xFF1572E8)),
                                     SizedBox(width: 8),
                                     Text(
                                       'Data Karyawan',
@@ -628,8 +664,11 @@ void _showLoading(BuildContext context) {
                                     labelText: 'Nama Karyawan *',
                                     prefixIcon: Icon(Icons.person_outline),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
-                                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -638,7 +677,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'NIK *',
                                     prefixIcon: Icon(Icons.credit_card),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -647,7 +688,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'Divisi/Departemen/Section *',
                                     prefixIcon: Icon(Icons.apartment),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -656,7 +699,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'No. HP *',
                                     prefixIcon: Icon(Icons.phone),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -665,7 +710,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'No. Rekening *',
                                     prefixIcon: Icon(Icons.account_balance),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -674,7 +721,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'Atas Nama Rekening *',
                                     prefixIcon: Icon(Icons.person),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                               ],
                             ),
@@ -684,7 +733,8 @@ void _showLoading(BuildContext context) {
                         Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -692,7 +742,8 @@ void _showLoading(BuildContext context) {
                               children: [
                                 Row(
                                   children: const [
-                                    Icon(Icons.child_care, color: Color(0xFF1572E8)),
+                                    Icon(Icons.child_care,
+                                        color: Color(0xFF1572E8)),
                                     SizedBox(width: 8),
                                     Text(
                                       'Data Anak',
@@ -711,7 +762,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'Nama Anak *',
                                     prefixIcon: Icon(Icons.person_outline),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -720,7 +773,9 @@ void _showLoading(BuildContext context) {
                                     labelText: 'Tempat Lahir Anak *',
                                     prefixIcon: Icon(Icons.location_city),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -732,19 +787,23 @@ void _showLoading(BuildContext context) {
                                   ),
                                   readOnly: true,
                                   onTap: () => _selectDate(context),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 // Upload KIBK & KK di sini
                                 const SizedBox(height: 16),
                                 uploadField(
                                   title: 'KIBK (Kartu Izin Berobat Keluarga)',
                                   file: fileKibk,
-                                  onPressed: () => _pickFile((f) => setState(() => fileKibk = f)),
+                                  onPressed: () => _pickFile(
+                                      (f) => setState(() => fileKibk = f)),
                                 ),
                                 uploadField(
                                   title: 'Fotocopy Kartu Keluarga',
                                   file: fileKk,
-                                  onPressed: () => _pickFile((f) => setState(() => fileKk = f)),
+                                  onPressed: () => _pickFile(
+                                      (f) => setState(() => fileKk = f)),
                                 ),
                               ],
                             ),
@@ -755,7 +814,8 @@ void _showLoading(BuildContext context) {
                         Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -811,14 +871,18 @@ void _showLoading(BuildContext context) {
                                 // Upload Surat Mahasiswa & Nilai IPK di sini
                                 const SizedBox(height: 16),
                                 uploadField(
-                                  title: 'Surat keterangan sebagai Mahasiswa (asli) dari pihak Kampus / Sekolah',
+                                  title:
+                                      'Surat keterangan sebagai Mahasiswa (asli) dari pihak Kampus / Sekolah',
                                   file: fileSuratMahasiswa,
-                                  onPressed: () => _pickFile((f) => setState(() => fileSuratMahasiswa = f)),
+                                  onPressed: () => _pickFile((f) =>
+                                      setState(() => fileSuratMahasiswa = f)),
                                 ),
                                 uploadField(
-                                  title: 'Fotocopy nilai IPK yang telah dilegalisir / Raport yang telah dilegalisir',
+                                  title:
+                                      'Fotocopy nilai IPK yang telah dilegalisir / Raport yang telah dilegalisir',
                                   file: fileNilaiIpk,
-                                  onPressed: () => _pickFile((f) => setState(() => fileNilaiIpk = f)),
+                                  onPressed: () => _pickFile(
+                                      (f) => setState(() => fileNilaiIpk = f)),
                                 ),
                               ],
                             ),
@@ -829,7 +893,8 @@ void _showLoading(BuildContext context) {
                         Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -837,7 +902,8 @@ void _showLoading(BuildContext context) {
                               children: [
                                 Row(
                                   children: const [
-                                    Icon(Icons.school_outlined, color: Colors.blue),
+                                    Icon(Icons.school_outlined,
+                                        color: Colors.blue),
                                     SizedBox(width: 8),
                                     Text(
                                       'Pendidikan Sekolah',
@@ -892,9 +958,11 @@ void _showLoading(BuildContext context) {
                                 // Upload Surat Ranking di sini
                                 const SizedBox(height: 16),
                                 uploadField(
-                                  title: 'Surat Keterangan Ranking dari pihak sekolah',
+                                  title:
+                                      'Surat Keterangan Ranking dari pihak sekolah',
                                   file: fileSuratRanking,
-                                  onPressed: () => _pickFile((f) => setState(() => fileSuratRanking = f)),
+                                  onPressed: () => _pickFile((f) =>
+                                      setState(() => fileSuratRanking = f)),
                                 ),
                               ],
                             ),
@@ -904,7 +972,8 @@ void _showLoading(BuildContext context) {
                         Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -929,9 +998,12 @@ void _showLoading(BuildContext context) {
                                   controller: unitController,
                                   decoration: const InputDecoration(
                                     labelText: 'Unit *',
-                                    prefixIcon: Icon(Icons.account_tree_outlined),
+                                    prefixIcon:
+                                        Icon(Icons.account_tree_outlined),
                                   ),
-                                  validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Wajib diisi'
+                                      : null,
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
@@ -960,10 +1032,15 @@ void _showLoading(BuildContext context) {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Icon(Icons.download, color: Colors.white),
+                                : const Icon(Icons.download,
+                                    color: Colors.white),
                             label: Text(
-                              isSendingGenerate ? 'Memproses...' : 'Generate & Download Surat',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              isSendingGenerate
+                                  ? 'Memproses...'
+                                  : 'Generate & Download Surat',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1572E8),
@@ -976,15 +1053,18 @@ void _showLoading(BuildContext context) {
                             onPressed: isSendingGenerate
                                 ? null
                                 : () async {
-                                    if (!(_formKey.currentState?.validate() ?? false)) {
+                                    if (!(_formKey.currentState?.validate() ??
+                                        false)) {
                                       showDialog(
                                         context: context,
                                         builder: (context) => AlertDialog(
                                           title: const Text('Lengkapi Data'),
-                                          content: const Text('Silakan lengkapi semua data yang wajib diisi sebelum download surat.'),
+                                          content: const Text(
+                                              'Silakan lengkapi semua data yang wajib diisi sebelum download surat.'),
                                           actions: [
                                             TextButton(
-                                              onPressed: () => Navigator.pop(context),
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
                                               child: const Text('OK'),
                                             ),
                                           ],
@@ -996,30 +1076,39 @@ void _showLoading(BuildContext context) {
                                       isSendingGenerate = true;
                                     });
                                     try {
-                                      final prefs = await SharedPreferences.getInstance();
-                                      final idEmployee = prefs.getInt('idEmployee');
+                                      final prefs =
+                                          await SharedPreferences.getInstance();
+                                      final idEmployee =
+                                          prefs.getInt('idEmployee');
                                       if (idEmployee == null) {
-                                        throw Exception('ID karyawan tidak ditemukan. Harap login ulang.');
+                                        throw Exception(
+                                            'ID karyawan tidak ditemukan. Harap login ulang.');
                                       }
 
-                                      final tempatTanggalLahir = '${tempatLahirAnakController.text}, ${tanggalLahirAnakController.text}';
+                                      final tempatTanggalLahir =
+                                          '${tempatLahirAnakController.text}, ${tanggalLahirAnakController.text}';
                                       final now = DateTime.now();
 
                                       // Hanya field yang diperlukan API generate
                                       final data = {
-                                        "NamaKaryawan": namaKaryawanController.text,
+                                        "NamaKaryawan":
+                                            namaKaryawanController.text,
                                         "NIK": nikController.text,
-                                        "DivisiDeptSection": divisiDeptSectionController.text,
+                                        "DivisiDeptSection":
+                                            divisiDeptSectionController.text,
                                         "NoHp": noHpController.text,
                                         "NoRekening": noRekeningController.text,
                                         "AtasNama": atasNamaController.text,
                                         "NamaAnak": namaAnakController.text,
-                                        "TempatTanggalLahirAnak": tempatTanggalLahir,
-                                        "NamaPerguruanTinggi": namaPerguruanTinggiController.text,
+                                        "TempatTanggalLahirAnak":
+                                            tempatTanggalLahir,
+                                        "NamaPerguruanTinggi":
+                                            namaPerguruanTinggiController.text,
                                         "Jurusan": jurusanController.text,
                                         "IPK": ipkController.text,
                                         "Semester": semesterController.text,
-                                        "NamaSekolah": namaSekolahController.text,
+                                        "NamaSekolah":
+                                            namaSekolahController.text,
                                         "Kelas": kelasController.text,
                                         "Ranking": rankingController.text,
                                         "Bidang": bidangController.text,
@@ -1037,13 +1126,15 @@ void _showLoading(BuildContext context) {
                                               SizedBox(
                                                 width: 28,
                                                 height: 28,
-                                                child: CircularProgressIndicator(),
+                                                child:
+                                                    CircularProgressIndicator(),
                                               ),
                                               SizedBox(width: 20),
                                               Expanded(
                                                 child: Text(
                                                   'Mohon tunggu, surat sedang diproses...',
-                                                  style: TextStyle(fontSize: 15),
+                                                  style:
+                                                      TextStyle(fontSize: 15),
                                                 ),
                                               ),
                                             ],
@@ -1064,15 +1155,18 @@ void _showLoading(BuildContext context) {
                                         ),
                                       );
 
-                                      Navigator.of(context).pop(); // Tutup dialog loading
+                                      Navigator.of(context)
+                                          .pop(); // Tutup dialog loading
 
                                       if (response.statusCode == 200) {
                                         // Simpan file ke Download
-                                        final directory = Directory('/storage/emulated/0/Download');
+                                        final directory = Directory(
+                                            '/storage/emulated/0/Download');
                                         if (!directory.existsSync()) {
                                           directory.createSync(recursive: true);
                                         }
-                                        final filePath = '${directory.path}/beasiswa_${DateTime.now().millisecondsSinceEpoch}.pdf';
+                                        final filePath =
+                                            '${directory.path}/beasiswa_${DateTime.now().millisecondsSinceEpoch}.pdf';
                                         final file = File(filePath);
                                         await file.writeAsBytes(response.data!);
 
@@ -1082,19 +1176,28 @@ void _showLoading(BuildContext context) {
                                           barrierDismissible: false,
                                           builder: (context) => Dialog(
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(20),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
                                             ),
                                             child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 28),
                                               child: Column(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1572E8), size: 54),
+                                                  Icon(
+                                                      Icons
+                                                          .check_circle_outline_rounded,
+                                                      color: Color(0xFF1572E8),
+                                                      size: 54),
                                                   const SizedBox(height: 18),
                                                   const Text(
                                                     'Download Berhasil',
                                                     style: TextStyle(
-                                                      fontWeight: FontWeight.w900,
+                                                      fontWeight:
+                                                          FontWeight.w900,
                                                       fontSize: 22,
                                                       color: Color(0xFF1572E8),
                                                       letterSpacing: 0.2,
@@ -1115,19 +1218,30 @@ void _showLoading(BuildContext context) {
                                                   SizedBox(
                                                     width: double.infinity,
                                                     child: ElevatedButton(
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: const Color(0xFF1572E8),
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            const Color(
+                                                                0xFF1572E8),
                                                         shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(12)),
-                                                        padding: const EdgeInsets.symmetric(vertical: 15),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12)),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 15),
                                                       ),
                                                       onPressed: () {
-                                                        Navigator.of(context).pop();
+                                                        Navigator.of(context)
+                                                            .pop();
                                                       },
                                                       child: const Text(
                                                         'OK',
                                                         style: TextStyle(
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                           color: Colors.white,
                                                           fontSize: 16.5,
                                                           letterSpacing: 0.2,
@@ -1147,19 +1261,26 @@ void _showLoading(BuildContext context) {
                                           barrierDismissible: false,
                                           builder: (context) => Dialog(
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(20),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
                                             ),
                                             child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 28),
                                               child: Column(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+                                                  Icon(Icons.cancel_rounded,
+                                                      color: Colors.red,
+                                                      size: 54),
                                                   const SizedBox(height: 18),
                                                   const Text(
                                                     'Gagal Download Surat',
                                                     style: TextStyle(
-                                                      fontWeight: FontWeight.w900,
+                                                      fontWeight:
+                                                          FontWeight.w900,
                                                       fontSize: 22,
                                                       color: Colors.red,
                                                       letterSpacing: 0.2,
@@ -1180,19 +1301,29 @@ void _showLoading(BuildContext context) {
                                                   SizedBox(
                                                     width: double.infinity,
                                                     child: ElevatedButton(
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.red,
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
                                                         shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(12)),
-                                                        padding: const EdgeInsets.symmetric(vertical: 15),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12)),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 15),
                                                       ),
                                                       onPressed: () {
-                                                        Navigator.of(context).pop();
+                                                        Navigator.of(context)
+                                                            .pop();
                                                       },
                                                       child: const Text(
                                                         'OK',
                                                         style: TextStyle(
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                           color: Colors.white,
                                                           fontSize: 16.5,
                                                           letterSpacing: 0.2,
@@ -1207,19 +1338,24 @@ void _showLoading(BuildContext context) {
                                         );
                                       }
                                     } catch (e) {
-                                      Navigator.of(context).pop(); // Tutup dialog loading jika error
+                                      Navigator.of(context)
+                                          .pop(); // Tutup dialog loading jika error
                                       showDialog(
                                         context: context,
                                         builder: (context) => Dialog(
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
                                           ),
                                           child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 24, vertical: 28),
                                             child: Column(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+                                                Icon(Icons.cancel_rounded,
+                                                    color: Colors.red,
+                                                    size: 54),
                                                 const SizedBox(height: 18),
                                                 const Text(
                                                   'Gagal Download Surat',
@@ -1245,19 +1381,29 @@ void _showLoading(BuildContext context) {
                                                 SizedBox(
                                                   width: double.infinity,
                                                   child: ElevatedButton(
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: Colors.red,
-                                                      shape: RoundedRectangleBorder(
-                                                          borderRadius: BorderRadius.circular(12)),
-                                                      padding: const EdgeInsets.symmetric(vertical: 15),
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 15),
                                                     ),
                                                     onPressed: () {
-                                                      Navigator.of(context).pop();
+                                                      Navigator.of(context)
+                                                          .pop();
                                                     },
                                                     child: const Text(
                                                       'OK',
                                                       style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         color: Colors.white,
                                                         fontSize: 16.5,
                                                         letterSpacing: 0.2,
@@ -1286,360 +1432,668 @@ void _showLoading(BuildContext context) {
               const SizedBox(height: 24),
 // Ganti Card Upload Pengajuan Beasiswa agar tampil beda dari card lain (misal: warna background, icon, border, dsb)
 
-Card(
-  margin: const EdgeInsets.only(bottom: 16),
-  elevation: 0,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(14),
-    side: const BorderSide(color: Color(0xFF1572E8), width: 2),
-  ),
-  color: const Color(0xFFF5F8FE), // Biru muda, beda dari card lain
-  child: Padding(
-    padding: const EdgeInsets.all(18.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: const [
-            Icon(Icons.cloud_upload_rounded, color: Color(0xFF1572E8), size: 28),
-            SizedBox(width: 10),
-            Text(
-              'Upload Pengajuan Beasiswa',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Color(0xFF1572E8),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Color(0xFF1572E8), width: 1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: uploadField(
-            title: 'Upload PDF atau Gambar Pengajuan Beasiswa',
-            file: fileUploadBeasiswa,
-            onPressed: () => _pickFile((f) => setState(() => fileUploadBeasiswa = f)),
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            icon: isSendingUpload
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Icon(Icons.upload, color: Colors.white),
-            label: Text(
-              isSendingUpload ? 'Mengirim...' : 'Kirim Pengajuan Beasiswa',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1572E8),
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 1,
-            ),
-onPressed: isSendingUpload
-    ? null
-    : () async {
-        if (fileUploadBeasiswa == null) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Upload Dokumen'),
-              content: const Text('Silakan upload dokumen pengajuan beasiswa terlebih dahulu.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-          return;
-        }
-        setState(() {
-          isSendingUpload = true;
-        });
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          final idEmployee = prefs.getInt('idEmployee');
-          if (idEmployee == null) {
-            throw Exception('ID karyawan tidak ditemukan. Harap login ulang.');
-          }
-
-          final dio = Dio();
-          final formData = FormData.fromMap({
-            "IdEmployee": idEmployee,
-            "Status": "Diajukan",
-            "UrlDokumen": await MultipartFile.fromFile(
-              fileUploadBeasiswa!.path,
-              filename: basename(fileUploadBeasiswa!.path),
-            ),
-          });
-
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              content: Row(
-                children: const [
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(),
-                  ),
-                  SizedBox(width: 20),
-                  Expanded(
-                    child: Text(
-                      'Mengirim dokumen...',
-                      style: TextStyle(fontSize: 15),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-
-          final response = await dio.post(
-            'http://103.31.235.237:5555/api/Beasiswa',
-            data: formData,
-            options: Options(
-              headers: {
-                'accept': '*/*',
-                'Content-Type': 'multipart/form-data',
-              },
-            ),
-          );
-
-          Navigator.of(context).pop(); // tutup loading
-
-          if (response.statusCode == 200 || response.statusCode == 201) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => Dialog(
+              Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: Color(0xFF1572E8), width: 2),
                 ),
+                color:
+                    const Color(0xFFF5F8FE), // Biru muda, beda dari card lain
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  padding: const EdgeInsets.all(18.0),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1572E8), size: 54),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Pengajuan Berhasil',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 22,
-                          color: Color(0xFF1572E8),
-                          letterSpacing: 0.2,
-                        ),
-                        textAlign: TextAlign.center,
+                      Row(
+                        children: const [
+                          Icon(Icons.cloud_upload_rounded,
+                              color: Color(0xFF1572E8), size: 28),
+                          SizedBox(width: 10),
+                          Text(
+                            'Upload Pengajuan Beasiswa',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Color(0xFF1572E8),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Dokumen pengajuan beasiswa berhasil dikirim.',
-                        style: TextStyle(
-                          fontSize: 16.5,
-                          color: Colors.black87,
-                          height: 1.5,
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border:
+                              Border.all(color: Color(0xFF1572E8), width: 1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        textAlign: TextAlign.center,
+                        child: uploadField(
+                          title: 'Upload PDF atau Gambar Pengajuan Beasiswa',
+                          file: fileUploadBeasiswa,
+                          onPressed: () => _pickFile(
+                              (f) => setState(() => fileUploadBeasiswa = f)),
+                        ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
+                          icon: isSendingUpload
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.upload, color: Colors.white),
+                          label: Text(
+                            isSendingUpload
+                                ? 'Mengirim...'
+                                : 'Kirim Pengajuan Beasiswa',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1572E8),
+                            minimumSize: const Size(double.infinity, 48),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'OK',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 16.5,
-                              letterSpacing: 0.2,
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            elevation: 1,
                           ),
+                          onPressed: isSendingUpload
+                              ? null
+                              : () async {
+                                  if (fileUploadBeasiswa == null) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Upload Dokumen'),
+                                        content: const Text(
+                                            'Silakan upload dokumen pengajuan beasiswa terlebih dahulu.'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: const Text('OK'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  setState(() {
+                                    isSendingUpload = true;
+                                  });
+                                  try {
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    final idEmployee =
+                                        prefs.getInt('idEmployee');
+                                    if (idEmployee == null) {
+                                      throw Exception(
+                                          'ID karyawan tidak ditemukan. Harap login ulang.');
+                                    }
+
+                                    final dio = Dio();
+                                    final formData = FormData.fromMap({
+                                      "IdEmployee": idEmployee,
+                                      "Status": "Diajukan",
+                                      "UrlDokumen":
+                                          await MultipartFile.fromFile(
+                                        fileUploadBeasiswa!.path,
+                                        filename:
+                                            basename(fileUploadBeasiswa!.path),
+                                      ),
+                                    });
+
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => AlertDialog(
+                                        content: Row(
+                                          children: const [
+                                            SizedBox(
+                                              width: 28,
+                                              height: 28,
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                            SizedBox(width: 20),
+                                            Expanded(
+                                              child: Text(
+                                                'Mengirim dokumen...',
+                                                style: TextStyle(fontSize: 15),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+
+                                    final response = await dio.post(
+                                      'http://103.31.235.237:5555/api/Beasiswa',
+                                      data: formData,
+                                      options: Options(
+                                        headers: {
+                                          'accept': '*/*',
+                                        },
+                                      ),
+                                    );
+
+                                    Navigator.of(context)
+                                        .pop(); // tutup loading
+
+                                    if (response.statusCode == 200 ||
+                                        response.statusCode == 201) {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) => Dialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 24, vertical: 28),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                    Icons
+                                                        .check_circle_outline_rounded,
+                                                    color: Color(0xFF1572E8),
+                                                    size: 54),
+                                                const SizedBox(height: 18),
+                                                const Text(
+                                                  'Pengajuan Berhasil',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 22,
+                                                    color: Color(0xFF1572E8),
+                                                    letterSpacing: 0.2,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                const SizedBox(height: 12),
+                                                const Text(
+                                                  'Dokumen pengajuan beasiswa berhasil dikirim.',
+                                                  style: TextStyle(
+                                                    fontSize: 16.5,
+                                                    color: Colors.black87,
+                                                    height: 1.5,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                const SizedBox(height: 28),
+                                                SizedBox(
+                                                  width: double.infinity,
+                                                  child: ElevatedButton(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xFF1572E8),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 15),
+                                                    ),
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text(
+                                                      'OK',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white,
+                                                        fontSize: 16.5,
+                                                        letterSpacing: 0.2,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                      setState(() {
+                                        fileUploadBeasiswa = null;
+                                      });
+                                    } else {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) => Dialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 24, vertical: 28),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.cancel_rounded,
+                                                    color: Colors.red,
+                                                    size: 54),
+                                                const SizedBox(height: 18),
+                                                const Text(
+                                                  'Gagal Mengirim',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 22,
+                                                    color: Colors.red,
+                                                    letterSpacing: 0.2,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Text(
+                                                  'Gagal mengirim dokumen: ${response.statusCode}',
+                                                  style: const TextStyle(
+                                                    fontSize: 16.5,
+                                                    color: Colors.black87,
+                                                    height: 1.5,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                const SizedBox(height: 28),
+                                                SizedBox(
+                                                  width: double.infinity,
+                                                  child: ElevatedButton(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 15),
+                                                    ),
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text(
+                                                      'OK',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white,
+                                                        fontSize: 16.5,
+                                                        letterSpacing: 0.2,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    Navigator.of(context)
+                                        .pop(); // pastikan loading tertutup
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => Dialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 24, vertical: 28),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.cancel_rounded,
+                                                  color: Colors.red, size: 54),
+                                              const SizedBox(height: 18),
+                                              const Text(
+                                                'Gagal Mengirim',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 22,
+                                                  color: Colors.red,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                'Terjadi kesalahan: $e',
+                                                style: const TextStyle(
+                                                  fontSize: 16.5,
+                                                  color: Colors.black87,
+                                                  height: 1.5,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              const SizedBox(height: 28),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12)),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 15),
+                                                  ),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: const Text(
+                                                    'OK',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
+                                                      fontSize: 16.5,
+                                                      letterSpacing: 0.2,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  } finally {
+                                    setState(() {
+                                      isSendingUpload = false;
+                                    });
+                                  }
+                                },
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            );
-            setState(() {
-              fileUploadBeasiswa = null;
-            });
-          } else {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Gagal Mengirim',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 22,
-                          color: Colors.red,
-                          letterSpacing: 0.2,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Gagal mengirim dokumen: ${response.statusCode}',
-                        style: const TextStyle(
-                          fontSize: 16.5,
-                          color: Colors.black87,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'OK',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 16.5,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-        } catch (e) {
-          Navigator.of(context).pop(); // pastikan loading tertutup
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Gagal Mengirim',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 22,
-                        color: Colors.red,
-                        letterSpacing: 0.2,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Terjadi kesalahan: $e',
-                      style: const TextStyle(
-                        fontSize: 16.5,
-                        color: Colors.black87,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text(
-                          'OK',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 16.5,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        } finally {
-          setState(() {
-            isSendingUpload = false;
-          });
-        }
-      },
-          ),
-        ),
-      ],
-    ),
-  ),
-),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> uploadBeasiswaDocument(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final idEmployee = prefs.getInt('idEmployee');
+    if (idEmployee == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('ID karyawan tidak ditemukan. Harap login ulang.')),
+      );
+      return;
+    }
+    if (fileUploadBeasiswa == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Silakan upload dokumen pengajuan beasiswa terlebih dahulu.')),
+      );
+      return;
+    }
+
+    final formData = FormData.fromMap({
+      "IdEmployee": idEmployee,
+      "Status": "Diajukan",
+      "UrlDokumen": await MultipartFile.fromFile(
+        fileUploadBeasiswa!.path,
+        filename: basename(fileUploadBeasiswa!.path),
+      ),
+    });
+
+    print('=== FormData yang akan dikirim (Beasiswa) ===');
+    for (var f in formData.fields) {
+      print('Field: ${f.key}, Value: ${f.value}');
+    }
+    for (var f in formData.files) {
+      print('File Field: ${f.key}, Filename: ${f.value.filename}');
+    }
+    print('=================================');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final response = await ApiService.post(
+        'http://103.31.235.237:5555/api/Beasiswa',
+        data: formData,
+      );
+
+      Navigator.of(context).pop(); // Tutup loading
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle_outline_rounded,
+                      color: Color(0xFF1572E8), size: 54),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Pengajuan Berhasil',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 22,
+                      color: Color(0xFF1572E8),
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Dokumen pengajuan beasiswa berhasil dikirim.',
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      color: Colors.black87,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1572E8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 16.5,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        setState(() {
+          fileUploadBeasiswa = null;
+        });
+      } else {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Gagal Mengirim',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 22,
+                      color: Colors.red,
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Gagal mengirim dokumen: ${response.statusCode}',
+                    style: const TextStyle(
+                      fontSize: 16.5,
+                      color: Colors.black87,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 16.5,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // pastikan loading tertutup
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cancel_rounded, color: Colors.red, size: 54),
+                const SizedBox(height: 18),
+                const Text(
+                  'Gagal Mengirim',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.red,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Terjadi kesalahan: $e',
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 }

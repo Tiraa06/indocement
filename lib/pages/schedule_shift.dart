@@ -2,13 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:indocement_apk/pages/bpjs_page.dart';
 import 'package:indocement_apk/pages/hr_menu.dart';
 import 'package:indocement_apk/pages/id_card.dart';
 import 'package:indocement_apk/pages/layanan_menu.dart';
 import 'package:indocement_apk/pages/skkmedic_page.dart';
-import 'package:indocement_apk/utils/network_helper.dart';
+import 'package:indocement_apk/service/api_service.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -69,19 +68,19 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         _isLoadingShifts = true;
       });
 
-      final response = await http.get(
-        Uri.parse('http://103.31.235.237:5555/api/JadwalShift'),
+      final response = await ApiService.get(
+        'http://103.31.235.237:5555/api/JadwalShift',
         headers: {
-          'accept': 'text/plain',
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-      ).timeout(const Duration(seconds: 10));
+      );
 
       print('Fetch Shift Options Status: ${response.statusCode}');
-      print('Fetch Shift Options Body: ${response.body}');
+      print('Fetch Shift Options Body: ${response.data}');
 
       if (response.statusCode == 200 && mounted) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = response.data;
         final List<String> shiftNames = data
             .map((shift) => shift['NamaShift']?.toString() ?? '')
             .where((name) => name.isNotEmpty)
@@ -144,7 +143,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
           message.contains('{')) {
         final jsonStart = message.indexOf('{');
         final jsonStr = message.substring(jsonStart);
-        final errorJson = json.decode(jsonStr);
+        final errorJson = jsonDecode(jsonStr);
         final errors = errorJson['errors'] as Map<String, dynamic>?;
         if (errors != null) {
           final errorMessages = errors.values
@@ -342,29 +341,20 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       }
       _userIdEmployee = idEmployee;
 
-      final userResponse = await safeRequest(
-        context,
-        () => http.get(
-          Uri.parse('http://103.31.235.237:5555/api/User'),
-          headers: {
-            'accept': 'text/plain',
-            'Content-Type': 'application/json',
-          },
-        ),
+      final userResponse = await ApiService.get(
+        'http://103.31.235.237:5555/api/User',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       );
-      if (userResponse == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
 
       print('Fetch User Status: ${userResponse.statusCode}');
-      print('Fetch User Body: ${userResponse.body}');
+      print('Fetch User Body: ${userResponse.data}');
 
       if (userResponse.statusCode != 200) {
         if (mounted) {
-          _showErrorModal('Gagal memuat data pengguna: ${userResponse.body}');
+          _showErrorModal('Gagal memuat data pengguna: ${userResponse.data}');
         }
         setState(() {
           _isLoading = false;
@@ -372,7 +362,7 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         return;
       }
 
-      final List<dynamic> userData = json.decode(userResponse.body);
+      final List<dynamic> userData = userResponse.data;
       final Set<int> activeKaryawanIds = userData
           .where(
               (user) => user['Status'] == 'Aktif' && user['Role'] == 'Karyawan')
@@ -380,34 +370,28 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
           .toSet();
       print('Active Karyawan IdEmployee: $activeKaryawanIds');
 
-      final employeeResponse = await safeRequest(
-        context,
-        () => http.get(
-          Uri.parse('http://103.31.235.237:5555/api/Employees/$idEmployee'),
-          headers: {'Content-Type': 'application/json'},
-        ),
+      final employeeResponse = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees/$idEmployee',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       );
-      if (employeeResponse == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
 
       print('Fetch User Employee Status: ${employeeResponse.statusCode}');
-      print('Fetch User Employee Body: ${employeeResponse.body}');
+      print('Fetch User Employee Body: ${employeeResponse.data}');
 
       if (employeeResponse.statusCode != 200) {
         if (mounted) {
           _showErrorModal(
-              'Gagal memuat data pengguna: ${employeeResponse.body}');
+              'Gagal memuat data pengguna: ${employeeResponse.data}');
         }
         setState(() {
           _isLoading = false;
         });
         return;
       }
-      final employeeData = json.decode(employeeResponse.body);
+      final employeeData = employeeResponse.data;
       _userSection = employeeData['IdSection']?.toString();
       print(
           'User ID: $idEmployee, IdSection: $_userSection, User Data: $employeeData');
@@ -422,25 +406,19 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         return;
       }
 
-      final response = await safeRequest(
-        context,
-        () => http.get(
-          Uri.parse('http://103.31.235.237:5555/api/Employees'),
-          headers: {'Content-Type': 'application/json'},
-        ),
+      final allEmployeesResponse = await ApiService.get(
+        'http://103.31.235.237:5555/api/Employees',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       );
-      if (response == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
 
-      print('Fetch All Employees Status: ${response.statusCode}');
-      print('Fetch All Employees Body: ${response.body}');
+      print('Fetch All Employees Status: ${allEmployeesResponse.statusCode}');
+      print('Fetch All Employees Body: ${allEmployeesResponse.data}');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+      if (allEmployeesResponse.statusCode == 200) {
+        final List<dynamic> data = allEmployeesResponse.data;
         print('Raw Employee Data: $data');
         final Map<int, Map<String, dynamic>> uniqueEmployees = {};
         for (var e in data) {
@@ -494,7 +472,8 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
         }
       } else {
         if (mounted) {
-          _showErrorModal('Gagal memuat data karyawan: ${response.body}');
+          _showErrorModal(
+              'Gagal memuat data karyawan: ${allEmployeesResponse.data}');
         }
         setState(() {
           _isLoading = false;
@@ -570,7 +549,6 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
 
     try {
       _showLoading(context);
-      // Try sending individual objects instead of a list
       final requestBody = _selectedPairs
           .map((pair) => {
                 'IdEmployee': pair['IdEmployee'],
@@ -586,36 +564,25 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
       print('Selected Pairs before submission: $_selectedPairs');
       print('Submitting request: $requestBody');
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? token = prefs.getString('authToken');
-
-      final headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'text/plain',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
-      print('Request headers: $headers');
-
       const maxRetries = 3;
       var attempt = 0;
-      http.Response? response;
 
       while (attempt < maxRetries) {
         try {
-          // Send each pair individually to test if list structure is the issue
           for (var pair in requestBody) {
-            response = await http
-                .post(
-                  Uri.parse('http://103.31.235.237:5555/api/TukarSchedule'),
-                  headers: headers,
-                  body: json.encode(pair),
-                )
-                .timeout(const Duration(seconds: 15));
+            final response = await ApiService.post(
+              'http://103.31.235.237:5555/api/TukarSchedule',
+              data: pair,
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+            );
             print(
-                'API Response for pair ${pair['IdEmployee']}: ${response.statusCode} - ${response.body}');
+                'API Response for pair ${pair['IdEmployee']}: ${response.statusCode} - ${response.data}');
             if (response.statusCode != 200 && response.statusCode != 201) {
               throw Exception(
-                  'Failed for employee ${pair['IdEmployee']}: ${response.body}');
+                  'Failed for employee ${pair['IdEmployee']}: ${response.data}');
             }
           }
           break;
@@ -632,13 +599,8 @@ class _ScheduleShiftPageState extends State<ScheduleShiftPage>
 
       Navigator.of(context).pop(); // Close loading dialog
 
-      if (response!.statusCode == 200 || response.statusCode == 201) {
-        if (mounted) {
-          _showSuccessModal();
-        }
-      } else {
-        throw Exception(
-            'Gagal mengajukan pengajuan: ${response.body.isNotEmpty ? response.body : 'Tidak ada detail kesalahan dari server'}');
+      if (mounted) {
+        _showSuccessModal();
       }
     } catch (e) {
       print('Error submitting form: $e');
