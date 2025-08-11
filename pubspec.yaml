@@ -54,6 +54,8 @@ dependencies:
   mime: ^2.0.0
   file_picker: ^10.1.9
   image: ^4.0.17
+  flutter_local_notifications: ^19.4.0
+  font_awesome_flutter: ^10.7.0
 
    # Lokasi
   geolocator: ^9.0.2

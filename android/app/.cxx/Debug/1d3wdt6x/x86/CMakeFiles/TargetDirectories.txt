@@ -1,0 +1,2 @@
+D:/indocement project/indocement_apk/android/app/.cxx/Debug/1d3wdt6x/x86/CMakeFiles/edit_cache.dir
+D:/indocement project/indocement_apk/android/app/.cxx/Debug/1d3wdt6x/x86/CMakeFiles/rebuild_cache.dir

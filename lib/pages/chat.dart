@@ -121,7 +121,7 @@ class _ChatPageState extends State<ChatPage> {
         print('Failed to initialize HubConnection');
         if (mounted && !_isDisposed) {
           setState(
-              () => _errorMessage = 'Gagal menginisialisasi koneksi SignalR.');
+              () => _errorMessage = 'Harap Tunggu Loading Hingga Selesai');
         }
       }
     } catch (e, stackTrace) {
@@ -133,7 +133,7 @@ class _ChatPageState extends State<ChatPage> {
         // Jangan tampilkan error modal jika _firstRoomLoad masih true
         if (!_firstRoomLoad) {
           setState(() =>
-              _errorMessage = 'Gagal menghubungkan ke server SignalR: $e');
+              _errorMessage = 'Harap Tunggu Loading Hingga Selesai');
         }
         _scheduleReconnect();
       }
@@ -182,7 +182,7 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       print('Error joining room via HTTP: $e');
       if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal bergabung ke room via HTTP: $e');
+        setState(() => _errorMessage = 'Harap Tunggu Loading Hingga Selesai');
         _scheduleReconnect();
       }
     }
@@ -525,14 +525,14 @@ class _ChatPageState extends State<ChatPage> {
       } else {
         if (mounted && !_isDisposed) {
           setState(() => _errorMessage =
-              'Gagal memverifikasi room: Status ${response.statusCode}, ${response.data}');
+              'Harap Tunggu Loading Hingga Selesai');
         }
         return false;
       }
     } catch (e) {
       print('Error verifying room $roomId: $e');
       if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal memverifikasi room: $e');
+        setState(() => _errorMessage = 'Harap Tunggu Loading Hingga Selesai');
       }
       return false;
     }
@@ -701,7 +701,7 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       print('Error checking consultation: $e');
       if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal memeriksa konsultasi: $e');
+        setState(() => _errorMessage = 'Harap Tunggu Loading Hingga Selesai');
       }
       return null;
     }
@@ -778,7 +778,7 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       print('Error creating consultation: $e');
       if (mounted && !_isDisposed) {
-        setState(() => _errorMessage = 'Gagal membuat konsultasi: $e');
+        setState(() => _errorMessage = 'Harap Tungu Loading Hingga Selesai');
       }
     }
   }
@@ -1334,27 +1334,27 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           if (_isLoading) const Center(child: CircularProgressIndicator()),
-          if (_errorMessage != null)
-            Positioned(
-              top: 10,
-              left: 10,
-              right: 10,
-              child: Material(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: Text(_errorMessage!,
-                              style: const TextStyle(color: Colors.white))),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () {
-                          if (mounted && !_isDisposed) {
-                            setState(() => _errorMessage = null);
-                          }
+if (_errorMessage != null)
+Positioned(
+  top: 10,
+  left: 10,
+  right: 10,
+  child: Material(
+    color: Colors.red,
+    borderRadius: BorderRadius.circular(8),
+    child: Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(_errorMessage!,
+              style: const TextStyle(color: Colors.white))),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () {
+              if (mounted && !_isDisposed) {
+                setState(() => _errorMessage = null);
+              }
                         },
                       ),
                     ],

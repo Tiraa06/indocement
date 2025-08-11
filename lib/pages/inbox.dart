@@ -7,6 +7,19 @@ import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:indocement_apk/service/api_service.dart';
 import 'chat.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+Future<void> initNotif() async {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+}
+
+
 
 class InboxPage extends StatefulWidget {
   const InboxPage({super.key});
@@ -50,6 +63,7 @@ class _InboxPageState extends State<InboxPage> {
   @override
   void initState() {
     super.initState();
+    initNotif(); // Tambahkan ini
     _clearLocalData();
     _loadEmployeeId();
   }
@@ -165,38 +179,57 @@ class _InboxPageState extends State<InboxPage> {
       if (response.statusCode == 200) {
         final data =
             response.data is String ? jsonDecode(response.data) : response.data;
+
+        // --- Tambahan: deteksi notifikasi baru ---
+        List<Map<String, dynamic>> newNotifications = (data as List)
+            .cast<Map<String, dynamic>>()
+            .where((notif) =>
+                notif['IdEmployee']?.toString() == _employeeId.toString())
+            .toList();
+
+        // Ambil ID notifikasi lama
+        final oldIds = _notifications.map((n) => n['Id']).toSet();
+        // Cari notifikasi yang benar-benar baru
+        final justArrived = newNotifications.where((n) => !oldIds.contains(n['Id'])).toList();
+
+        // Tampilkan notifikasi lokal untuk setiap notifikasi baru
+        for (final notif in justArrived) {
+          final source = notif['Source']?.toString() ?? 'Notifikasi';
+          final status = notif['Status']?.toString() ?? '';
+          final title = 'Notifikasi Baru: $source';
+          final body = 'Status: $status';
+        }
+        // --- Akhir tambahan ---
+
         if (mounted) {
           setState(() {
-            _notifications = (data as List)
-                .cast<Map<String, dynamic>>()
-                .where((notif) =>
-                    notif['IdEmployee']?.toString() == _employeeId.toString())
+            _notifications = newNotifications
                 .map((notif) {
-              final source = notif['Source']?.toString() ?? 'Unknown';
-              final status = notif['Status']?.toString() == 'Diajukan'
-                  ? 'Diajukan'
-                  : notif['Status']?.toString() == 'Disetujui'
-                      ? 'Disetujui'
-                      : notif['Status']?.toString() == 'DiSetujui'
+                  final source = notif['Source']?.toString() ?? 'Unknown';
+                  final status = notif['Status']?.toString() == 'Diajukan'
+                      ? 'Diajukan'
+                      : notif['Status']?.toString() == 'Disetujui'
                           ? 'Disetujui'
-                          : notif['Status']?.toString() == 'Dilihat'
-                              ? 'Dilihat'
-                              : notif['Status']?.toString() == 'DiReturn'
-                                  ? 'DiReturn'
-                                  : notif['Status']?.toString() == 'Ditolak'
-                                      ? 'Ditolak'
-                                      : 'Pending';
-              return {
-                'Id': notif['Id']?.toString() ?? '',
-                'IdSource': notif['IdSource']?.toString() ?? 'N/A',
-                'source': source,
-                'Status': status,
-                'timestamp': notif['UpdatedAt']?.toString() ??
-                    notif['CreatedAt']?.toString() ??
-                    '',
-                'isRead': source == 'Konsultasi' ? false : true,
-              };
-            }).toList()
+                          : notif['Status']?.toString() == 'DiSetujui'
+                              ? 'Disetujui'
+                              : notif['Status']?.toString() == 'Dilihat'
+                                  ? 'Dilihat'
+                                  : notif['Status']?.toString() == 'DiReturn'
+                                      ? 'DiReturn'
+                                      : notif['Status']?.toString() == 'Ditolak'
+                                          ? 'Ditolak'
+                                          : 'Pending';
+                  return {
+                    'Id': notif['Id']?.toString() ?? '',
+                    'IdSource': notif['IdSource']?.toString() ?? 'N/A',
+                    'source': source,
+                    'Status': status,
+                    'timestamp': notif['UpdatedAt']?.toString() ??
+                        notif['CreatedAt']?.toString() ??
+                        '',
+                    'isRead': source == 'Konsultasi' ? false : true,
+                  };
+                }).toList()
               ..sort((a, b) => DateTime.parse('${b['timestamp']}')
                   .compareTo(DateTime.parse('${a['timestamp']}')));
             _hasUnreadNotifications = _notifications.any(

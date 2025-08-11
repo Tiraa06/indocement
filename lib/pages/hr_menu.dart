@@ -7,6 +7,8 @@ import 'form.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HRCareMenuPage extends StatefulWidget {
   const HRCareMenuPage({super.key});
@@ -227,10 +229,66 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                               'title': 'Konsultasi Dengan HR',
                               'color': Colors.blue,
                               'onTap': () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const ChatPage()),
+                                showModalBottomSheet(
+                                  context: context,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                  ),
+                                  builder: (context) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            "Pilih Layanan Konsultasi",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ListTile(
+                                            leading: Icon(Icons.chat, color: Colors.blue),
+                                            title: const Text("HR HelpDesk Via Aplikasi"),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => const ChatPage(), // sama seperti sebelumnya
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: Icon(FontAwesomeIcons.whatsapp, color: Colors.green),
+                                            title: const Text("HR HelpDesk Via WhatsApp"),
+                                            onTap: () async {
+                                              Navigator.pop(context);
+                                              final waUrl = Uri.parse(
+                                                "https://wa.me/628111991110?text=Halo%20HR%20HelpDesk%2C%20saya%20ingin%20konsultasi."
+                                              );
+                                              try {
+                                                bool launched = await launchUrl(
+                                                  waUrl,
+                                                  mode: LaunchMode.externalApplication,
+                                                );
+                                                if (!launched) {
+                                                  // Fallback ke mode default jika gagal
+                                                  await launchUrl(waUrl, mode: LaunchMode.platformDefault);
+                                                }
+                                              } catch (e) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text("Tidak dapat membuka WhatsApp")),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 );
                               },
                             },
@@ -242,7 +300,8 @@ class _HRCareMenuPageState extends State<HRCareMenuPage>
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) => const KeluhanPage()),
+                                    builder: (_) => const KeluhanPage(),
+                                  ),
                                 );
                               },
                             },

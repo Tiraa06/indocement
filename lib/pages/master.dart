@@ -82,103 +82,6 @@ class _MasterScreenState extends State<MasterScreen>
     // Hapus: _checkProfileAndShowModal();
   }
 
-  Future<void> _checkProfileAndShowModal() async {
-    final incomplete = await _isProfileIncomplete();
-    if (incomplete && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            contentPadding: const EdgeInsets.all(16.0),
-            content: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.8,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.info_outline,
-                      color: Colors.orange, size: 48),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Profil Anda belum lengkap.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Silakan lengkapi data profil Anda agar dapat menggunakan semua fitur aplikasi.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const EditProfilePage(
-                                  employeeName: '',
-                                  jobTitle: '',
-                                  employeeId: null,
-                                  urlFoto: null,
-                                )),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1572E8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 24),
-                    ),
-                    child: const Text(
-                      'Lengkapi Profil',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 24),
-                    ),
-                    child: const Text(
-                      'Tutup',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      });
-    }
-  }
-
   Future<void> _loadEmployeeId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -271,17 +174,16 @@ class _MasterScreenState extends State<MasterScreen>
     });
   }
 
-void _closeLoadingDialog() {
-  if (_isLoadingDialogVisible && mounted && Navigator.canPop(context)) {
-    Navigator.pop(context);
-    setState(() {
+  void _closeLoadingDialog() {
+    if (_isLoadingDialogVisible && mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+      setState(() {
+        _isLoadingDialogVisible = false;
+      });
+    } else {
       _isLoadingDialogVisible = false;
-    });
-  } else {
-    _isLoadingDialogVisible = false;
+    }
   }
-}
-
 
   Future<void> _showVerificationApprovedModal(
       String fieldName, String verifId) async {
@@ -424,22 +326,21 @@ void _closeLoadingDialog() {
     });
   }
 
-void _onItemTapped(int index) async {
-  if (_selectedIndex == index) return;
-  final hasNetwork = await _checkNetwork();
-  if (!hasNetwork) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const Error404Screen()),
-    );
-    return;
+  void _onItemTapped(int index) async {
+    if (_selectedIndex == index) return;
+    final hasNetwork = await _checkNetwork();
+    if (!hasNetwork) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Error404Screen()),
+      );
+      return;
+    }
+    setState(() {
+      _selectedIndex = index;
+    });
+    _animationController.forward().then((_) => _animationController.reverse());
   }
-  setState(() {
-    _selectedIndex = index;
-  });
-  _animationController.forward().then((_) => _animationController.reverse());
-}
-
 
   Future<void> _checkAndRequestAllPermissions() async {
     // Daftar permission yang umum untuk aplikasi HR/employee
@@ -694,11 +595,49 @@ class _MasterContentState extends State<MasterContent> {
   String? _email;
   String? _telepon;
 
+  bool _isProfileIncompleteFlag = false;
+
   @override
   void initState() {
     super.initState();
-    // Jangan panggil _showLoading(context) di sini!
+    _requestAllPermissions(); // Tambahkan ini
     _loadProfileData();
+    _checkProfileIncompleteFlag();
+  }
+
+  Future<void> _requestAllPermissions() async {
+    final permissions = [
+      Permission.camera,
+      Permission.storage,
+      Permission.photos,
+      Permission.mediaLibrary,
+      Permission.location,
+      Permission.notification,
+      Permission.contacts,
+      Permission.sms,
+      Permission.calendar,
+      Permission.sensors,
+      Permission.accessMediaLocation,
+      Permission.manageExternalStorage,
+      Permission.activityRecognition,
+      Permission.appTrackingTransparency,
+      Permission.accessNotificationPolicy,
+    ];
+
+    for (final perm in permissions) {
+      if (await perm.status != PermissionStatus.granted) {
+        await perm.request();
+      }
+    }
+  }
+
+  Future<void> _checkProfileIncompleteFlag() async {
+    final incomplete = await _isProfileIncomplete();
+    if (mounted) {
+      setState(() {
+        _isProfileIncompleteFlag = incomplete;
+      });
+    }
   }
 
   Future<bool> _checkNetwork() async {
@@ -913,8 +852,6 @@ class _MasterContentState extends State<MasterContent> {
         masterScreenState?.setState(() {
           masterScreenState._isInitialLoadComplete = true;
         });
-        // Panggil modal setelah data selesai di-load
-        masterScreenState?._checkProfileAndShowModal();
       }
     }
   }
@@ -961,7 +898,7 @@ class _MasterContentState extends State<MasterContent> {
                       onProfileTap: () async {
                         _showLoading(context);
                         final hasNetwork = await _checkNetwork();
-                        _closeLoadingDialog();
+                        _closeLoadingDialog(); // <-- pastikan ini selalu dipanggil
                         if (!hasNetwork) {
                           Navigator.pushReplacement(
                             context,
@@ -979,6 +916,81 @@ class _MasterContentState extends State<MasterContent> {
                     ),
                     const BannerCarousel(),
                     Categories(checkNetwork: _checkNetwork),
+                    if (_isProfileIncompleteFlag)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        child: Card(
+                          color: Colors.orange.shade50,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.info_outline, color: Colors.orange, size: 36),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Profil Anda belum lengkap.",
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        "Silakan lengkapi data profil Anda agar dapat menggunakan semua fitur aplikasi.",
+                                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => const EditProfilePage(
+                                                employeeName: '',
+                                                jobTitle: '',
+                                                employeeId: null,
+                                                urlFoto: null,
+                                              ),
+                                            ),
+                                          ).then((_) {
+                                            _checkProfileIncompleteFlag();
+                                          });
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF1572E8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 10, horizontal: 20),
+                                        ),
+                                        child: const Text(
+                                          'Lengkapi Profil',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     const DailyInfo(),
                     const SizedBox(height: 48),
                   ],
@@ -1031,12 +1043,6 @@ class _MasterContentState extends State<MasterContent> {
                                   question: 'Apa saja menu yang tersedia?',
                                   answer:
                                       'Menu yang tersedia mencakup BPJS, ID Card, SK Kerja & Medical, Layanan Karyawan, HR Chat, dan lainnya.',
-                                ),
-                                _buildFAQItem(
-                                  icon: Icons.info,
-                                  question: 'Apa itu Info Harian?',
-                                  answer:
-                                      'Info Harian menyajikan informasi penting seperti jadwal shift, ulang tahun karyawan, dan pengingat tugas.',
                                 ),
                                 _buildFAQItem(
                                   icon: Icons.mail,
@@ -1246,15 +1252,9 @@ class Categories extends StatelessWidget {
       {"icon": "assets/icons/document.svg", "text": "SK Kerja & Medical"},
       {"icon": "assets/icons/service.svg", "text": "Layanan Karyawan"},
       {"icon": "assets/icons/hr_care.svg", "text": "HR Chat"},
-      {"icon": "assets/icons/more.svg", "text": "Lainnya"},
+      // Tambahkan satu item kosong agar jadi 6 menu (untuk grid 2x3)
+      {"icon": "", "text": ""},
     ];
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    const cardWidth = 56.0;
-    const spacing = 20.0;
-    const padding = 16.0 * 2;
-    final crossAxisCount = (screenWidth - padding) ~/ (cardWidth + spacing);
-    final columnCount = crossAxisCount.clamp(2, 5);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -1275,14 +1275,18 @@ class Categories extends StatelessWidget {
         child: GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: columnCount,
-          crossAxisSpacing: spacing,
-          mainAxisSpacing: 12.0,
-          childAspectRatio: cardWidth / (cardWidth + 30),
+          crossAxisCount: 3, // 3 kolom
+          crossAxisSpacing: 24.0,
+          mainAxisSpacing: 24.0,
+          childAspectRatio: 0.85, // Supaya card lebih proporsional
           children: List.generate(
             categories.length,
             (index) {
               final category = categories[index];
+              // Jika item dummy, tampilkan kotak kosong
+              if (category["icon"] == "" && category["text"] == "") {
+                return const SizedBox.shrink();
+              }
               return CategoryCard(
                 iconPath: category["icon"]!,
                 text: category["text"]!,
@@ -1290,17 +1294,16 @@ class Categories extends StatelessWidget {
                   final masterScreenState =
                       context.findAncestorStateOfType<_MasterScreenState>();
                   masterScreenState?._showLoading(context);
-final hasNetwork = await checkNetwork();
-if (!hasNetwork) {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const Error404Screen()),
-  );
-  return;
-}
-if (category["text"] == "BPJS") {
-
+                  final hasNetwork = await checkNetwork();
+                  if (!hasNetwork) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Error404Screen()),
+                    );
+                    return;
+                  }
+                  if (category["text"] == "BPJS") {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1335,12 +1338,6 @@ if (category["text"] == "BPJS") {
                         builder: (context) => const LayananMenuPage(),
                       ),
                     );
-                  } else if (category["text"] == "Lainnya") {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Menu Lainnya belum tersedia'),
-                      ),
-                    );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -1373,9 +1370,7 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dpi = MediaQuery.of(context).devicePixelRatio;
-    final double fontSize = screenWidth < 390 ? 10 : 12;
+    final double fontSize = 13;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1383,25 +1378,27 @@ class CategoryCard extends StatelessWidget {
         GestureDetector(
           onTap: press,
           child: Container(
-            padding: const EdgeInsets.all(12),
-            height: 60,
-            width: 60,
+            padding: const EdgeInsets.all(10),
+            height: 64,
+            width: 64,
             decoration: BoxDecoration(
               color: const Color(0xFFF5F6F9),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: SvgPicture.asset(
-              iconPath,
-              width: 30,
-              height: 30,
-            ),
+            child: iconPath.isNotEmpty
+                ? SvgPicture.asset(
+                    iconPath,
+                    width: 32,
+                    height: 32,
+                  )
+                : null,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           text,
           textAlign: TextAlign.center,
-          maxLines: 4,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(fontSize: fontSize),
         ),
@@ -1420,36 +1417,13 @@ class DailyInfo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionTitle(
-            title: "Info Harian",
-            press: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Lihat semua info harian')),
-              );
-            },
-          ),
           const SizedBox(height: 12),
+          // Hapus semua contoh InfoCard di bawah ini
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: const [
-                InfoCard(
-                  title: "Shift Hari Ini",
-                  subtitle: "Pagi (07.00 - 15.00)",
-                  description: "Jangan lupa datang tepat waktu ya!",
-                ),
-                SizedBox(width: 12),
-                InfoCard(
-                  title: "Ulang Tahun ðŸŽ‚",
-                  subtitle: "Andi P. (Dept. QC)",
-                  description: "Kirim ucapan via HR Chat",
-                ),
-                SizedBox(width: 12),
-                InfoCard(
-                  title: "Reminder",
-                  subtitle: "Submit lembur",
-                  description: "Sebelum jam 17.00 hari ini",
-                ),
+                // Tidak ada InfoCard di sini, kosongkan
               ],
             ),
           ),
@@ -1535,24 +1509,6 @@ class SectionTitle extends StatelessWidget {
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Colors.black,
-            ),
-          ),
-          TextButton.icon(
-            onPressed: press,
-            icon: const Icon(Icons.arrow_forward_ios,
-                size: 14, color: Colors.blue),
-            label: const Text(
-              "Lihat Semua",
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
             ),
           ),
         ],
