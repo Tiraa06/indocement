@@ -385,7 +385,8 @@ class _MasterScreenState extends State<MasterScreen>
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           contentPadding: const EdgeInsets.all(20),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -918,7 +919,8 @@ class _MasterContentState extends State<MasterContent> {
                     Categories(checkNetwork: _checkNetwork),
                     if (_isProfileIncompleteFlag)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 0),
                         child: Card(
                           color: Colors.orange.shade50,
                           shape: RoundedRectangleBorder(
@@ -930,11 +932,13 @@ class _MasterContentState extends State<MasterContent> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.info_outline, color: Colors.orange, size: 36),
+                                const Icon(Icons.info_outline,
+                                    color: Colors.orange, size: 36),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "Profil Anda belum lengkap.",
@@ -947,7 +951,9 @@ class _MasterContentState extends State<MasterContent> {
                                       const SizedBox(height: 4),
                                       const Text(
                                         "Silakan lengkapi data profil Anda agar dapat menggunakan semua fitur aplikasi.",
-                                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black54),
                                       ),
                                       const SizedBox(height: 8),
                                       ElevatedButton(
@@ -955,7 +961,8 @@ class _MasterContentState extends State<MasterContent> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => const EditProfilePage(
+                                              builder: (_) =>
+                                                  const EditProfilePage(
                                                 employeeName: '',
                                                 jobTitle: '',
                                                 employeeId: null,
@@ -967,9 +974,11 @@ class _MasterContentState extends State<MasterContent> {
                                           });
                                         },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF1572E8),
+                                          backgroundColor:
+                                              const Color(0xFF1572E8),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 10, horizontal: 20),
@@ -1252,7 +1261,6 @@ class Categories extends StatelessWidget {
       {"icon": "assets/icons/document.svg", "text": "SK Kerja & Medical"},
       {"icon": "assets/icons/service.svg", "text": "Layanan Karyawan"},
       {"icon": "assets/icons/hr_care.svg", "text": "HR Chat"},
-      // Tambahkan satu item kosong agar jadi 6 menu (untuk grid 2x3)
       {"icon": "", "text": ""},
     ];
 
@@ -1275,15 +1283,14 @@ class Categories extends StatelessWidget {
         child: GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3, // 3 kolom
+          crossAxisCount: 3,
           crossAxisSpacing: 24.0,
           mainAxisSpacing: 24.0,
-          childAspectRatio: 0.85, // Supaya card lebih proporsional
+          childAspectRatio: 0.75,
           children: List.generate(
             categories.length,
             (index) {
               final category = categories[index];
-              // Jika item dummy, tampilkan kotak kosong
               if (category["icon"] == "" && category["text"] == "") {
                 return const SizedBox.shrink();
               }
@@ -1296,49 +1303,52 @@ class Categories extends StatelessWidget {
                   masterScreenState?._showLoading(context);
                   final hasNetwork = await checkNetwork();
                   if (!hasNetwork) {
+                    masterScreenState?._closeLoadingDialog();
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const Error404Screen()),
+                          builder: (context) => const Error404Screen()),
                     );
                     return;
                   }
+                  // Perform navigation and close the loading dialog
                   if (category["text"] == "BPJS") {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const BPJSPage(),
                       ),
-                    );
+                    ).then((_) => masterScreenState?._closeLoadingDialog());
                   } else if (category["text"] == "HR Chat") {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const HRCareMenuPage(),
                       ),
-                    );
+                    ).then((_) => masterScreenState?._closeLoadingDialog());
                   } else if (category["text"] == "ID Card") {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const IdCardUploadPage(),
                       ),
-                    );
+                    ).then((_) => masterScreenState?._closeLoadingDialog());
                   } else if (category["text"] == "SK Kerja & Medical") {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const SKKMedicPage(),
                       ),
-                    );
+                    ).then((_) => masterScreenState?._closeLoadingDialog());
                   } else if (category["text"] == "Layanan Karyawan") {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const LayananMenuPage(),
                       ),
-                    );
+                    ).then((_) => masterScreenState?._closeLoadingDialog());
                   } else {
+                    masterScreenState?._closeLoadingDialog();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content:
@@ -1370,7 +1380,7 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double fontSize = 13;
+    final double fontSize = 12;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
