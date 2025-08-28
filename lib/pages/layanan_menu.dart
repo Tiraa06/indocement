@@ -47,7 +47,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Uang Duka',
         'color': Colors.blue,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const UangDukaPage()),
@@ -59,7 +59,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Schedule Shift',
         'color': Colors.orange,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ScheduleShiftPage()),
@@ -71,7 +71,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Absensi',
         'color': Colors.purple,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const EventMenuPage()),
@@ -83,7 +83,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Dispensasi/Kompensasi',
         'color': Colors.teal,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const DispensasiPage()),
@@ -95,7 +95,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'File Aktif',
         'color': Colors.blueGrey,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const FileAktifPage()),
@@ -107,7 +107,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Bea Siswa',
         'color': Colors.red,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const BeasiswaPage()),
@@ -119,7 +119,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Penghargaan Masa Kerja',
         'color': Colors.amber,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const MasaKerjaPage()),
@@ -131,7 +131,7 @@ class _LayananMenuPageState extends State<LayananMenuPage>
         'title': 'Internal Recruitment',
         'color': Colors.indigo,
         'onTap': () {
-          Navigator.pop(context);
+        
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const InternalRecruitmentPage()),
